@@ -5,3 +5,4 @@ text/
 *.out
 *.o
 .vscode/
+*.iso
