@@ -7,8 +7,7 @@
 // SegmentDestriptor is the entry of GDT
 // 8 bytes each
 // More info: https://wiki.osdev.org/Global_Descriptor_Table
-class SegmentDescriptor {
-private:
+struct SegmentDescriptor {
     // base - 32bits; limits - 20bits
     uint16_t limit_lo_;  // limit 0:15
     uint16_t base_lo_;   // base 0:15
@@ -27,30 +26,7 @@ private:
     // 4-5: 0
     // 0-3: limit 16:19
     uint8_t base_hi_;    // base 24:31
-
-public:
-    SegmentDescriptor(uint32_t base = 0, uint32_t limit = 0, uint8_t type = 0);
-    ~SegmentDescriptor();
-    uint32_t Base();
-    uint32_t Limit();
 } __attribute__((packed));
-
-// GDT
-class GlobalDescriptorTable {
-public:
-    SegmentDescriptor null_segment_descriptor_;
-    SegmentDescriptor unused_segment_descriptor_;
-    SegmentDescriptor code_segment_descriptor_;
-    SegmentDescriptor data_segment_descriptor_;
-    SegmentDescriptor task_state_segment_descriptor_;
-
-public:
-    GlobalDescriptorTable();
-    ~GlobalDescriptorTable();
-
-    uint16_t CodeSegmentSelector();
-    uint16_t DataSegmentSelector();
-};
 
 // Segment Descriptor Layout (64 bits)
 // |   7    |     6       |     5     |   4    |   3    |   2    |   1    |   0    |  字节
@@ -74,5 +50,10 @@ struct GlobalDescriptorTablePointer {
     uint16_t size_;
     uint32_t base_;
 } __attribute__((packed));
+
+typedef struct SegmentDescriptor seg_des_t;
+typedef struct GlobalDescriptorTablePointer gdt_ptr_t;
+
+void setGlobalDescriptorTable();
 
 #endif

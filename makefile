@@ -1,16 +1,16 @@
-GPP_PARAMS = -m32 -fno-use-cxa-atexit -nostdlib -fno-builtin -fno-rtti -fno-exceptions -fno-leading-underscore
+GPP_PARAMS = -m32 -nostdlib -fno-builtin -fno-exceptions -fno-leading-underscore
 NASM_PARAMS = -f elf32
 LD_PARAMS = -m elf_i386
 
-objects = loader.elf32 kernel.elf32 gdt.elf32
+objects = loader.elf32 kernel.elf32 gdt.elf32 utils.elf32 screen.elf32
 
 .PHONY = clean
 
 # kernel.s: kernel.cpp:
 # 	g++ $(GPP_PARAMS) kernel.cpp -s -o kernel.s
 
-%.elf32: %.cpp
-	g++ $(GPP_PARAMS) -o $@ -c $<
+%.elf32: %.c
+	gcc $(GPP_PARAMS) -o $@ -c $<
 
 %.elf32: %.s
 	nasm $(NASM_PARAMS) -o $@ $<

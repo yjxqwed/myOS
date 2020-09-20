@@ -16,6 +16,7 @@ global loader
 loader:
     xchg bx, bx  ; magic bp
     mov esp, kernel_stk
+    mov ebp, esp
     push eax
     push ebx
     call kernelMain
@@ -23,17 +24,17 @@ loader:
         jmp loop
 
 global flushGDT
-extern gp, dss, css
+extern _gp, _dss, _css
 flushGDT:
     xchg bx, bx  ; magic bp
-    lgdt [gp]
-    mov ax, [dss]
+    lgdt [_gp]
+    mov ax, [_dss]
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
     mov ss, ax
-    mov ax, [css]
+    mov ax, [_css]
     jmp 0x10:flush2
 flush2:
     ret

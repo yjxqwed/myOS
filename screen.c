@@ -1,8 +1,5 @@
 #include "types.h"
-#include "gdt.h"
-
-const int COL = 80;
-const int ROW = 25;
+#include "screen.h"
 
 void clear_screen() {
     volatile int8_t* video_buffer = (volatile int8_t*)0xB8000;
@@ -14,14 +11,6 @@ void clear_screen() {
         video_buffer[i++] = 0x04;              
     }
 }
-
-// void printf(const char* str) {
-//     volatile int8_t* video = (volatile int8_t*)0xB8000;
-//     while (*str != 0) {
-//         *video++ = *str++;
-//         *video++ = 0x04;
-//     }
-// }
 
 void printf(const char* str) {
     static uint16_t* VideoMemory = (uint16_t*)0xb8000;
@@ -49,11 +38,4 @@ void printf(const char* str) {
             y = 0;
         }
     }
-}
-
-extern "C" void kernelMain(void* multiboot_structure, unsigned int magic_number) {
-    // clear_screen();
-    // printf("Hello Wolrd! --- This is myOS by Justing Yang (bochs test)");
-    GlobalDescriptorTable gdt();
-    while (true);
 }

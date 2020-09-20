@@ -1,0 +1,7 @@
+*.elf32
+*.bin
+text/
+*.txt
+*.out
+*.o
+.vscode/
