@@ -1,0 +1,20 @@
+megs: 32
+
+romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
+vgaromimage: file=/usr/local/share/bochs/VGABIOS-lgpl-latest
+
+# floppya: 1_44=boot.img, status=inserted
+# ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+ata0-master: type=cdrom, path="mykernel.iso", status=inserted
+boot: cdrom
+
+# boot: floppy
+
+log: bochsout.txt
+
+mouse: enabled = 0
+magic_break: enabled=1
+
+#display_library: x, options="gui_debug"
+
+#keyboard: enabled=1, map=/usr/share/bochs/keymaps/x11-pc-us.map
