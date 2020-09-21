@@ -2,7 +2,7 @@ GPP_PARAMS = -m32 -nostdlib -fno-builtin -fno-exceptions -fno-leading-underscore
 NASM_PARAMS = -f elf32
 LD_PARAMS = -m elf_i386
 
-objects = loader.elf32 kernel.elf32 gdt.elf32 utils.elf32 screen.elf32
+objects = loader.elf32 kernel.elf32 gdt.elf32 utils.elf32 screen.elf32 idt.elf32 system.elf32 debug.elf32
 
 .PHONY = clean
 

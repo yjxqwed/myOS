@@ -13,6 +13,7 @@
 extern kernelMain
 [section .text]
 global loader
+kernel_stk equ 0x01280800
 loader:
     xchg bx, bx  ; magic bp
     mov esp, kernel_stk
@@ -39,7 +40,8 @@ flushGDT:
 flush2:
     ret
 
-
-[section .bss]
-    resb 2*1024*1024  ; 2MiB stack
-kernel_stk:
+global flushIDT
+extern _ip
+flushIDT:
+    lidt [_ip]
+    ret

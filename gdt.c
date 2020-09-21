@@ -1,8 +1,9 @@
 #include "gdt.h"
 
-#define _64MiB 64 * 1024 * 1024
+// #define _64MiB 64 * 1024 * 1024
 
-seg_des_t _gdt[5];
+// seg_des_t _gdt[5];
+seg_des_t* _gdt = (seg_des_t*)0x01100000;
 gdt_ptr_t _gp;
 uint16_t _dss, _css;
 
@@ -10,8 +11,8 @@ uint16_t _dss, _css;
 void setSegmentDescriptor(
     seg_des_t* sd, uint32_t base, uint32_t limit,
     uint8_t flags,  // high 4 bits of the 6th byte
-    uint8_t access) {
-
+    uint8_t access
+) {
     uint8_t* target = (uint8_t*)sd;
 
     // put base
