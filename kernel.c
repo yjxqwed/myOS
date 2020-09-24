@@ -6,12 +6,12 @@
 
 void kernelMain(void* multiboot_structure, unsigned int magic_number) {
     clear_screen();
-    debugMagicBreakpoint();
+    // debugMagicBreakpoint();
     printf("Hello Wolrd! --- This is myOS by Justing Yang (before my gdt)\n");
     setGlobalDescriptorTable();
-    debugMagicBreakpoint();
+    // debugMagicBreakpoint();
     printf("Hello Wolrd! --- This is myOS by Justing Yang (after my gdt)\n");
     setInterruptDescriptorTable();
-    int b = 1 / 0;
+    // int b = 1 / 0;
     // while (1);
 }

@@ -12,6 +12,12 @@ struct InterruptDescriptor {
    uint16_t offset_2; // offset bits 16..31
 } __attribute__((packed));
 
+// type and attrs
+//   7                           0
+// +---+---+---+---+---+---+---+---+
+// | P |  DPL  | S |    GateType   |
+// +---+---+---+---+---+---+---+---+
+
 typedef struct InterruptDescriptor Gate;
 
 struct InterruptDescriptorTablePointer {
@@ -22,5 +28,5 @@ struct InterruptDescriptorTablePointer {
 typedef struct InterruptDescriptorTablePointer idt_ptr_t;
 
 void setInterruptDescriptorTable();
-
+void setInterruptDescriptor(Gate* gate, uint32_t offset, uint16_t selector, uint8_t attr);
 #endif

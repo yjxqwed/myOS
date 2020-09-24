@@ -1,5 +1,6 @@
 #include "idt.h"
 #include "system.h"
+#include "isr.h"
 
 
 
@@ -24,7 +25,7 @@ void setInterruptDescriptorTable() {
     
     // Add interrupt descriptor here
 
-
+    setISRs();
 
 
     // Add interrupt descriptor above

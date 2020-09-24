@@ -1,8 +1,5 @@
 #include "gdt.h"
 
-// #define _64MiB 64 * 1024 * 1024
-
-// seg_des_t _gdt[5];
 seg_des_t* _gdt = (seg_des_t*)0x01100000;
 gdt_ptr_t _gp;
 uint16_t _dss, _css;
@@ -35,13 +32,15 @@ void setSegmentDescriptor(
 extern void flushGDT();
 
 void setGlobalDescriptorTable() {
-    setSegmentDescriptor(&(_gdt[0]), 0, 0, 0xc, 0);  // null
-    setSegmentDescriptor(&(_gdt[1]), 0, 0, 0xc, 0);  // unused    
-    setSegmentDescriptor(&(_gdt[2]), 0, 0xfffff, 0xc ,0x9a);  // code
-    setSegmentDescriptor(&(_gdt[3]), 0, 0xfffff, 0xc, 0x92);  // data
-    setSegmentDescriptor(&(_gdt[4]), 0, 0, 0xc, 0);  // tss
+    setSegmentDescriptor(&(_gdt[0]), 0, 0, 0xc, 0);  // null  0x00
+    setSegmentDescriptor(&(_gdt[1]), 0, 0, 0xc, 0);  // unused  0x08
+    setSegmentDescriptor(&(_gdt[2]), 0, 0xfffff, 0xc ,0x9a);  // kernel code  0x10
+    setSegmentDescriptor(&(_gdt[3]), 0, 0xfffff, 0xc, 0x92);  // kernel data  0x18
+    setSegmentDescriptor(&(_gdt[4]), 0, 0xfffff, 0xc, 0x92);  // user code
+    setSegmentDescriptor(&(_gdt[5]), 0, 0xfffff, 0xc, 0x92);  // user data
+    setSegmentDescriptor(&(_gdt[6]), 0, 0, 0xc, 0);  // tss
     _gp.base_ = (uint32_t)_gdt;
-    _gp.size_ = 5 * sizeof(seg_des_t) - 1;
+    _gp.size_ = 7 * sizeof(seg_des_t) - 1;
     _dss = 0x18;
     _css = 0x10;
     flushGDT();

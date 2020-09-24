@@ -25,7 +25,9 @@ loader:
         jmp loop
 
 global flushGDT
-extern _gp, _dss, _css
+extern _gp, _dss, _css  ; _gp is the gdt pointer
+                        ; _dss is the kernel data seg selector
+                        ; _css is the kernel code seg selector
 flushGDT:
     xchg bx, bx  ; magic bp
     lgdt [_gp]
@@ -35,13 +37,12 @@ flushGDT:
     mov fs, ax
     mov gs, ax
     mov ss, ax
-    mov ax, [_css]
     jmp 0x10:flush2
 flush2:
     ret
 
 global flushIDT
-extern _ip
+extern _ip  ; the idt pointer
 flushIDT:
     lidt [_ip]
     ret
