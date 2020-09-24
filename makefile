@@ -1,4 +1,4 @@
-GPP_PARAMS = -m32 -nostdlib -fno-builtin -fno-exceptions -fno-leading-underscore
+GPP_PARAMS = -m32 -nostdlib -fno-builtin -fno-exceptions -fno-leading-underscore -masm=intel
 NASM_PARAMS = -f elf32
 LD_PARAMS = -m elf_i386
 

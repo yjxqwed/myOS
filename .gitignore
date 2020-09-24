@@ -1,8 +1,8 @@
 *.elf32
 *.bin
-text/
+text/*
 *.txt
 *.out
 *.o
-.vscode/
+.vscode/*
 *.iso

@@ -41,3 +41,8 @@
 +-----------+
 |           |
 </pre>
+
+# References
+* <a href="wiki.osdev.org"> osdev.org </a>
+* <a href="http://www.osdever.net/bkerndev/Docs/title.htm"> bkerndev </a>
+
