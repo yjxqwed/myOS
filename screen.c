@@ -8,7 +8,7 @@ void clear_screen() {
     while(i < total)
     {
         video_buffer[i++] = ' ';
-        video_buffer[i++] = 0x04;              
+        video_buffer[i++] = 0x0f;              
     }
 }
 

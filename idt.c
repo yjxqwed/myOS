@@ -1,6 +1,8 @@
 #include "idt.h"
 #include "system.h"
 
+
+
 Gate* _idt = (Gate*)0x01180000;
 idt_ptr_t _ip;
 
@@ -21,6 +23,11 @@ void setInterruptDescriptorTable() {
     memset((uint8_t*)_idt, 0, 256 * sizeof(Gate));
     
     // Add interrupt descriptor here
+
+
+
+
+    // Add interrupt descriptor above
 
     _ip.base_ = (uint32_t)_idt;
     _ip.size_ = 256 * sizeof(Gate) - 1;

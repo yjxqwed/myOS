@@ -12,5 +12,6 @@ void kernelMain(void* multiboot_structure, unsigned int magic_number) {
     debugMagicBreakpoint();
     printf("Hello Wolrd! --- This is myOS by Justing Yang (after my gdt)\n");
     setInterruptDescriptorTable();
+    int b = 1 / 0;
     // while (1);
 }
