@@ -63,6 +63,7 @@ extern _dss
 ; up for kernel mode segments, calls the C-level fault handler,
 ; and finally restores the stack frame.
 isr_common_stub:
+    xchg bx, bx  ; magic bp
     pusha
     push ds
     push es

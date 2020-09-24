@@ -35,7 +35,7 @@ extern void isr29();
 extern void isr30();
 extern void isr31();
 
-#define SETINTDES(x) setInterruptDescriptor(&(_idt[(x)]), (uint32_t)isr##x, 0x10, 0x8e);
+#define SETINTDES(x) setInterruptDescriptor(&(_idt[x]), (uint32_t)isr##x, 0x10, 0x8e);
 
 extern Gate* _idt;
 void setISRs() {

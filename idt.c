@@ -11,7 +11,7 @@ void setInterruptDescriptor(
     Gate* gate, uint32_t offset, uint16_t selector, uint8_t attr
 ) {
     gate->offset_1 = offset & 0xffff;
-    gate->offset_2 = (offset >> 4) & 0xffff;
+    gate->offset_2 = (offset >> 16) & 0xffff;
     gate->selector = selector;
     gate->zero = 0x00;
     gate->type_attr = attr;
