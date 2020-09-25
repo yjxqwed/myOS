@@ -1,7 +1,13 @@
 megs: 32
 
-romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
-vgaromimage: file=/usr/local/share/bochs/VGABIOS-lgpl-latest
+# linux
+# romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
+# vgaromimage: file=/usr/local/share/bochs/VGABIOS-lgpl-latest
+
+# windows
+romimage: file="C:\Program Files\Bochs-2.6.11/BIOS-bochs-latest", address=0x00000000, options=none
+vgaromimage: file="C:\Program Files\Bochs-2.6.11/VGABIOS-lgpl-latest"
+
 
 # floppya: 1_44=boot.img, status=inserted
 # ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14

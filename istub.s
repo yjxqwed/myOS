@@ -1,11 +1,12 @@
 ; file for the interrupt stubs
-; these stubs will be called when
+; one of these stubs will be called when
 ; an interrupt is raised
 [bits 32]
 
 %macro isr_no_err_code 1
 global isr%1
 isr%1:
+    ; cli
     push byte 0  ; dummy error code
     push byte %1 ; int number
     jmp isr_common_stub
@@ -14,12 +15,14 @@ isr%1:
 %macro isr_err_code 1
 global isr%1
 isr%1:
+    ; cli
     push byte %1 ; int number
     jmp isr_common_stub
-%endmacro
+%endmacro;
 
 [section .text]
 
+; cpu exception handlers
 isr_no_err_code 0   ; 0:  Divide By Zero Exception
 isr_no_err_code 1   ; 1:  Debug Execption
 isr_no_err_code 2   ; 2:  Non Maskable Interrupt Execption
@@ -53,6 +56,26 @@ isr_no_err_code 29  ; 29: Reserved
 isr_no_err_code 30  ; 30: Reserved
 isr_no_err_code 31  ; 31: Reserved
 
+; interrupt requests handlers
+; isr 32-47 = irq 0 - 15
+isr_no_err_code 32  ; 32: IRQ0
+isr_no_err_code 33  ; 33: IRQ1
+isr_no_err_code 34  ; 34: IRQ2
+isr_no_err_code 35  ; 35: IRQ3
+isr_no_err_code 36  ; 36: IRQ4
+isr_no_err_code 37  ; 37: IRQ5
+isr_no_err_code 38  ; 38: IRQ6
+isr_no_err_code 39  ; 39: IRQ7
+isr_no_err_code 40  ; 40: IRQ8
+isr_no_err_code 41  ; 41: IRQ9
+isr_no_err_code 42  ; 42: IRQ10
+isr_no_err_code 43  ; 43: IRQ11
+isr_no_err_code 44  ; 44: IRQ12
+isr_no_err_code 45  ; 45: IRQ13
+isr_no_err_code 46  ; 46: IRQ14
+isr_no_err_code 47  ; 47: IRQ15
+
+
 
 
 ; The C interrupt handler
@@ -60,7 +83,7 @@ extern interrupt_handler
 extern _dss
 
 ; This is our common ISR stub. It saves the processor state, sets
-; up for kernel mode segments, calls the C-level fault handler,
+; up for kernel mode segments, calls the C-level interrupt handler,
 ; and finally restores the stack frame.
 isr_common_stub:
     xchg bx, bx  ; magic bp
