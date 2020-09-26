@@ -3,7 +3,7 @@ NASM_PARAMS = -f elf32
 LD_PARAMS = -m elf_i386
 
 objects = loader.elf32 kernel.elf32 gdt.elf32 utils.elf32 screen.elf32 \
-          idt.elf32 system.elf32 debug.elf32 istub.elf32 isr.elf32
+          idt.elf32 system.elf32 debug.elf32 istub.elf32 isr.elf32 kb.elf32
 
 .PHONY = clean
 

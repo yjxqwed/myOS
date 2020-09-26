@@ -2,6 +2,8 @@
 #include "isr.h"
 #include "screen.h"
 #include "system.h"
+#include "debug.h"
+#include "kb.h"
 
 // cpu exception
 extern void isr0();
@@ -168,17 +170,53 @@ char* cpu_execption_msgs[] = {
     "31: Reserved",
 };
 
-void interrupt_handler(isrp_t* p) {
-
-}
-
-void cpu_exception_handler(int int_no) {
-    printf("SYSTEM HALTED.");
+void cpu_exception_handler(isrp_t *p) {
+    uint32_t err_code = p->err_code;
+    uint32_t int_no = p->int_no;
+    printf(cpu_execption_msgs[int_no]);
+    printf(" System Halted.\n");
     while(1);
 }
 
-void interrupt_request_handler(int int_no) {
-    printf("IRQ recvd.");
-    while(1);
-    // TODO: To inform the PIC that the interrupt is served.
+void interrupt_request_handler(isrp_t *p) {
+    uint32_t irq_no = p->int_no - 32;
+    // printf("IRQ recvd!");
+    switch(irq_no) {
+    case 0: {
+        // debugMagicBreakpoint();
+        // static uint32_t count = 0;
+        // count++;
+        // if (count % 10000000 == 0) {
+        //     printf("0");
+        //     count = 0;
+        // }
+        // printf("0");
+        break;
+    } case 1: {
+        // debugMagicBreakpoint();
+        // uint8_t scancode = inportb(0x60);
+        // printf("1");
+        kb_handler(p);
+        break;
+    } default: {
+        printf("default");
+    }
+    }
+    // if (irq_no >= 8) {
+    //     outportb(0xA0, 0x20);
+    // }
+    outportb(0x20, 0x20);
 }
+
+void interrupt_handler(isrp_t *p) {
+    uint32_t err_code = p->err_code;
+    uint32_t int_no = p->int_no;
+    if (int_no <= 31) {
+        cpu_exception_handler(p);
+    } else if (int_no <= 47) {
+        interrupt_request_handler(p);
+    } else {
+        printf("Unknown interrupt!\n");
+    }
+}
+

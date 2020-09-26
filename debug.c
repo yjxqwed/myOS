@@ -1,5 +1,9 @@
 #include "debug.h"
 
+// #define DEBUG
+
 void debugMagicBreakpoint() {
-    asm("xchg %bx, %bx");
+    #ifdef DEBUG
+        __asm__ volatile ("xchg %bx, %bx");
+    #endif
 }

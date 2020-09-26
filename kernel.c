@@ -12,12 +12,15 @@ void kernelMain(void* multiboot_structure, unsigned int magic_number) {
     setInterruptDescriptorTable();
     // debugMagicBreakpoint();
     printf("Hello Wolrd! --- This is myOS by Justing Yang (after my gdt)\n");
-    debugMagicBreakpoint();
+    // debugMagicBreakpoint();
 
     // to allow the interrupt
-    // __asm__ volatile("sti");
+    __asm__ volatile(
+        "xchg bx, bx \n"
+        "sti"
+    );
 
     
+    // debugMagicBreakpoint();
     // int b = 1 / 0;
-    // while (1);
 }

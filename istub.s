@@ -7,6 +7,7 @@
 global isr%1
 isr%1:
     ; cli
+    ; xchg bx, bx
     push byte 0  ; dummy error code
     push byte %1 ; int number
     jmp isr_common_stub
@@ -16,6 +17,7 @@ isr%1:
 global isr%1
 isr%1:
     ; cli
+    ; xchg bx, bx
     push byte %1 ; int number
     jmp isr_common_stub
 %endmacro;
@@ -86,7 +88,7 @@ extern _dss
 ; up for kernel mode segments, calls the C-level interrupt handler,
 ; and finally restores the stack frame.
 isr_common_stub:
-    xchg bx, bx  ; magic bp
+    ; xchg bx, bx  ; magic bp
     pusha
     push ds
     push es
@@ -97,13 +99,9 @@ isr_common_stub:
     mov es, ax
     mov fs, ax
     mov gs, ax
-    ; mov eax, esp   ; Push us the stack
-    ; push eax
-    push esp
-    ; mov eax, interrupt_handler
-    ; call eax       ; A special call, preserves the 'eip' register
+    push esp  ; push the param
     call interrupt_handler
-    pop eax
+    pop eax  ; pop the param
     pop gs
     pop fs
     pop es

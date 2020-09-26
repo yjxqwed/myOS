@@ -15,12 +15,19 @@ extern kernelMain
 global loader
 kernel_stk equ 0x01280800
 loader:
-    xchg bx, bx  ; magic bp
+    ; xchg bx, bx
     mov esp, kernel_stk
     mov ebp, esp
     push eax
     push ebx
     call kernelMain
+
+    ; mov ax, 0xf0
+    ; mov ds, ax
+    ; mov eax, [0xfff00]
+    ; xchg bx,bx
+    ; db 0xff, 0xff, 0xff
+    ; xchg bx,bx
     loop:
         jmp loop
 
@@ -29,7 +36,7 @@ extern _gp, _dss, _css  ; _gp is the gdt pointer
                         ; _dss is the kernel data seg selector
                         ; _css is the kernel code seg selector
 flushGDT:
-    xchg bx, bx  ; magic bp
+    ; xchg bx, bx  ; magic bp
     lgdt [_gp]
     mov ax, [_dss]
     mov ds, ax
