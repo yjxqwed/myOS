@@ -1,6 +1,6 @@
 #include "kb.h"
 #include "system.h"
-
+#include "screen.h"
 
 // keyboard data port: 0x60
 //          control port: 0x64
