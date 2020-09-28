@@ -4,6 +4,7 @@
 #include "system.h"
 #include "debug.h"
 #include "kb.h"
+#include "string.h"
 
 // cpu exception
 extern void isr0();
@@ -68,16 +69,16 @@ extern void isr47();
 *  order to make IRQ0 to 15 be remapped to IDT entries 32 to
 *  47 */
 void irq_remap(void) {
-    outportb(0x20, 0x11);
-    outportb(0xA0, 0x11);
-    outportb(0x21, 0x20);
-    outportb(0xA1, 0x28);
-    outportb(0x21, 0x04);
-    outportb(0xA1, 0x02);
-    outportb(0x21, 0x01);
-    outportb(0xA1, 0x01);
-    outportb(0x21, 0x0);
-    outportb(0xA1, 0x0);
+    outportb(PIC_M_CTL, 0x11);
+    outportb(PIC_S_CTL, 0x11);
+    outportb(PIC_M_CTLMASK, 0x20);
+    outportb(PIC_S_CTLMASK, 0x28);
+    outportb(PIC_M_CTLMASK, 0x04);
+    outportb(PIC_S_CTLMASK, 0x02);
+    outportb(PIC_M_CTLMASK, 0x01);
+    outportb(PIC_S_CTLMASK, 0x01);
+    outportb(PIC_M_CTLMASK, 0x0);
+    outportb(PIC_S_CTLMASK, 0x0);
 }
 
 extern Gate* _idt;
@@ -174,6 +175,11 @@ void cpu_exception_handler(isrp_t *p) {
     uint32_t err_code = p->err_code;
     uint32_t int_no = p->int_no;
     printf(cpu_execption_msgs[int_no]);
+    printf(" eip=");
+    char out[UINT32LEN];
+    printf(uitosh(p->eip, out));
+    printf(" errco=");
+    printf(uitosh(p->err_code, out));
     printf(" System Halted.\n");
     while(1);
 }

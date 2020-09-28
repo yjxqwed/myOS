@@ -5,6 +5,12 @@
 
 #include "types.h"
 
+// 8259A chip ports. More info: https://wiki.osdev.org/8259_PIC
+#define PIC_M_CTL     0x20
+#define PIC_M_CTLMASK 0x21
+#define PIC_S_CTL     0xA0
+#define PIC_S_CTLMASK 0xA1
+
 struct InterruptServiceRoutineParam {
     uint32_t gs, fs, es, ds;      /* pushed the segs last */
     uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;  /* pushed by 'pusha' */

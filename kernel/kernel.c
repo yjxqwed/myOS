@@ -17,6 +17,7 @@ void kernelMain(void* multiboot_structure, unsigned int magic_number) {
     // to allow the interrupt
     __asm__ volatile(
         "sti"
+        "\n\thlt"
     );
 
     

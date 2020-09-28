@@ -21,13 +21,6 @@ loader:
     push eax
     push ebx
     call kernelMain
-
-    ; mov ax, 0xf0
-    ; mov ds, ax
-    ; mov eax, [0xfff00]
-    ; xchg bx,bx
-    ; db 0xff, 0xff, 0xff
-    ; xchg bx,bx
     loop:
         jmp loop
 
