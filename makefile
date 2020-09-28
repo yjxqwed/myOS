@@ -1,9 +1,21 @@
-GPP_PARAMS = -m32 -nostdlib -fno-builtin -fno-exceptions -fno-leading-underscore -masm=intel
+GPP_PARAMS = -m32 -I include -nostdlib -fno-builtin -fno-exceptions -fno-leading-underscore -masm=intel
 NASM_PARAMS = -f elf32
 LD_PARAMS = -m elf_i386
 
-objects = loader.elf32 kernel.elf32 gdt.elf32 utils.elf32 screen.elf32 \
-          idt.elf32 system.elf32 debug.elf32 istub.elf32 isr.elf32 kb.elf32
+# objects = kernel/asm/loader.elf32 \
+#           kernel/asm/isr.elf32 \
+#           kernel.elf32 gdt.elf32 utils.elf32 screen.elf32 \
+#           idt.elf32 system.elf32 debug.elf32 istub.elf32 isr.elf32 kb.elf32
+
+drive_objs = drive/kb.elf32 drive/screen.elf32
+kernel_asm_objs = kernel/asm/loader.elf32 \
+                  kernel/asm/istub.elf32
+kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \
+                kernel/isr.elf32 kernel/kernel.elf32
+lib_objs = lib/debug.elf32 lib/system.elf32 lib/utils.elf32
+
+# objects = drive.bin kernel_asm.bin kernel_c.bin lib.bin
+objects = $(drive_objs) $(kernel_asm_objs) $(kernel_c_objs) $(lib_objs)
 
 .PHONY = clean
 
@@ -22,7 +34,7 @@ install: mykernel.bin
 	sudo cp $< /boot/mykernel.bin
 
 clean:
-	rm -rf *.o *.elf32 *.bin *.out iso *.iso *.img
+	rm -rf *.o *.elf32 *.bin *.out iso *.iso *.img $(objects)
 
 mykernel.iso: mykernel.bin
 	mkdir iso
