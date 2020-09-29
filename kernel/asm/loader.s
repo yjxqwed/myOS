@@ -3,7 +3,7 @@
 
 [section .multiboot]
     MAGIC_NUM equ 0x1badb002
-    FLAG equ (1 << 0 | 1 << 1)
+    FLAG      equ (1 << 0 | 1 << 1)
     CHECK_SUM equ -(MAGIC_NUM + FLAG)   
 
     dd MAGIC_NUM
@@ -21,6 +21,7 @@ loader:
     push eax
     push ebx
     call kernelMain
+    ; ud2
     loop:
         jmp loop
 

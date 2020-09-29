@@ -75,6 +75,16 @@ uint8_t* memset(uint8_t* mem, uint8_t val, uint32_t size) {
     return mem;
 }
 
+uint16_t* memsetw(uint16_t* mem, uint16_t val, uint32_t size) {
+    if (mem == NULL) {
+        return NULL;
+    }
+    for (int i = 0; i < size; i++) {
+        mem[i] = val;
+    }
+    return mem;
+}
+
 
 uint32_t strlen(const char* str) {
     uint32_t len = 0;

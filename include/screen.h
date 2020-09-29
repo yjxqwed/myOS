@@ -7,4 +7,7 @@
 void clear_screen();
 void printf(const char* str);
 
+void putch(char c, int x, int y);
+void putstr(const char* str);
+
 #endif
