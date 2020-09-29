@@ -1,5 +1,11 @@
 #include "string.h"
 
+
+static char hex_char[16] = {
+    '0', '1', '2', '3', '4', '5', '6', '7',
+    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
+};
+
 char* itos(int32_t number, char out[INT32LEN]) {
     if (number == 0) {
         out[0] = '0';
@@ -16,7 +22,7 @@ char* itos(int32_t number, char out[INT32LEN]) {
         out[idx++] = '-';
     }
     while (number > 0) {
-        out[idx++] = '0' + (number % 10);
+        out[idx++] = hex_char[number % 10];
         number /= 10;
     }
     out[idx] = '\0';
@@ -34,11 +40,6 @@ char* itos(int32_t number, char out[INT32LEN]) {
     }
     return out;
 }
-
-static char hex_char[16] = {
-    '0', '1', '2', '3', '4', '5', '6', '7',
-    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
-};
 
 char* uitosh(uint32_t number, char out[UINT32LEN]) {
     if (number == 0) {
@@ -74,7 +75,7 @@ uint8_t* memset(uint8_t* mem, uint8_t val, uint32_t size) {
     return mem;
 }
 
-// length of a null terminated string
+
 uint32_t strlen(const char* str) {
     uint32_t len = 0;
     while (str[len] != '\0') {
@@ -84,7 +85,7 @@ uint32_t strlen(const char* str) {
 }
 
 
-// Unsafe. Make sure src is null terminated.
+
 char* strcpy(const char* src, char* dest) {
     if (src == dest) {
         return dest;
@@ -103,7 +104,7 @@ char* strcpy(const char* src, char* dest) {
     return dest;
 }
 
-// dest is not guaranteed to be null terminated
+
 char* strncpy(const char* src, char* dest, uint32_t n) {
     if (src == dest) {
         return dest;

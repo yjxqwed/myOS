@@ -46,6 +46,11 @@ struct SegmentDescriptor {
 // TI = 0 GDT; TI = 1 LDT
 // RPL: Ring Privilege
 
+// Privileges
+// DPL privilege in segment/gate descriptors
+// CPL privilege in cs/ss registers
+// RPL privilege in descriptor selectors
+
 struct GlobalDescriptorTablePointer {
     uint16_t size_;
     uint32_t base_;
