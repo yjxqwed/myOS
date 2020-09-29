@@ -21,7 +21,7 @@ loader:
     push eax
     push ebx
     call kernelMain
-    ; ud2
+
     loop:
         jmp loop
 
@@ -47,3 +47,6 @@ extern _ip  ; the idt pointer
 flushIDT:
     lidt [_ip]
     ret
+
+[section .data]
+one: db 0x01
