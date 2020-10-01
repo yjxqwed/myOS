@@ -13,7 +13,7 @@ void kb_handler(isrp_t *p) {
     if (scan_code & 0x80) {  // bit 7 set => released
         printf(" released! ");
     } else {  // else pressed
-        printf(itos((int32_t)scan_code, s));
+        printf(uitosh((int32_t)scan_code, s));
         printf(" pressed! ");
     }
 }
