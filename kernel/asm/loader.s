@@ -22,8 +22,8 @@ loader:
     push ebx
     call kernelMain
 
-    loop:
-        jmp loop
+    ; int 0x1F
+    jmp $
 
 global flushGDT
 extern _gp, _dss, _css  ; _gp is the gdt pointer

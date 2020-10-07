@@ -175,11 +175,12 @@ void cpu_exception_handler(isrp_t *p) {
     uint32_t err_code = p->err_code;
     uint32_t int_no = p->int_no;
     printf(cpu_execption_msgs[int_no]);
-    printf(" eip=");
-    char out[UINT32LEN];
-    printf(uitosh(p->eip, out));
-    printf(" errco=");
-    printf(uitosh(p->err_code, out));
+    // printf(" eip=");
+    // char out[UINT32LEN];
+    // printf(uitosh(p->eip, out));
+    // printf(" errco=");
+    // printf(uitosh(p->err_code, out));
+    printISRParam(p);
     printf(" System Halted.\n");
     while(1);
 }
@@ -215,6 +216,7 @@ void interrupt_request_handler(isrp_t *p) {
 }
 
 void interrupt_handler(isrp_t *p) {
+    // printISRParam(p);
     uint32_t err_code = p->err_code;
     uint32_t int_no = p->int_no;
     if (int_no <= 31) {

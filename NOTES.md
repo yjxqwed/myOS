@@ -1,5 +1,25 @@
 # Notes
 
+## Development Environment
+### WSL (WSL2 on Win10 build 2004)
+### X server
+> Download and install <a href="https://sourceforge.net/projects/vcxsrv/">XLaunch</a> on Windows  
+> export DISPLAY="`grep nameserver /etc/resolv.conf | sed 's/nameserver //'`:0"
+### Bochs
+> sudo apt update  
+> sudo apt upgrade  
+> sudo apt install build-essential bison xorg-dev g++  
+> sudo apt install bochs-x  
+> Download and extract <a href="http://bochs.sourceforge.net/">bochs</a>  
+> cd {directory of bochs}  
+> ./configure  --enable-debugger --enable-disasm  
+> sudo make && sudo make install  
+### Compile the OS
+> sudo apt install g++ nasm binutils grub-pc-bin xorriso
+### Run
+> bochs -q  
+
+
 ## Temp Memory Layout of myOS
 
 <pre>
@@ -59,7 +79,7 @@ Under the Real Mode, registers are 16-bit and the cpu address bus is 20-bit, it 
 ##### Segment
 The segment:offset structure is still used while the segment is an index to the segment descriptor and the offset is now 32-bit. Segment descriptors are stored in a table called the Global Descriptor Table (<a href="https://wiki.osdev.org/GDT">GDT</a>).
 
-##### Interrupt
+##### Interrupts
 To handle the interrupts, we need a Interrupt Descriptor Table (<a href="https://wiki.osdev.org/IDT">IDT</a>). Entries in this table are so-called Gate Descriptors. There are 4 types of Gate descriptors:
 * Call Gate
 * Interrupt Gate
@@ -69,6 +89,17 @@ To handle the interrupts, we need a Interrupt Descriptor Table (<a href="https:/
 A call gate is used to let a program in the lower privileged level (ring 3) can call functions in a higher privileged level (ring 0). A function A whats to call function B via a call gate G should satisfy the privilege Check max(CPL_A, RPL_A) <= DPL_G && CPL_A >= DPL_B. Call gate is used to raise the privilege.
 
 An interrupt/trap gate is used to call the interrupt service routines (ISRs) from ring 0 or ring 3. The only difference is the interrupt gate will clear the IF flag wile the trap gate won't.
+
+##### Exceptions
+Generally, interrupts are a subset of the <a href="https://wiki.osdev.org/Exceptions">exceptions</a>. When an exception is raised, the cpu will push the return address and many other registers. The return address is determined by the exception type.
+
+* int 0-31: Intel Defined CPU exceptions
+> Fault: return address = this instruction  
+> Trap: return address = next instruction  
+> Abort: no return address
+* int 32-128: User Defined interrupts
+> interrupts: return address = next instruction
+
 
 ##### Enter Ring 3
 Using gates can raise the privilege while there is only one way to lower the privilege: return from a interrupt handler.
