@@ -4,7 +4,7 @@
 #include "debug.h"
 #include "idt.h"
 
-void kernelMain(void* multiboot_structure, unsigned int magic_number) {
+void kernelMain(void) {
     clear_screen();
     // debugMagicBreakpoint();
     printf("Hello Wolrd! --- This is myOS by Justing Yang (before my gdt)\n");
@@ -17,7 +17,7 @@ void kernelMain(void* multiboot_structure, unsigned int magic_number) {
     // to allow the interrupt
     __asm__ volatile(
         "sti"
-        "\n\thlt"
+        // "\n\thlt"
     );
 
     

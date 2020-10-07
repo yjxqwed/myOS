@@ -79,6 +79,9 @@ void irq_remap(void) {
     outportb(PIC_S_CTLMASK, 0x01);
     outportb(PIC_M_CTLMASK, 0x0);
     outportb(PIC_S_CTLMASK, 0x0);
+
+    // disable all interrupts
+    outportb(PIC_M_CTLMASK, 0b11111111);
 }
 
 extern Gate* _idt;
@@ -187,6 +190,7 @@ void cpu_exception_handler(isrp_t *p) {
 
 void interrupt_request_handler(isrp_t *p) {
     uint32_t irq_no = p->int_no - 32;
+    // printISRParam(p);
     // printf("IRQ recvd!");
     switch(irq_no) {
     case 0: {

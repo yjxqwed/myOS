@@ -15,8 +15,10 @@ kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \
 lib_objs = lib/debug.elf32 lib/system.elf32 lib/utils.elf32 \
            lib/string.elf32
 
+usr_asm_objs = usr/asm/test.elf32
+
 # objects = drive.bin kernel_asm.bin kernel_c.bin lib.bin
-objects = $(driver_objs) $(kernel_asm_objs) $(kernel_c_objs) $(lib_objs)
+objects = $(driver_objs) $(kernel_asm_objs) $(kernel_c_objs) $(lib_objs) $(usr_asm_objs)
 
 .PHONY = clean
 

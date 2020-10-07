@@ -1,4 +1,4 @@
-megs: 32
+megs: 512
 
 # linux
 romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
