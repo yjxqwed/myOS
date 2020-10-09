@@ -20,18 +20,25 @@ kernel_code_sel: equ 0x10
 kernel_data_sel: equ 0x18
 usr_code_sel: equ 0x23
 usr_data_sel: equ 0x2B
+tss_sel: equ 0x30
 loader:
     ; xchg bx, bx
     mov esp, kernel_stk_top
     mov ebp, esp
-    push eax
-    push ebx
+    ; push eax
+    ; push ebx
     call kernelMain
+
+    mov ax, tss_sel
+    ltr ax
+
+    xchg bx, bx
 
     push usr_data_sel  ; usr ss
     push usr_stk_top   ; usr esp
     push usr_code_sel  ; usr code
     push usr_test      ; usr func
+    xchg bx, bx
     retf
 
     ; int 0x1F

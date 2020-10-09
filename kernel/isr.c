@@ -81,7 +81,7 @@ void irq_remap(void) {
     outportb(PIC_S_CTLMASK, 0x0);
 
     // disable all interrupts
-    outportb(PIC_M_CTLMASK, 0b11111111);
+    // outportb(PIC_M_CTLMASK, 0b11111111);
 }
 
 extern Gate* _idt;

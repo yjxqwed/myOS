@@ -5,4 +5,6 @@ global usr_test
 ; extern clear_screen
 usr_test:
     ; call 0x10:clear_screen
+    xchg bx, bx
+    int 0
     jmp $
