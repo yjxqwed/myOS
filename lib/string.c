@@ -102,7 +102,7 @@ char* strcpy(const char* src, char* dest) {
         return dest;
     }
     uint32_t len = strlen(src);
-    if (src < dest) {
+    if (src > dest) {
         for (int i = 0; i < len; i++) {
             dest[i] = src[i];
         }
