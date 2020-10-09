@@ -16,7 +16,7 @@ void kernelMain(void) {
     // clear_screen();
     init_screen();
     // debugMagicBreakpoint();
-    kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang (before my gdt)\n");
+    kprintf(KPL_PANIC, "Hello Wolrd! --- This is myOS by Justing Yang (before my gdt)\n");
     setTssEntry0();
     setGlobalDescriptorTable();
     setInterruptDescriptorTable();
@@ -25,10 +25,10 @@ void kernelMain(void) {
     // debugMagicBreakpoint();
 
     // to allow the interrupt
-    // __asm__ volatile(
-    //     "sti"
-    //     "\n\thlt"
-    // );
+    __asm__ volatile(
+        "sti"
+        "\n\thlt"
+    );
 
     
     // debugMagicBreakpoint();

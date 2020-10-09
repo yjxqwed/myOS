@@ -22,6 +22,6 @@ void kb_handler(isrp_t *p) {
     } else {  // else pressed
         // kprintf(uitosh((int32_t)scan_code, s));
         // kprintf(" pressed! ");
-        kprintf(KPL_DUMP, "{%x pressed!}", scan_code);
+        kprintf(KPL_PANIC, "{%x pressed!}", scan_code);
     }
 }

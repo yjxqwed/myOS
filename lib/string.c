@@ -120,7 +120,7 @@ char* strncpy(const char* src, char* dest, uint32_t n) {
     if (src == dest) {
         return dest;
     }
-    if (src < dest) {
+    if (src > dest) {
         for (int i = 0; i < n; i++) {
             dest[i] = src[i];
         }

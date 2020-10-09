@@ -161,8 +161,9 @@ void putc(char c, COLOR bg, COLOR fg) {
         cursor_row++;
     }
     if (cursor_row >= MAXROW) {
-        cursor_row = MAXROW - 1;
+        // __asm__("xchg bx, bx");
         scroll(cursor_row - MAXROW + 1);
+        cursor_row = MAXROW - 1;
     }
     set_cursor(cursor_row, cursor_col);
 }
