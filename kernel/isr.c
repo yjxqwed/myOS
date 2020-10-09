@@ -12,6 +12,7 @@
 #include <common/debug.h>
 #include <driver/kb.h>
 #include <string.h>
+#include <kprintf.h>
 
 // cpu exception
 extern void isr0();
@@ -184,14 +185,9 @@ char* cpu_execption_msgs[] = {
 void cpu_exception_handler(isrp_t *p) {
     uint32_t err_code = p->err_code;
     uint32_t int_no = p->int_no;
-    printf(cpu_execption_msgs[int_no]);
-    // printf(" eip=");
-    // char out[UINT32LEN];
-    // printf(uitosh(p->eip, out));
-    // printf(" errco=");
-    // printf(uitosh(p->err_code, out));
+    kprintf(KPL_PANIC, cpu_execption_msgs[int_no]);
     printISRParam(p);
-    printf(" System Halted.\n");
+    kprintf(KPL_PANIC, " System Halted.\n");
     while(1);
 }
 
@@ -217,7 +213,7 @@ void interrupt_request_handler(isrp_t *p) {
         kb_handler(p);
         break;
     } default: {
-        printf("default");
+        // printf("default");
     }
     }
     // if (irq_no >= 8) {
@@ -235,7 +231,7 @@ void interrupt_handler(isrp_t *p) {
     } else if (int_no <= 47) {
         interrupt_request_handler(p);
     } else {
-        printf("Unknown interrupt!\n");
+        kprintf(KPL_DUMP, "Unknown interrupt!\n");
     }
 }
 
