@@ -10,16 +10,18 @@
 #include <common/debug.h>
 #include <sys/idt.h>
 #include <sys/tss.h>
+#include <kprintf.h>
 
 void kernelMain(void) {
-    clear_screen();
+    // clear_screen();
+    init_screen();
     // debugMagicBreakpoint();
-    printf("Hello Wolrd! --- This is myOS by Justing Yang (before my gdt)\n");
+    kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang (before my gdt)\n");
     setTssEntry0();
     setGlobalDescriptorTable();
     setInterruptDescriptorTable();
     // debugMagicBreakpoint();
-    printf("Hello Wolrd! --- This is myOS by Justing Yang (after my gdt)\n");
+    kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang (after my gdt)\n");
     // debugMagicBreakpoint();
 
     // to allow the interrupt

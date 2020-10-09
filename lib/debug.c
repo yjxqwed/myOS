@@ -5,6 +5,7 @@
 #include <common/debug.h>
 #include <driver/screen.h>
 #include <string.h>
+#include <kprintf.h>
 
 // #define DEBUG
 
@@ -15,9 +16,10 @@ void debugMagicBreakpoint() {
 }
 
 void printISRParam(const isrp_t* p) {
-    printf(" eip=");
-    char out[UINT32LEN];
-    printf(uitosh(p->eip, out));
-    printf(" errco=");
-    printf(uitosh(p->err_code, out));
+    // printf(" eip=");
+    // char out[UINT32LEN];
+    // printf(uitosh(p->eip, out));
+    // printf(" errco=");
+    // printf(uitosh(p->err_code, out));
+    kprintf(KPL_DUMP, "\neip=%x; errco=%x", p->eip, p->err_code);
 }

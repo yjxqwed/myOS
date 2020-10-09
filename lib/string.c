@@ -13,7 +13,7 @@ char* itos(int32_t number, char out[INT32LEN]) {
         out[1] = '\0';
         return out;
     } else if (number == -2147483648) {
-        strcpy(out, "-2147483648");
+        strcpy("-2147483648", out);
         return out;
     }
 

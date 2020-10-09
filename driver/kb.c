@@ -9,6 +9,7 @@
 #include <driver/screen.h>
 #include <common/utils.h>
 #include <string.h>
+#include <kprintf.h>
 
 // keyboard data port: 0x60
 //          control port: 0x64
@@ -17,9 +18,10 @@ void kb_handler(isrp_t *p) {
 
     char s[INT32LEN];
     if (scan_code & 0x80) {  // bit 7 set => released
-        printf(" released! ");
+        kprintf(KPL_DUMP, "{%x released!}", scan_code);
     } else {  // else pressed
-        printf(uitosh((int32_t)scan_code, s));
-        printf(" pressed! ");
+        // kprintf(uitosh((int32_t)scan_code, s));
+        // kprintf(" pressed! ");
+        kprintf(KPL_DUMP, "{%x pressed!}", scan_code);
     }
 }
