@@ -1,7 +1,11 @@
-#include "idt.h"
-#include "system.h"
-#include "isr.h"
-#include "string.h"
+// #include "idt.h"
+// #include "system.h"
+// #include "isr.h"
+// #include "string.h"
+#include <sys/idt.h>
+#include <sys/system.h>
+#include <sys/isr.h>
+#include <string.h>
 
 
 

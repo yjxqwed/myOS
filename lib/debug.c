@@ -1,6 +1,10 @@
-#include "debug.h"
-#include "screen.h"
-#include "string.h"
+// #include "debug.h"
+// #include "screen.h"
+// #include "string.h"
+
+#include <common/debug.h>
+#include <driver/screen.h>
+#include <string.h>
 
 // #define DEBUG
 

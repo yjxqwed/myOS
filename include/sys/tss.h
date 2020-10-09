@@ -1,7 +1,8 @@
 #ifndef __TSS_H__
 #define __TSS_H__
 
-#include "types.h"
+// #include "types.h"
+#include <common/types.h>
 
 struct TaskStateSegmentEntry {
     uint32_t prev_tss;   // The previous TSS - if we used hardware task switching this would form a linked list.

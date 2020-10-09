@@ -2,7 +2,8 @@
 #ifndef __GDT_H__
 #define __GDT_H__
 
-#include "types.h"
+// #include "types.h"
+#include <common/types.h>
 
 // SegmentDestriptor is the entry of GDT
 // 8 bytes each
@@ -35,6 +36,16 @@ struct SegmentDescriptor {
 // |  BASE  |G|D|0|A|LIMIT|P|D |S|TYPE|<------- BASE 23-0 ------>|<-- LIMIT 15-0 ->|  含义
 // |  31-24 | |/| |V|19-16| |P |
 //            |B| |L|     | |L |
+
+// Segment Descriptor Layout for TSS (64 bits)
+// |   7    |     6       |     5     |   4    |   3    |   2    |   1    |   0    |  字节
+// |76543210|7 6 5 4 3210 |7 65 4 3210|76543210|76543210|76543210|76543210|76543210|  比特
+// |--------|-|-|-|-|---- |-|--|-|----|--------|--------|--------|--------|--------|  占位
+// |  BASE  |G|0|0|A|LIMIT|P|D |0|10B1|<------- BASE 23-0 ------>|<-- LIMIT 15-0 ->|  含义
+// |  31-24 | | | |V|19-16| |P |
+//            | | |L|     | |L |
+//
+// B: busy bit
 
 // Segment Selector Layout (16 bits)
 // |   1    |     0    |  字节

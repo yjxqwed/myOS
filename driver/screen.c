@@ -1,6 +1,10 @@
-#include "types.h"
-#include "screen.h"
-#include "string.h"
+// #include "types.h"
+// #include "screen.h"
+// #include "string.h"
+
+#include <common/types.h>
+#include <driver/screen.h>
+#include <string.h>
 
 void clear_screen() {
     volatile int8_t* video_buffer = (volatile int8_t*)0xB8000;

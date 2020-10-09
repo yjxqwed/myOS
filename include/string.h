@@ -2,7 +2,8 @@
 #define __STRING_H__
 
 
-#include "types.h"
+// #include "types.h"
+#include <common/types.h>
 
 #define INT32LEN 12
 #define UINT32LEN 13

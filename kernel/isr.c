@@ -1,10 +1,17 @@
-#include "idt.h"
-#include "isr.h"
-#include "screen.h"
-#include "system.h"
-#include "debug.h"
-#include "kb.h"
-#include "string.h"
+// #include "idt.h"
+// #include "isr.h"
+// #include "screen.h"
+// #include "system.h"
+// #include "debug.h"
+// #include "kb.h"
+// #include "string.h"
+#include <sys/idt.h>
+#include <sys/isr.h>
+#include <driver/screen.h>
+#include <sys/system.h>
+#include <common/debug.h>
+#include <driver/kb.h>
+#include <string.h>
 
 // cpu exception
 extern void isr0();

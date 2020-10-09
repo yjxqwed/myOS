@@ -1,4 +1,5 @@
-#include "tss.h"
+// #include "tss.h"
+#include <sys/tss.h>
 
 tss_entry_t *tss_entry_0 = (tss_entry_t*)0x01281000;
 

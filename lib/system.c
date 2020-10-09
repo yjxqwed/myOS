@@ -1,4 +1,5 @@
-#include "system.h"
+// #include "system.h"
+#include <sys/system.h>
 
 uint8_t inportb(uint16_t port) {
     uint8_t val;

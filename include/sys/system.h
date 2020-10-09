@@ -1,7 +1,8 @@
 #ifndef __SYSTEM_H__
 #define __SYSTEM_H__
 
-#include "types.h"
+// #include "types.h"
+#include <common/types.h>
 
 // hardware io
 

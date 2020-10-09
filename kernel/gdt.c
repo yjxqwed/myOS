@@ -1,5 +1,8 @@
-#include "gdt.h"
-#include "tss.h"
+// #include "gdt.h"
+// #include "tss.h"
+
+#include <sys/gdt.h>
+#include <sys/tss.h>
 
 seg_des_t* _gdt = (seg_des_t*)0x01100000;
 gdt_ptr_t _gp;
