@@ -185,14 +185,9 @@ char* cpu_execption_msgs[] = {
 void cpu_exception_handler(isrp_t *p) {
     uint32_t err_code = p->err_code;
     uint32_t int_no = p->int_no;
-    kprintf(KPL_DUMP, cpu_execption_msgs[int_no]);
-    // printf(" eip=");
-    // char out[UINT32LEN];
-    // printf(uitosh(p->eip, out));
-    // printf(" errco=");
-    // printf(uitosh(p->err_code, out));
+    kprintf(KPL_PANIC, cpu_execption_msgs[int_no]);
     printISRParam(p);
-    kprintf(KPL_DUMP, " System Halted.\n");
+    kprintf(KPL_PANIC, " System Halted.\n");
     while(1);
 }
 

@@ -21,5 +21,5 @@ void printISRParam(const isrp_t* p) {
     // printf(uitosh(p->eip, out));
     // printf(" errco=");
     // printf(uitosh(p->err_code, out));
-    kprintf(KPL_DUMP, "\neip=%x; errco=%x", p->eip, p->err_code);
+    kprintf(KPL_PANIC, " {eip=%x; errco=%x}", p->eip, p->err_code);
 }

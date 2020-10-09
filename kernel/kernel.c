@@ -16,7 +16,7 @@ void kernelMain(void) {
     // clear_screen();
     init_screen();
     // debugMagicBreakpoint();
-    kprintf(KPL_PANIC, "Hello Wolrd! --- This is myOS by Justing Yang (before my gdt)\n");
+    kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang (before my gdt)\n");
     setTssEntry0();
     setGlobalDescriptorTable();
     setInterruptDescriptorTable();
@@ -32,5 +32,5 @@ void kernelMain(void) {
 
     
     // debugMagicBreakpoint();
-    // int b = 1 / 0;
+    int b = 1 / 0;
 }
