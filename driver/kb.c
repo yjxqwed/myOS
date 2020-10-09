@@ -18,10 +18,10 @@ void kb_handler(isrp_t *p) {
 
     char s[INT32LEN];
     if (scan_code & 0x80) {  // bit 7 set => released
-        kprintf(KPL_DUMP, "{%x released!}", scan_code);
+        kprintf(KPL_NOTICE, "{%x released!}", scan_code);
     } else {  // else pressed
         // kprintf(uitosh((int32_t)scan_code, s));
         // kprintf(" pressed! ");
-        kprintf(KPL_PANIC, "{%x pressed!}", scan_code);
+        kprintf(KPL_DEBUG, "{%x pressed!}", scan_code);
     }
 }

@@ -4,8 +4,11 @@
 #include <driver/screen.h>
 
 typedef enum KP_LEVEL {
-    KPL_DUMP,  // black bg, white fg
-    KPL_PANIC  // red bg, yellow fg
+    KPL_DUMP,   // black bg, white fg
+    KPL_NOTICE, // blue bg, white fg
+    KPL_DEBUG,  // cyan bg, light green fg
+    KPL_PANIC,  // red bg, yellow fg
+    KPL_SIZE
 } KP_LEVEL;
 
 

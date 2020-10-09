@@ -30,7 +30,10 @@ void kernelMain(void) {
         "\n\thlt"
     );
 
-    
+    kprintf(KPL_DUMP, "%d is the minimum int32\n", (int32_t)0x80000000);
+    kprintf(KPL_DUMP, "%d is the maximum int32\n", (int32_t)0x7FFFFFFF);
+    kprintf(KPL_DUMP, "%d is zero in decimal\n", 0);
+    kprintf(KPL_DUMP, "%x is zero in hexadecimal\n", 0);
     // debugMagicBreakpoint();
-    int b = 1 / 0;
+    // int b = 1 / 0;
 }

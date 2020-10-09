@@ -130,8 +130,10 @@ void kprintf(KP_LEVEL kpl, const char *fmt, ...) {
     struct KPC_STRUCT {
         COLOR bg;
         COLOR fg;
-    } KPL[2] = {
+    } KPL[KPL_SIZE] = {
         {BLACK, GRAY},
+        {BLUE, DARK_GRAY},
+        {CYAN, LIGHT_GREEN},
         {RED, YELLOW},
     };
     for (int i = 0; i < idx; i++) {
