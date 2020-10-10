@@ -1,5 +1,5 @@
 G_PARAMS = -m32 -I include -nostdlib -fno-builtin -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel
-NASM_PARAMS = -f elf32
+NASM_PARAMS = -I include -f elf32
 LD_PARAMS = -m elf_i386
 
 # objects = kernel/asm/loader.elf32 \
@@ -7,7 +7,7 @@ LD_PARAMS = -m elf_i386
 #           kernel.elf32 gdt.elf32 utils.elf32 screen.elf32 \
 #           idt.elf32 system.elf32 debug.elf32 istub.elf32 isr.elf32 kb.elf32
 
-driver_objs = driver/kb.elf32 driver/screen.elf32
+driver_objs = driver/kb.elf32 driver/screen.elf32 driver/pit.elf32
 kernel_asm_objs = kernel/asm/loader.elf32 \
                   kernel/asm/istub.elf32
 kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \

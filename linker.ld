@@ -9,6 +9,7 @@ SECTIONS {
         *(.multiboot)
         *(.text*)
         *(.rodata)
+        *(.constant)
     }
 
     .data : {

@@ -9,6 +9,9 @@ typedef char int8_t;
 typedef short int16_t;
 typedef int int32_t;
 
+typedef float float32_t;
+typedef double float64_t;
+
 #define NULL 0
 
 #define true 1

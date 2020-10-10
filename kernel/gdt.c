@@ -48,8 +48,8 @@ void setGlobalDescriptorTable() {
         &(_gdt[6]),
         (uint32_t)tss_entry_0,
         103,
-        0b0100,  // gr = 0 (byte); sz = 1 (32 bit pm)
-        0x89
+        0b0000,  // gr = 0 (byte); sz = 1 (32 bit pm)
+        0b10001001
     );  // tss 0x33
     // setSegmentDescriptor(&(_gdt[7]), 0, 0xfffff, 0xc, 0xb2);  // test: dpl 1 data 0x38
     _gp.base_ = (uint32_t)_gdt;

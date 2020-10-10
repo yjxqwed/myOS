@@ -80,6 +80,23 @@ static void parse_hex(uint32_t number) {
     }
 }
 
+// To be implemented
+static void parse_double(double number) {
+}
+
+// To be implemented
+static void parse_float(float number) {
+}
+
+static struct KPC_STRUCT {
+    COLOR bg;
+    COLOR fg;
+} KPL[KPL_SIZE] = {
+    {BLACK, GRAY},
+    {BLUE, LIGHT_GREEN},
+    {CYAN, WHITE},
+    {RED, YELLOW},
+};
 void kprintf(KP_LEVEL kpl, const char *fmt, ...) {
     args_list args;
     args_start(args, fmt);
@@ -127,15 +144,7 @@ void kprintf(KP_LEVEL kpl, const char *fmt, ...) {
         }
     }
     buf[idx] = '\0';
-    struct KPC_STRUCT {
-        COLOR bg;
-        COLOR fg;
-    } KPL[KPL_SIZE] = {
-        {BLACK, GRAY},
-        {BLUE, DARK_GRAY},
-        {CYAN, LIGHT_GREEN},
-        {RED, YELLOW},
-    };
+
     for (int i = 0; i < idx; i++) {
         putc(buf[i], KPL[kpl].bg, KPL[kpl].fg);
     }

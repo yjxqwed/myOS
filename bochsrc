@@ -24,3 +24,8 @@ magic_break: enabled=1
 #display_library: x, options="gui_debug"
 
 #keyboard: enabled=1, map=/usr/share/bochs/keymaps/x11-pc-us.map
+
+debug: action=ignore, pci=report
+info: action=report
+error: action=report
+panic: action=ask

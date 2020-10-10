@@ -11,6 +11,7 @@
 #include <sys/system.h>
 #include <common/debug.h>
 #include <driver/kb.h>
+#include <driver/pit.h>
 #include <string.h>
 #include <kprintf.h>
 
@@ -193,32 +194,20 @@ void cpu_exception_handler(isrp_t *p) {
 
 void interrupt_request_handler(isrp_t *p) {
     uint32_t irq_no = p->int_no - 32;
-    // printISRParam(p);
-    // printf("IRQ recvd!");
     switch(irq_no) {
     case 0: {
-        // debugMagicBreakpoint();
-        // static uint32_t count = 0;
-        // count++;
-        // if (count % 10000000 == 0) {
-        //     printf("0");
-        //     count = 0;
-        // }
-        // printf("0");
+        do_timer(p);
         break;
     } case 1: {
-        // debugMagicBreakpoint();
-        // uint8_t scancode = inportb(0x60);
-        // printf("1");
+        __asm__ volatile("xchg bx, bx");
         kb_handler(p);
         break;
     } default: {
-        // printf("default");
     }
     }
-    // if (irq_no >= 8) {
-    //     outportb(0xA0, 0x20);
-    // }
+    if (irq_no >= 8) {
+        outportb(0xA0, 0x20);
+    }
     outportb(0x20, 0x20);
 }
 
