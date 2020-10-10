@@ -43,7 +43,7 @@ void setGlobalDescriptorTable() {
     setSegmentDescriptor(&(_gdt[2]), 0, 0xfffff, 0xc ,0x9a);  // kernel code  0x10
     setSegmentDescriptor(&(_gdt[3]), 0, 0xfffff, 0xc, 0x92);  // kernel data  0x18
     setSegmentDescriptor(&(_gdt[4]), (uint32_t)tss_entry_0,
-                         103, 0b0000, 0b10001001);            // tss          0x20
+                         103, 0x04, 0x89);                    // tss          0x20
     setSegmentDescriptor(&(_gdt[5]), 0, 0xfffff, 0xc, 0xfa);  // user code    0x2B
     setSegmentDescriptor(&(_gdt[6]), 0, 0xfffff, 0xc, 0xf2);  // user data    0x33
     _gp.base_ = (uint32_t)_gdt;
