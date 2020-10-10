@@ -9,7 +9,6 @@
 
 void kernelMain(void) {
     init_screen();
-
     setTssEntry0();
     timer_install(1000);
     setGlobalDescriptorTable();

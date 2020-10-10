@@ -9,9 +9,9 @@
     ((sizeof(type) - 1) / sizeof(int32_t) + 1) * sizeof(int32_t) \
 )
 
-#define args_start(ap, fmt) {\
+#define args_start(ap, fmt) do {\
     ap = (char *)((unsigned int)(&fmt) + _arg_stack_size(&fmt)); \
-}
+} while (0)
 
 #define args_end(ap)
 

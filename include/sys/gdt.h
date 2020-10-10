@@ -2,8 +2,16 @@
 #ifndef __GDT_H__
 #define __GDT_H__
 
-// #include "types.h"
 #include <common/types.h>
+
+// MUST be same as the values in include/sys/asm/inc.s
+#define	SELECTOR_NULL       0x00  // null selector
+#define SELECTOR_UNUSED     0x08  // unused selector
+#define	SELECTOR_KCODE      0x10  // kernel code selector
+#define	SELECTOR_KDATA      0x18  // kernel data selector
+#define	SELECTOR_TSS        0x20  // tss selector
+#define SELECTOR_UCODE      0x2B  // user code selector
+#define SELECTOR_UDATA      0x33  // user data selector
 
 // SegmentDestriptor is the entry of GDT
 // 8 bytes each

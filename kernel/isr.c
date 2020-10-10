@@ -1,10 +1,3 @@
-// #include "idt.h"
-// #include "isr.h"
-// #include "screen.h"
-// #include "system.h"
-// #include "debug.h"
-// #include "kb.h"
-// #include "string.h"
 #include <sys/idt.h>
 #include <sys/isr.h>
 #include <driver/screen.h>
@@ -67,7 +60,8 @@ extern void isr45();
 extern void isr46();
 extern void isr47();
 
-#define SETINTDES(x) setInterruptDescriptor(&(_idt[x]), (uint32_t)isr##x, 0x10, 0x8e);
+#define SETINTDES(x) \
+    setInterruptDescriptor(&(_idt[x]), (uint32_t)isr##x, 0x10, 0x8e);
 
 /* Normally, IRQs 0 to 7 are mapped to entries 8 to 15. This
 *  is a problem in protected mode, because IDT entry 8 is a
@@ -88,9 +82,6 @@ void irq_remap(void) {
     outportb(PIC_S_CTLMASK, 0x01);
     outportb(PIC_M_CTLMASK, 0x0);
     outportb(PIC_S_CTLMASK, 0x0);
-
-    // disable all interrupts
-    // outportb(PIC_M_CTLMASK, 0b11111111);
 }
 
 extern Gate* _idt;
@@ -195,20 +186,19 @@ void cpu_exception_handler(isrp_t *p) {
 void interrupt_request_handler(isrp_t *p) {
     uint32_t irq_no = p->int_no - 32;
     switch(irq_no) {
-    case 0: {
-        do_timer(p);
-        break;
-    } case 1: {
-        __asm__ volatile("xchg bx, bx");
-        kb_handler(p);
-        break;
-    } default: {
-    }
+        case 0: {
+            do_timer(p);
+            break;
+        } case 1: {
+            kb_handler(p);
+            break;
+        } default: {
+        }
     }
     if (irq_no >= 8) {
-        outportb(0xA0, 0x20);
+        outportb(PIC_S_CTL, 0x20);
     }
-    outportb(0x20, 0x20);
+    outportb(PIC_M_CTL, 0x20);
 }
 
 void interrupt_handler(isrp_t *p) {

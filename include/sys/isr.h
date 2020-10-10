@@ -3,7 +3,6 @@
 #ifndef __ISR_H__
 #define __ISR_H__
 
-// #include "types.h"
 #include <common/types.h>
 
 // 8259A chip ports. More info: https://wiki.osdev.org/8259_PIC
