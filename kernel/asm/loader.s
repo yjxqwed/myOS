@@ -23,7 +23,7 @@ loader:
     call kernelMain
 
     ; xchg bx, bx
-    magic_bp
+    ; magic_bp
 
     ; go to ring 3
     mov ax, tss_sel
