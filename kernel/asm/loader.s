@@ -20,6 +20,8 @@ global loader
 loader:
     mov esp, kernel_stk_top
     mov ebp, esp
+    push eax
+    push ebx
     call kernelMain
 
     ; xchg bx, bx

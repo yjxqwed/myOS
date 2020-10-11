@@ -13,7 +13,12 @@ typedef enum KP_LEVEL {
 
 
 // kernel printf
-// DONT be too long, please
+// DONT be too long, please (1024 char max)
+// %s -> string
+// %d -> signed decimal int32
+// %x -> unsigned hex uint32
+// %X -> unsigned hex uint32 full 8 bits
+// %c -> char
 void kprintf(KP_LEVEL kpl, const char *fmt, ...);
 
 

@@ -139,6 +139,11 @@ void putc(char c, COLOR bg, COLOR fg) {
         } case '\t': {
             break;
         } case '\n': {
+            while (cursor_col < MAXCOL) {
+                *p++ = BLANK_CHAR;
+                *p++ = attr;
+                cursor_col++;
+            }
             cursor_col = 0;
             cursor_row++;
             break;

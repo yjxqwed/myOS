@@ -80,6 +80,15 @@ static void parse_hex(uint32_t number) {
     }
 }
 
+static void parse_heX(uint32_t number) {
+    memset(&(buf[idx]), '0', 8);
+    idx += 8;
+    for (int d = 1; number > 0; d++) {
+        buf[(idx - d)] = hex_char[number % 16];
+        number /= 16;
+    }
+}
+
 // To be implemented
 static void parse_double(double number) {
 }
@@ -129,6 +138,9 @@ void kprintf(KP_LEVEL kpl, const char *fmt, ...) {
                     break;
                 } case 'x': {
                     parse_hex((uint32_t)args_next(args, uint32_t));
+                    break;
+                } case 'X': {
+                    parse_heX((uint32_t)args_next(args, uint32_t));
                     break;
                 } case 'd': {
                     parse_dec((int32_t)args_next(args, int32_t));
