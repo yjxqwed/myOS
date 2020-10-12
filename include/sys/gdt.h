@@ -78,6 +78,12 @@ struct GlobalDescriptorTablePointer {
 typedef struct SegmentDescriptor seg_des_t;
 typedef struct GlobalDescriptorTablePointer gdt_ptr_t;
 
+void setSegmentDescriptor(
+    seg_des_t* sd, uint32_t base, uint32_t limit,
+    uint8_t flags,  // high 4 bits of the 6th byte
+    uint8_t access
+);
+
 void setGlobalDescriptorTable();
 
 #endif

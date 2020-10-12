@@ -193,6 +193,8 @@ void interrupt_request_handler(isrp_t *p) {
             kb_handler(p);
             break;
         } default: {
+            kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
+            break;
         }
     }
     if (irq_no >= 8) {

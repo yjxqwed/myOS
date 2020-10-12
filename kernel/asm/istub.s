@@ -91,7 +91,7 @@ extern interrupt_handler
 ; and finally restores the stack frame.
 isr_common_stub:
     ; xchg bx, bx  ; magic bp
-    pusha
+    pushad
     push ds
     push es
     push fs
@@ -108,6 +108,12 @@ isr_common_stub:
     pop fs
     pop es
     pop ds
-    popa
+    popad
     add esp, 8     ; Cleans up the pushed error code and pushed ISR number
     iretd          ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP!
+
+; push esp pushes the original value of esp
+;
+; |    |                push esp  |0x0C| <- esp = 0x08
+; |xxxx| <- esp = 0x0C    ===>    |xxxx|
+; |yyyy|                          |yyyy|

@@ -12,7 +12,7 @@ kernel_asm_objs = kernel/asm/loader.elf32 \
                   kernel/asm/istub.elf32
 kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \
                 kernel/isr.elf32 kernel/kernel.elf32 \
-                kernel/tss.elf32
+                kernel/tss.elf32 kernel/proc.elf32
 lib_objs = lib/debug.elf32 lib/system.elf32 lib/utils.elf32 \
            lib/string.elf32 lib/kprintf.elf32
 

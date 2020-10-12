@@ -19,6 +19,8 @@ void timer_install(uint32_t hz) {
     outportb(TIMER0, (divisor >> 8) & 0xFF);
 }
 
+#define CLOCKSZ 25
+
 static void clock() {
     static int ticks = 0;
     static int sec = -1;
@@ -27,8 +29,9 @@ static void clock() {
         ticks = 0;
         int row, col;
         get_cursor(&row, &col);
-        set_cursor(MAXROW - 1, 0);
-        kprintf(KPL_NOTICE, "clock: %d sec passed", sec);
+        // set_cursor(MAXROW - 1, 0);
+        set_cursor(0, MAXCOL - CLOCKSZ);
+        kprintf(KPL_DEBUG, "clock: %d sec passed", sec);
         set_cursor(row, col);
     }
     ticks++;

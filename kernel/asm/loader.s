@@ -28,14 +28,13 @@ loader:
     ; magic_bp
 
     ; go to ring 3
-    mov ax, tss_sel
-    ltr ax
-    push usr_data_sel  ; usr ss
-    push usr_stk_top   ; usr esp
-    push usr_code_sel  ; usr code
-    push usr_test      ; usr func
-    retf
-
+    ; mov ax, tss_sel
+    ; ltr ax
+    ; push usr_data_sel  ; usr ss
+    ; push usr_stk_top   ; usr esp
+    ; push usr_code_sel  ; usr code
+    ; push usr_test      ; usr func
+    ; retf
     jmp $
 
 global flushGDT
