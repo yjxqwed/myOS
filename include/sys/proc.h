@@ -26,6 +26,9 @@ typedef struct Registers {
 // PROC_NAME_LENGTH - 1 characters (null terminated)
 #define PROC_NAME_LENGTH 16
 
+// each process has a stack of 32KiB
+#define PROC_STK_SIZE 0x8000
+
 // struct for each process
 typedef struct Process {
     // registers for state saving
