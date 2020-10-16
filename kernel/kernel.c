@@ -7,6 +7,7 @@
 #include <kprintf.h>
 #include <driver/pit.h>
 #include <multiboot/multiboot.h>
+#include <sys/interrupt.h>
 
 #define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
 
@@ -68,11 +69,9 @@ void kernelMain(multiboot_info_t *mbi, uint32_t magic_number) {
     setGlobalDescriptorTable();
     setInterruptDescriptorTable();
 
-    // to allow the interrupt
-    __asm__ volatile(
-        "sti"
-        "\n\thlt"
-    );
+    kprintf(KPL_DUMP, "IF: %d\n", get_int_status());
+    enable_int();
+    kprintf(KPL_DUMP, "IF: %d\n", get_int_status());
 
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
     kprintf(KPL_DUMP, "%d is the minimum int32\n", (int32_t)0x80000000);

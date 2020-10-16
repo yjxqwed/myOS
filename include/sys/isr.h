@@ -12,13 +12,13 @@
 #define PIC_S_CTLMASK 0xA1
 
 // CPU exceptions. More info: https://wiki.osdev.org/Exceptions
-#define DIVBYZERO 0x0
-#define DEBUG 0x1
-#define NMASKABLEINT 0x2
-#define BREAKPOINT 0x3
-#define OVERFLOW 0x4
-#define BDRANGEXCEEDED 0x5
-#define INVALIDOP 0x6
+// #define DIVBYZERO 0x0
+// #define DEBUG 0x1
+// #define NMASKABLEINT 0x2
+// #define BREAKPOINT 0x3
+// #define OVERFLOW 0x4
+// #define BDRANGEXCEEDED 0x5
+// #define INVALIDOP 0x6
 
 struct InterruptServiceRoutineParam {
     uint32_t gs, fs, es, ds;      /* pushed the segs last */
