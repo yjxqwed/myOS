@@ -7,7 +7,8 @@ LD_PARAMS = -m elf_i386
 #           kernel.elf32 gdt.elf32 utils.elf32 screen.elf32 \
 #           idt.elf32 system.elf32 debug.elf32 istub.elf32 isr.elf32 kb.elf32
 
-driver_objs = driver/kb.elf32 driver/screen.elf32 driver/pit.elf32
+driver_objs = driver/kb.elf32 driver/screen.elf32 driver/pit.elf32 \
+              driver/hd.elf32
 kernel_asm_objs = kernel/asm/loader.elf32 \
                   kernel/asm/istub.elf32
 kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \
@@ -38,7 +39,7 @@ install: mykernel.bin
 	sudo cp $< /boot/mykernel.bin
 
 clean:
-	rm -rf *.o *.elf32 *.bin *.out iso *.iso *.img $(objects)
+	rm -rf *.o *.elf32 *.bin *.out iso *.iso $(objects)
 
 mykernel.iso: mykernel.bin
 	mkdir iso

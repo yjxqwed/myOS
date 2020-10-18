@@ -1,6 +1,7 @@
 #include <common/types.h>
 #include <sys/gdt.h>
 #include <driver/screen.h>
+#include <driver/hd.h>
 #include <common/debug.h>
 #include <sys/idt.h>
 #include <sys/tss.h>
@@ -62,6 +63,8 @@ void kernelMain(multiboot_info_t *mbi, uint32_t magic_number) {
         }
     }
     kprintf(KPL_NOTICE, "=============================================\n");
+
+    print_hd_info();
 
     setTssEntry0();
     timer_install(1000);
