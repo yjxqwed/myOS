@@ -5,6 +5,9 @@
 
 // For Page Directory and Page Table
 
+// page size = 4kb
+#define PAGE_SIZE 0x1000
+
 // ========== Page Directory ==========
 
 typedef uint32_t PageDirectoryEntry;
@@ -66,5 +69,8 @@ void set_pde_addr(pte_t *pte, uint32_t addr);
 #define PTE_PRESENT       0
 
 void set_pde_attr(pte_t *pte, int attr, int val);
+
+// enable and init page directory
+void init_pd();
 
 #endif

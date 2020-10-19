@@ -8,6 +8,7 @@
 #include <kprintf.h>
 #include <driver/pit.h>
 #include <multiboot/multiboot.h>
+#include <mm/pager.h>
 
 #define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
 
@@ -70,6 +71,8 @@ void kernelMain(multiboot_info_t *mbi, uint32_t magic_number) {
     timer_install(1000);
     setGlobalDescriptorTable();
     setInterruptDescriptorTable();
+    init_pd();
+    debugMagicBreakpoint();
 
     // to allow the interrupt
     __asm__ volatile(

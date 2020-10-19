@@ -57,5 +57,20 @@ flushIDT:
     lidt [_ip]
     ret
 
+global flushPD
+extern _pd  ; page directory base address
+flushPD:
+    magic_bp
+    mov eax, [_pd]
+    mov cr3, eax
+
+    ; enable paging
+    mov eax, cr0
+    or eax, 0x80000000
+    magic_bp
+    mov cr0, eax
+    ret
+
+
 [section .data]
 one: db 0x01
