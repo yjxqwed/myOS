@@ -5,6 +5,8 @@
 seg_des_t* _gdt = (seg_des_t*)GDT_BASE_ADDR;
 gdt_ptr_t _gp;
 
+#define GDT_SIZE 64
+
 
 void setSegmentDescriptor(
     seg_des_t* sd, uint32_t base, uint32_t limit,
@@ -32,18 +34,20 @@ void setSegmentDescriptor(
 
 extern void flushGDT();
 
-extern tss_entry_t *tss_entry_0;
+extern tss_entry_t *tss;
 
 void setGlobalDescriptorTable() {
     setSegmentDescriptor(&(_gdt[0]), 0, 0, 0xc, 0);           // null         0x00
     setSegmentDescriptor(&(_gdt[1]), 0, 0, 0xc, 0);           // unused       0x08
     setSegmentDescriptor(&(_gdt[2]), 0, 0xfffff, 0xc ,0x9a);  // kernel code  0x10
     setSegmentDescriptor(&(_gdt[3]), 0, 0xfffff, 0xc, 0x92);  // kernel data  0x18
-    setSegmentDescriptor(&(_gdt[4]), (uint32_t)tss_entry_0,
-                         103, 0x04, 0x89);                    // tss          0x20
+    // setTssEntry0();
+    setSegmentDescriptor(
+        &(_gdt[4]), (uint32_t)tss, 103, 0x04, 0x89
+    );                                                        // tss          0x20
     setSegmentDescriptor(&(_gdt[5]), 0, 0xfffff, 0xc, 0xfa);  // user code    0x2B
     setSegmentDescriptor(&(_gdt[6]), 0, 0xfffff, 0xc, 0xf2);  // user data    0x33
     _gp.base_ = (uint32_t)_gdt;
-    _gp.size_ = 7 * sizeof(seg_des_t) - 1;
+    _gp.size_ = GDT_SIZE * sizeof(seg_des_t) - 1;
     flushGDT();
 }

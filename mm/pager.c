@@ -7,12 +7,15 @@
 pde_t *page_directory = (pde_t *)PD_BASE_ADDR;
 uint32_t _pd = 0;  // for loader.s
 
-void set_pde_addr(pde_t *pde, uint32_t addr) {
-    *pde = (addr << 12) | (*pde & 0xfff);
+
+// both pde and pte hold physical page number
+// otherwise a recursive lookup will occur
+void set_pde_ppage_number(pde_t *pde, uint32_t phy_page_number) {
+    *pde = (phy_page_number << 12) | (*pde & 0xfff);
 }
 
-void set_pte_addr(pte_t *pte, uint32_t addr) {
-    *pte = (addr << 12) | (*pte & 0xfff);
+void set_pte_ppage_number(pte_t *pte, uint32_t phy_page_number) {
+    *pte = (phy_page_number << 12) | (*pte & 0xfff);
 }
 
 void set_pde_attr(pde_t *pde, int attr, int val) {
@@ -34,7 +37,7 @@ void set_pte_attr(pde_t *pte, int attr, int val) {
 extern void flushPD();
 
 void init_pd() {
-    memset(page_directory, 0, PAGE_SIZE);  // set pd to all 0s
+    memset((uint8_t *)page_directory, 0, PAGE_SIZE);  // set pd to all 0s
     _pd = (uint32_t)page_directory;
     flushPD();
 }
@@ -42,7 +45,7 @@ void init_pd() {
 
 #define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
 void print_mem_info(multiboot_info_t *mbi) {
-    kprintf(KPL_NOTICE, "================ System Info ================\n");
+    kprintf(KPL_NOTICE, "================ Memory Info ================\n");
     kprintf(KPL_NOTICE, "Flags = 0x%x\n", (uint32_t)mbi->flags);
 
     // check mem

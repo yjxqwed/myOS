@@ -4,7 +4,7 @@
 #include <driver/hd.h>
 #include <common/debug.h>
 #include <sys/idt.h>
-#include <sys/tss.h>
+// #include <sys/tss.h>
 #include <kprintf.h>
 #include <driver/pit.h>
 #include <multiboot/multiboot.h>
@@ -14,7 +14,6 @@
 
 void kernelMain(multiboot_info_t *mbi, uint32_t magic_number) {
     init_screen();
-
 
     // check magic number
     if (magic_number != MULTIBOOT_BOOTLOADER_MAGIC) {
@@ -27,12 +26,11 @@ void kernelMain(multiboot_info_t *mbi, uint32_t magic_number) {
 
     print_mem_info(mbi);
     print_hd_info();
-    // setTssEntry0();
     timer_install(1000);
     setGlobalDescriptorTable();
     setInterruptDescriptorTable();
-    init_pd();
-    debugMagicBreakpoint();
+    // init_pd();
+    // debugMagicBreakpoint();
 
     kprintf(KPL_DUMP, "IF: %d\n", get_int_status());
     enable_int();
@@ -40,6 +38,7 @@ void kernelMain(multiboot_info_t *mbi, uint32_t magic_number) {
 
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
     kprintf(KPL_DUMP, "%d is the minimum int32\n", (int32_t)0x80000000);
+    // debugMagicBreakpoint();
     kprintf(KPL_DUMP, "%d is the maximum int32\n", (int32_t)0x7FFFFFFF);
     kprintf(KPL_DUMP, "%d is zero in decimal\n", 0);
     kprintf(KPL_DUMP, "%x is zero in hexadecimal\n", 0);

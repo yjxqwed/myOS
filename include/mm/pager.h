@@ -15,7 +15,7 @@ typedef uint32_t PageDirectoryEntry;
 typedef PageDirectoryEntry pde_t;
 
 // addr is 4KB aligned
-void set_pde_addr(pde_t *pde, uint32_t addr);
+void set_pde_ppage_number(pde_t *pde, uint32_t phy_page_number);
 
 // ignored
 #define PDE_GLOBAL        8
@@ -44,7 +44,7 @@ typedef uint32_t PageTableEntry;
 typedef PageTableEntry pte_t;
 
 // addr is 4KB aligned
-void set_pde_addr(pte_t *pte, uint32_t addr);
+void set_pte_ppage_number(pte_t *pte, uint32_t phy_page_number);
 
 // set to prevent the TLB from updating the
 // address in its cache if cr3 is reset

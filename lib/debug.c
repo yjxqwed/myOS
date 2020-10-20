@@ -5,7 +5,7 @@
 #include <sys/interrupt.h>
 
 void debugMagicBreakpoint() {
-    #ifdef NDEBUG
+    #ifdef KDEBUG
         __asm__ volatile ("xchg %bx, %bx");
     #endif
 }

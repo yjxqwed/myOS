@@ -75,5 +75,5 @@ static void clock() {
 }
 
 void do_timer(isrp_t *p) {
-    clock();
+    // clock();
 }
