@@ -1,12 +1,9 @@
-// #include "gdt.h"
-// #include "tss.h"
-
 #include <sys/gdt.h>
 #include <sys/tss.h>
+#include <sys/global.h>
 
-seg_des_t* _gdt = (seg_des_t*)0x01100000;
+seg_des_t* _gdt = (seg_des_t*)GDT_BASE_ADDR;
 gdt_ptr_t _gp;
-// uint16_t _dss, _css;
 
 
 void setSegmentDescriptor(
@@ -48,7 +45,5 @@ void setGlobalDescriptorTable() {
     setSegmentDescriptor(&(_gdt[6]), 0, 0xfffff, 0xc, 0xf2);  // user data    0x33
     _gp.base_ = (uint32_t)_gdt;
     _gp.size_ = 7 * sizeof(seg_des_t) - 1;
-    // _dss = 0x18;
-    // _css = 0x10;
     flushGDT();
 }

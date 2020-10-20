@@ -1,15 +1,12 @@
-// #include "idt.h"
-// #include "system.h"
-// #include "isr.h"
-// #include "string.h"
 #include <sys/idt.h>
 #include <sys/system.h>
 #include <sys/isr.h>
 #include <string.h>
+#include <sys/global.h>
 
 
 
-Gate* _idt = (Gate*)0x01180000;
+Gate* _idt = (Gate*)IDT_BASE_ADDR;
 idt_ptr_t _ip;
 
 void setInterruptDescriptor(

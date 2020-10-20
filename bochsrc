@@ -9,6 +9,7 @@ vgaromimage: file=/usr/local/share/bochs/VGABIOS-lgpl-latest
 # vgaromimage: file="C:\Program Files\Bochs-2.6.11/VGABIOS-lgpl-latest"
 
 ata0-master: type=cdrom, path="mykernel.iso", status=inserted
+ata1-master: type=disk, path="hd256M.img", mode=flat
 boot: cdrom
 log: bochsout.txt
 mouse: enabled = 0

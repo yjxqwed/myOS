@@ -28,14 +28,13 @@ loader:
     ; magic_bp
 
     ; go to ring 3
-    mov ax, tss_sel
-    ltr ax
-    push usr_data_sel  ; usr ss
-    push usr_stk_top   ; usr esp
-    push usr_code_sel  ; usr code
-    push usr_test      ; usr func
-    retf
-
+    ; mov ax, tss_sel
+    ; ltr ax
+    ; push usr_data_sel  ; usr ss
+    ; push usr_stk_top   ; usr esp
+    ; push usr_code_sel  ; usr code
+    ; push usr_test      ; usr func
+    ; retf
     jmp $
 
 global flushGDT
@@ -57,6 +56,21 @@ extern _ip  ; the idt pointer
 flushIDT:
     lidt [_ip]
     ret
+
+global flushPD
+extern _pd  ; page directory base address
+flushPD:
+    magic_bp
+    mov eax, [_pd]
+    mov cr3, eax
+
+    ; enable paging
+    mov eax, cr0
+    or eax, 0x80000000
+    magic_bp
+    mov cr0, eax
+    ret
+
 
 [section .data]
 one: db 0x01
