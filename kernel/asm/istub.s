@@ -5,11 +5,11 @@
 
 %include "sys/asm/inc.s"
 
+; interrupt gate will automatically clear the IF bit (cli)
+
 %macro isr_no_err_code 1
 global isr%1
 isr%1:
-    ; cli
-    ; xchg bx, bx
     push byte 0  ; dummy error code
     push byte %1 ; int number
     jmp isr_common_stub
@@ -18,8 +18,6 @@ isr%1:
 %macro isr_err_code 1
 global isr%1
 isr%1:
-    ; cli
-    ; xchg bx, bx
     push byte %1 ; int number
     jmp isr_common_stub
 %endmacro;
@@ -90,7 +88,6 @@ extern interrupt_handler
 ; up for kernel mode segments, calls the C-level interrupt handler,
 ; and finally restores the stack frame.
 isr_common_stub:
-    ; xchg bx, bx  ; magic bp
     pushad
     push ds
     push es
@@ -110,10 +107,12 @@ isr_common_stub:
     pop ds
     popad
     add esp, 8     ; Cleans up the pushed error code and pushed ISR number
+                   ; Although the CPU pushes error code automatically, it doesn't pop it
+
     iretd          ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP!
 
 ; push esp pushes the original value of esp
 ;
-; |    |                push esp  |0x0C| <- esp = 0x08
+; |    |                push esp  |0x0C| <- esp = 0x08  high addr
 ; |xxxx| <- esp = 0x0C    ===>    |xxxx|
-; |yyyy|                          |yyyy|
+; |yyyy|                          |yyyy|                low addr

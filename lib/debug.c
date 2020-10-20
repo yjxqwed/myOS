@@ -1,25 +1,29 @@
-// #include "debug.h"
-// #include "screen.h"
-// #include "string.h"
-
 #include <common/debug.h>
 #include <driver/screen.h>
 #include <string.h>
 #include <kprintf.h>
-
-// #define DEBUG
+#include <sys/interrupt.h>
 
 void debugMagicBreakpoint() {
-    #ifdef DEBUG
+    #ifdef NDEBUG
         __asm__ volatile ("xchg %bx, %bx");
     #endif
 }
 
 void printISRParam(const isrp_t* p) {
-    // printf(" eip=");
-    // char out[UINT32LEN];
-    // printf(uitosh(p->eip, out));
-    // printf(" errco=");
-    // printf(uitosh(p->err_code, out));
     kprintf(KPL_PANIC, " {eip=%x; errco=%x}", p->eip, p->err_code);
+}
+
+void panic_spin(
+    const char* filename, int line,
+    const char* funcname, const char* condition
+) {
+    disable_int();
+    kprintf(KPL_DUMP, "\n");
+    kprintf(KPL_PANIC, "!!!!! error !!!!!\n");
+    kprintf(KPL_PANIC, "file: %s\n", filename);
+    kprintf(KPL_PANIC, "line: %d\n", line);
+    kprintf(KPL_PANIC, "function: %s\n", funcname);
+    kprintf(KPL_PANIC, "condition: %s\n", condition);
+    while (1);
 }

@@ -4,8 +4,9 @@
 uint8_t inportb(uint16_t port) {
     uint8_t val;
     __asm__ volatile (
-        "inb %0, %1"
-        "\n\tnop\n\t nop" // introduce some delay
+        "inb %0, %1\n\t"
+        "nop\n\t"
+        "nop"         // introduce some delay
         : "=a"(val)   // output
         : "Nd"(port)  // input
         :             // clobbered regs
@@ -15,8 +16,9 @@ uint8_t inportb(uint16_t port) {
 
 void outportb(uint16_t port, uint8_t val) {
     __asm__ volatile (
-        "outb %1, %0"
-        "\n\tnop\n\tnop" // introduce some delay
+        "outb %1, %0\n\t"
+        "nop\n\t"
+        "nop"         // introduce some delay
         :             // output
         : "a"(val), 
           "Nd"(port)  // input
