@@ -2,6 +2,7 @@
 #define __PAGER_H__
 
 #include <common/types.h>
+#include <multiboot/multiboot.h>
 
 // For Page Directory and Page Table
 
@@ -72,5 +73,5 @@ void set_pde_attr(pte_t *pte, int attr, int val);
 
 // enable and init page directory
 void init_pd();
-
+void print_mem_info(multiboot_info_t *mbi);
 #endif
