@@ -28,37 +28,39 @@
 |           |   0x0010 0000
 |  kernel   |
 |   code    |     16 MiB
-|           |
 \           /
 /           \
 |           |   0x010f ffff
 +-----------+
 |           |   0x0110 0000
-|    GDT    |
-|   65536   |
-|  entries  |     512 KiB (65536 x 8B)
-|           |
+|   Page    |
+| Directory |     4 KiB
 \           /
 /           \
-|           |   0x0117 ffff
+|           |   0x0110 0fff
 +-----------+
-|           |   0x0118 0000
+|           |   0x0110 1000
+|    GDT    |
+|    64     |
+|  entries  |     512B (64 x 8B)
+\           /      < 10 entries actually
+/           \
+|           |   0x0110 11ff
++-----------+
+|           |   0x0110 1200
 |    IDT    |
 |    256    |     2 KiB (256 x 8B)
 |  entries  |
-|           |
 \           /
 /           \
-|           |   0x0118 07ff
+|           |   0x0110 19ff
 +-----------+
-|           |   0x0118 0800
-|           |
+|           |   0x0110 1a00
 |  kernel   |
 |  stack    |    1 MiB + 1B
 \           /
 /           \
-|           |
-|           |   0x0128 0800
+|           |   0x0120 1a00
 +-----------+
 |           |
 </pre>
@@ -111,3 +113,6 @@ Using gates can raise the privilege while there is only one way to lower the pri
 * Set bit 0 of the cr0 register
 
 The <a href="https://wiki.osdev.org/GRUB">GRUB</a> will do this for us. But we still need to override the GDT with the lgdt instruction.
+
+## Memory Management
+### Paging

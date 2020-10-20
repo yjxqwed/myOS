@@ -7,7 +7,8 @@ LD_PARAMS = -m elf_i386
 #           kernel.elf32 gdt.elf32 utils.elf32 screen.elf32 \
 #           idt.elf32 system.elf32 debug.elf32 istub.elf32 isr.elf32 kb.elf32
 
-driver_objs = driver/kb.elf32 driver/screen.elf32 driver/pit.elf32
+driver_objs = driver/kb.elf32 driver/screen.elf32 driver/pit.elf32 \
+              driver/hd.elf32
 kernel_asm_objs = kernel/asm/loader.elf32 \
                   kernel/asm/istub.elf32
 kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \
@@ -17,10 +18,13 @@ kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \
 lib_objs = lib/debug.elf32 lib/system.elf32 lib/utils.elf32 \
            lib/string.elf32 lib/kprintf.elf32
 
+mm_objs = mm/pager.elf32
+
 usr_asm_objs = usr/asm/test.elf32
 
 # objects = drive.bin kernel_asm.bin kernel_c.bin lib.bin
-objects = $(driver_objs) $(kernel_asm_objs) $(kernel_c_objs) $(lib_objs) $(usr_asm_objs)
+objects = $(driver_objs) $(kernel_asm_objs) $(kernel_c_objs) $(lib_objs) $(usr_asm_objs) \
+          $(mm_objs)
 
 .PHONY = clean
 
@@ -39,7 +43,7 @@ install: mykernel.bin
 	sudo cp $< /boot/mykernel.bin
 
 clean:
-	rm -rf *.o *.elf32 *.bin *.out iso *.iso *.img $(objects)
+	rm -rf *.o *.elf32 *.bin *.out iso *.iso $(objects)
 
 mykernel.iso: mykernel.bin
 	mkdir iso

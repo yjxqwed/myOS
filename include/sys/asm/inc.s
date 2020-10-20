@@ -6,7 +6,7 @@ xchg bx, bx
 
 
 [section .constant]
-kernel_stk_top: equ 0x01280800
+kernel_stk_top: equ 0x01201a00
 usr_stk_top: equ 0x0c800000
 
 kernel_code_sel: equ 0x10
