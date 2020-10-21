@@ -5,7 +5,7 @@
 seg_des_t* _gdt = (seg_des_t*)GDT_BASE_ADDR;
 gdt_ptr_t _gp;
 
-#define GDT_SIZE 64
+#define GDT_SIZE 32
 
 
 void setSegmentDescriptor(
@@ -42,6 +42,7 @@ void setGlobalDescriptorTable() {
     setSegmentDescriptor(&(_gdt[2]), 0, 0xfffff, 0xc ,0x9a);  // kernel code  0x10
     setSegmentDescriptor(&(_gdt[3]), 0, 0xfffff, 0xc, 0x92);  // kernel data  0x18
     // setTssEntry0();
+    init_tss();
     setSegmentDescriptor(
         &(_gdt[4]), (uint32_t)tss, 103, 0x04, 0x89
     );                                                        // tss          0x20

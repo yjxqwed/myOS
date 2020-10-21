@@ -36,7 +36,7 @@ struct TaskStateSegmentEntry {
 
 typedef struct TaskStateSegmentEntry tss_entry_t;
 
-void setTssEntry0();
+// void setTssEntry0();
 
 void init_tss();
 

@@ -6,7 +6,7 @@
 [section .multiboot]
     MAGIC_NUM equ 0x1badb002
     FLAG      equ (1 << 0 | 1 << 1)
-    CHECK_SUM equ -(MAGIC_NUM + FLAG)   
+    CHECK_SUM equ -(MAGIC_NUM + FLAG)
 
     dd MAGIC_NUM
     dd FLAG
@@ -28,8 +28,8 @@ loader:
     ; magic_bp
 
     ; go to ring 3
-    ; mov ax, tss_sel
-    ; ltr ax
+    mov ax, tss_sel
+    ltr ax
     ; push usr_data_sel  ; usr ss
     ; push usr_stk_top   ; usr esp
     ; push usr_code_sel  ; usr code
