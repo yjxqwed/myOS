@@ -1,12 +1,12 @@
-G_PARAMS = -m32 -I include -nostdlib -fno-builtin -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel
+# build flags
+G_PARAMS = -m32 -I include -I include/lib -nostdlib -fno-builtin \
+           -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel
 NASM_PARAMS = -I include -f elf32
 LD_PARAMS = -m elf_i386
 
-# objects = kernel/asm/loader.elf32 \
-#           kernel/asm/isr.elf32 \
-#           kernel.elf32 gdt.elf32 utils.elf32 screen.elf32 \
-#           idt.elf32 system.elf32 debug.elf32 istub.elf32 isr.elf32 kb.elf32
 
+
+# objects
 driver_objs = driver/kb.elf32 driver/screen.elf32 driver/pit.elf32 \
               driver/hd.elf32
 kernel_asm_objs = kernel/asm/loader.elf32 \
@@ -22,10 +22,12 @@ mm_objs = mm/pager.elf32
 
 usr_asm_objs = usr/asm/test.elf32
 
-# objects = drive.bin kernel_asm.bin kernel_c.bin lib.bin
-objects = $(driver_objs) $(kernel_asm_objs) $(kernel_c_objs) $(lib_objs) $(usr_asm_objs) \
-          $(mm_objs)
+objects = $(driver_objs) $(kernel_asm_objs) $(kernel_c_objs) \
+          $(lib_objs) $(usr_asm_objs) $(mm_objs)
 
+
+
+# build rules
 .PHONY = clean
 
 all: mykernel.bin

@@ -61,14 +61,17 @@ global flushPD
 extern _pd  ; page directory base address
 flushPD:
     magic_bp
+
+    add dword [_gp + 2], 0xc0000000
+
     mov eax, [_pd]
     mov cr3, eax
 
     ; enable paging
     mov eax, cr0
     or eax, 0x80000000
-    magic_bp
     mov cr0, eax
+    lgdt [_gp]
     ret
 
 
