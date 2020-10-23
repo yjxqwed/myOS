@@ -1,21 +1,32 @@
 #ifndef __GLOBAL_H__
 #define __GLOBAL_H__
 
+#include <common/types.h>
+
 // file for some global macros
 
+// vaddr 0xc0000000 - 0xffffffff is kernel space
+#define KERNEL_SPACE_BASE_ADDR (0xc0000000)
 
 // global descriptor table base address
-#define GDT_BASE_ADDR  0x00700000
+#define GDT_BASE_ADDR  (0x00700000 + KERNEL_SPACE_BASE_ADDR)
 // tss base address (task state segment base address)
-#define TSS_BASE_ADDR  0x00700100
+#define TSS_BASE_ADDR  (0x00700100 + KERNEL_SPACE_BASE_ADDR)
 // interrupt descriptor table base address
-#define IDT_BASE_ADDR  0x00700300
+#define IDT_BASE_ADDR  (0x00700300 + KERNEL_SPACE_BASE_ADDR)
 // page directory base address
-#define PD_BASE_ADDR   0x00800000
+#define PD_BASE_ADDR   (0x00800000 + KERNEL_SPACE_BASE_ADDR)
+
+// video memory base address
+#define VIDEO_MEM      (0x000B8000 + KERNEL_SPACE_BASE_ADDR)
 
 // kernel stack is 4 MiB starting from 0x00cf ffff
-#define K_STACK_TOP    0x00cfffff
-#define K_STACK_SIZE   4 * 1024 * 1024
+#define K_STACK_TOP    (0x00cfffff + KERNEL_SPACE_BASE_ADDR)
+#define K_STACK_SIZE   (4 * 1024 * 1024)
 
+// kernel space physical address
+#define __pa(x) ((uint32_t)x - KERNEL_SPACE_BASE_ADDR)
+// kernel space virtual address
+#define __va(x) ((uint32_t)x + KERNEL_SPACE_BASE_ADDR)
 
 #endif

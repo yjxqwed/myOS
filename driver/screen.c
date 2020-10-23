@@ -6,8 +6,14 @@
 static int cursor_row = 0;
 static int cursor_col = 0;
 
+static uint32_t video_mem = __pa(VIDEO_MEM);
+
+void video_mem_enable_paging() {
+    video_mem = VIDEO_MEM;
+}
+
 static void clear_row(int row) {
-    char *p = (char *)(VIDEO_MEM + CHAR_OFFSET(row, 0));
+    char *p = (char *)(video_mem + CHAR_OFFSET(row, 0));
     for (int i = 0; i < ROW_RAM;) {
         p[i++] = BLANK_CHAR;
         p[i++] = BLANK_ATTR;
@@ -15,7 +21,7 @@ static void clear_row(int row) {
 }
 
 static void clear_screen() {
-    char *p = (char *)VIDEO_MEM;
+    char *p = (char *)video_mem;
     for (int i; i < PAGE_RAM; ) {
         p[i++] = BLANK_CHAR;
         p[i++] = BLANK_ATTR;
@@ -23,8 +29,8 @@ static void clear_screen() {
 }
 
 static void scroll(int num_row) {
-    char *dest = (char *)(VIDEO_MEM);
-    char *src = (char *)(VIDEO_MEM + CHAR_OFFSET(num_row, 0));
+    char *dest = (char *)(video_mem);
+    char *src = (char *)(video_mem + CHAR_OFFSET(num_row, 0));
     uint32_t size = (MAXROW - num_row) * ROW_RAM;
     strncpy(src, dest, size);
     for (int i = 1; i <= num_row; i++) {
@@ -50,7 +56,7 @@ void set_cursor(int row, int col) {
 }
 
 void putc(char c, COLOR bg, COLOR fg) {
-    char *p = (char *)(VIDEO_MEM + CHAR_OFFSET(cursor_row, cursor_col));
+    char *p = (char *)(video_mem + CHAR_OFFSET(cursor_row, cursor_col));
     uint8_t attr = ATTR(bg, fg);
     switch (c) {
         case '\a': {

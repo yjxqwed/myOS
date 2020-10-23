@@ -77,4 +77,7 @@ void print_mem_info(multiboot_info_t *mbi);
 #define MEM_LIMIT 254 * 1024 * 1024
 // memory management init
 void mm_init(multiboot_info_t *mbi);
+
+// clear low memory mapping after enabling paging
+void clear_low_mem_mapping();
 #endif

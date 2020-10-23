@@ -2,7 +2,7 @@
 #include <sys/tss.h>
 #include <sys/global.h>
 
-seg_des_t* _gdt = (seg_des_t*)GDT_BASE_ADDR;
+seg_des_t* _gdt = (seg_des_t*)__pa(GDT_BASE_ADDR);
 gdt_ptr_t _gp;
 
 #define GDT_SIZE 32
@@ -35,6 +35,11 @@ void setSegmentDescriptor(
 extern void flushGDT();
 
 extern tss_entry_t *tss;
+
+void gdt_enable_paging() {
+    _gdt = (seg_des_t*)GDT_BASE_ADDR;
+    _gp.base_ = (uint32_t)_gdt;
+}
 
 void setGlobalDescriptorTable() {
     setSegmentDescriptor(&(_gdt[0]), 0, 0, 0xc, 0);           // null         0x00

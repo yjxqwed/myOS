@@ -5,7 +5,7 @@
 #include <kprintf.h>
 #include <bitmap.h>
 
-pde_t *page_directory = (pde_t *)PD_BASE_ADDR;
+pde_t *page_directory = (pde_t *)__pa(PD_BASE_ADDR);
 uint32_t _pd = 0;  // for loader.s
 
 
@@ -53,23 +53,26 @@ extern void flushPD();
 void init_paging() {
     memset((uint8_t *)page_directory, 0, PAGE_SIZE);  // set pd to all 0s
     _pd = (uint32_t)page_directory;
-    uint32_t first_pd_ppage_no = PD_BASE_ADDR / PAGE_SIZE + 1;
+    // the first pt starts at after the pd.
+    uint32_t first_pt_ppage_no = __pa(PD_BASE_ADDR) / PAGE_SIZE + 1;
 
     int i, j;
     // pdes 0x300 ~ 0x3fe are for vaddr 0xc0000000 ~ 0xffbfffff (high 1G - 4MiB)
-    for (i = 0x300, j = 0; i <= 0x3ff; i++, j++) {
+    for (i = 0x300, j = 0; i < 0x400; i++, j++) {
         pde_t *pde = &(page_directory[i]);
-        set_pde_ppage_number(pde, first_pd_ppage_no + j);
+        set_pde_ppage_number(pde, first_pt_ppage_no + j);
         set_pde_attr(pde, PDE_SUPERUSER, 1);
         set_pde_attr(pde, PDE_RW, 1);
         set_pde_attr(pde, PDE_PRESENT, 1);
     }
     // the last pde refers the PD itself.
-    set_pde_ppage_number(&(page_directory[0x3ff]), first_pd_ppage_no);
+    set_pde_ppage_number(&(page_directory[0x3ff]), first_pt_ppage_no);
 
-    for (i = 0, j = 0; i <= 4; i++, j++) {
+    // pdes 0x0 ~ 0x3 are for vaddr 0x0 ~ 0x00bfffff
+    // for cpu to move to paging mode
+    for (i = 0, j = 0; i < 4; i++, j++) {
         pde_t *pde = &(page_directory[i]);
-        set_pde_ppage_number(pde, first_pd_ppage_no + j);
+        set_pde_ppage_number(pde, first_pt_ppage_no + j);
         set_pde_attr(pde, PDE_SUPERUSER, 1);
         set_pde_attr(pde, PDE_RW, 1);
         set_pde_attr(pde, PDE_PRESENT, 1);
@@ -87,25 +90,6 @@ void init_paging() {
             set_pte_attr(pte, PTE_SUPERUSER, 1);
             set_pte_attr(pte, PTE_RW, 1);
             set_pte_attr(pte, PTE_PRESENT, 1);
-            // kprintf(KPL_DEBUG, "%d   ", (i - 1) * 1024 + j);
-            // kprintf(KPL_DEBUG, "pt[%d] = 0x%X\n", j, (uint32_t)*pte);
-            // debugMagicBreakpoint();
-        }
-    }
-
-    for (i = 0; i < 4; i++) {
-        pte_t *pt = (pte_t *)((page_directory[i] >> 12) << 12);
-        memset((uint8_t *)pt, 0, PAGE_SIZE);
-        // each page table has 1024 entries
-        for (j = 0; j < 1024; j++) {
-            pte_t *pte = &(pt[j]);
-            set_pte_ppage_number(pte, i * 1024 + j);
-            set_pte_attr(pte, PTE_SUPERUSER, 1);
-            set_pte_attr(pte, PTE_RW, 1);
-            set_pte_attr(pte, PTE_PRESENT, 1);
-            // kprintf(KPL_DEBUG, "%d   ", (i - 1) * 1024 + j);
-            // kprintf(KPL_DEBUG, "pt[%d] = 0x%X\n", j, (uint32_t)*pte);
-            // debugMagicBreakpoint();
         }
     }
 
@@ -158,31 +142,34 @@ void print_mem_info(multiboot_info_t *mbi) {
     kprintf(KPL_NOTICE, "=============================================\n");
 }
 
-void enable_paging() {
-
+void clear_low_mem_mapping() {
+    pde_t *pd = (pde_t *)__va(page_directory);
+    for (int i = 0; i < 4; i++) {
+        pd[i] = (pde_t)0;
+    }
 }
 
 void mm_init(multiboot_info_t *mbi) {
-    // if (CHECK_FLAG(mbi->flags, 0)) {
-    //     uint32_t high_free_mem = mbi->mem_upper * 1024;
-    //     if (high_free_mem < MEM_LIMIT) {
-    //         kprintf(
-    //             KPL_PANIC, 
-    //             "Not Enough Memory; "
-    //             "try with >= 256 MiB mem. System Halted.\n"
-    //         );
-    //         while (1);
-    //     }
-    //     uint32_t high_free_pages = high_free_mem / 4096;
-    //     kprintf(
-    //         KPL_NOTICE,
-    //         "Free mem: 0x%X byte(s); "
-    //         "free pages: 0x%X page(s).\n",
-    //         high_free_mem, high_free_pages
-    //     );
-    // } else {
-    //     kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
-    //     while (1);
-    // }
+    if (CHECK_FLAG(mbi->flags, 0)) {
+        uint32_t high_free_mem = mbi->mem_upper * 1024;
+        if (high_free_mem < MEM_LIMIT) {
+            kprintf(
+                KPL_PANIC, 
+                "Not Enough Memory; "
+                "try with >= 256 MiB mem. System Halted.\n"
+            );
+            while (1);
+        }
+        uint32_t high_free_pages = high_free_mem / 4096;
+        kprintf(
+            KPL_NOTICE,
+            "Free mem: 0x%X byte(s); "
+            "free pages: 0x%X page(s).\n",
+            high_free_mem, high_free_pages
+        );
+    } else {
+        kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
+        while (1);
+    }
     init_paging();
 }
