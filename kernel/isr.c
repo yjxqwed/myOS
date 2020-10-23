@@ -88,7 +88,9 @@ void irq_remap(void) {
 
 extern Gate* _idt;
 void setISRs() {
+    MAGICBP;
     SETINTDES(0);
+    MAGICBP;
     SETINTDES(1);
     SETINTDES(2);
     SETINTDES(3);

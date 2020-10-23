@@ -26,7 +26,7 @@ void test_magic_number(uint32_t magic_number) {
 // void kernelMain(multiboot_info_t *mbi, uint32_t magic_number) {
 void kernelMain() {
     clear_low_mem_mapping();
-    // debugMagicBreakpoint();
+    MAGICBP;
     kprintf(KPL_DUMP, "KERNEL!\n");
     // while (1);
     // init_screen();
@@ -39,6 +39,7 @@ void kernelMain() {
     // timer_install(1000);
     // setGlobalDescriptorTable();
     // mm_init(mbi);
+    MAGICBP;
     setInterruptDescriptorTable();
     // // init_pd();
     // // debugMagicBreakpoint();
@@ -46,10 +47,13 @@ void kernelMain() {
 
     // debugMagicBreakpoint();
     // int i = 1 / 0;
+    MAGICBP;
     kprintf(KPL_DUMP, "IF: %d\n", get_int_status());
+    MAGICBP;
     enable_int();
+    MAGICBP;
     kprintf(KPL_DUMP, "IF: %d\n", get_int_status());
-
+    MAGICBP;
     while (1);
 
     // kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
