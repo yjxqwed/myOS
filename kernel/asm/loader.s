@@ -12,40 +12,35 @@
     dd FLAG
     dd CHECK_SUM
 
+extern ksetup_before_paging
+extern ksetup_after_paging
 extern kernelMain
-extern usr_test
-extern test_magic_number
-extern mm_init
-extern video_mem_enable_paging
-extern setGlobalDescriptorTable
+
 [section .text]
 global loader
 loader:
     mov esp, kernel_stk_top
     mov ebp, esp
-    push eax
-    call test_magic_number
-    push ebx  ; for mm_init
-    call setGlobalDescriptorTable
-    call mm_init
 
-    add esp, kernel_space_base_addr
-    add ebp, kernel_space_base_addr
+    push eax
+    push ebx
+    call ksetup_before_paging
+    ; jmp to the higher half
+    lea eax, [after_paging]
+    jmp eax
+after_paging:
+    call ksetup_after_paging
+    jmp kernelMain
+
 
     ; mov ax, tss_sel
     ; ltr ax
 
-    ; ; push usr_data_sel  ; usr ss
-    ; ; push usr_stk_top   ; usr esp
-    ; ; push usr_code_sel  ; usr code
-    ; ; push usr_test      ; usr func
-    ; ; retf
-
-    call video_mem_enable_paging
-
-    mov eax, kernelMain
-    add eax, kernel_space_base_addr
-    jmp eax
+    ; push usr_data_sel  ; usr ss
+    ; push usr_stk_top   ; usr esp
+    ; push usr_code_sel  ; usr code
+    ; push usr_test      ; usr func
+    ; retf
 
 global flushGDT
 extern _gp  ; _gp is the gdt pointer
@@ -64,31 +59,20 @@ flush2:
 global flushIDT
 extern _ip  ; the idt pointer
 flushIDT:
-    ; magic_bp
     lidt [_ip]
     ret
 
 global flushPD
 extern _pd  ; page directory base address
-extern gdt_enable_paging
 flushPD:
-    ; magic_bp
-
-    ; sgdt [_gp]
-    add dword [_gp + 2], kernel_space_base_addr
-
-    ; call gdt_enable_paging
-
-    mov eax, [_pd]
+    ; _pd is vaddr, we need paddr here
+    mov eax, [_pd - kernel_space_base_addr]
     mov cr3, eax
 
-    ; enable paging
-    mov eax, cr0
-    ; bit 31 of cr0 is to enable paging
-    or eax, 0x80000000
+    mov eax, cr0  ; enable paging
+    or eax, 0x80000000  ; bit 31 of cr0 is to enable paging
     mov cr0, eax
 
-    lgdt [_gp]
     ret
 
 

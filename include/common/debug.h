@@ -3,7 +3,6 @@
 
 #include <sys/isr.h>
 
-void debugMagicBreakpoint();
 void printISRParam(const isrp_t* p);
 
 void panic_spin(

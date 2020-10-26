@@ -143,6 +143,8 @@ void print_mem_info(multiboot_info_t *mbi) {
 }
 
 void clear_low_mem_mapping() {
+    // TO FIGURE OUT: Does the low 1MiB memory need identity map?
+    // (for bios/grub/hw use maybe)
     pde_t *pd = (pde_t *)__va(page_directory);
     for (int i = 0; i < 4; i++) {
         pd[i] = (pde_t)0;

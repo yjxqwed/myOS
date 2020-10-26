@@ -2,7 +2,7 @@
 #include <sys/tss.h>
 #include <sys/global.h>
 
-seg_des_t* _gdt = (seg_des_t*)__pa(GDT_BASE_ADDR);
+seg_des_t* _gdt = (seg_des_t*)GDT_BASE_ADDR;
 gdt_ptr_t _gp;
 
 #define GDT_SIZE 32

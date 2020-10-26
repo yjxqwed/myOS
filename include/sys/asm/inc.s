@@ -1,6 +1,6 @@
 ; some constants
 
-%macro magic_bp 0
+%macro MAGICBP 0
 xchg bx, bx
 %endmacro
 

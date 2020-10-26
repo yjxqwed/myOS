@@ -63,7 +63,7 @@ extern void isr46();
 extern void isr47();
 
 #define SETINTDES(x) \
-    setInterruptDescriptor(&(_idt[x]), (uint32_t)isr##x + KERNEL_SPACE_BASE_ADDR, SELECTOR_KCODE, 0x8e);
+    setInterruptDescriptor(&(_idt[x]), (uint32_t)isr##x, SELECTOR_KCODE, 0x8e);
 
 /* Normally, IRQs 0 to 7 are mapped to entries 8 to 15. This
 *  is a problem in protected mode, because IDT entry 8 is a
@@ -88,9 +88,7 @@ void irq_remap(void) {
 
 extern Gate* _idt;
 void setISRs() {
-    MAGICBP;
     SETINTDES(0);
-    MAGICBP;
     SETINTDES(1);
     SETINTDES(2);
     SETINTDES(3);

@@ -55,4 +55,6 @@ void enable_cursor(int cursor_start, int cursor_end);
 void disable_cursor();
 
 void init_screen();
+
+void video_mem_enable_paging();
 #endif
