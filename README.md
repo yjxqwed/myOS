@@ -9,4 +9,7 @@ From 2020.9
 * <a href="http://www.osdever.net/bkerndev/Docs/title.htm"> bkerndev </a>
 * <a href="http://skelix.net/skelixos/index_en.html"> skelix os </a>
 * <a href="https://www.gnu.org/software/grub/manual/multiboot/multiboot.html"> GNU multiboot </a>
+* <a href="http://littleosbook.github.io/#linking-the-kernel"> The little book about OS development </a>
+* <a href="https://book.douban.com/subject/3735649/"> 《Orange'S:一个操作系统的实现》 于渊 </a>
+* <a href="https://book.douban.com/subject/26745156/"> 《操作系统真象还原》 郑钢 </a>
 

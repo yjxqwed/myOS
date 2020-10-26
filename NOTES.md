@@ -112,3 +112,28 @@ The <a href="https://wiki.osdev.org/GRUB">GRUB</a> will do this for us. But we s
 
 ## Memory Management
 ### Paging
+
+#### x86 Paging 
+The x86 cpu uses 2-level paging. The 32-bit address is used as 3 parts, as below.
+<pre>
+| <-------- 32 bits --------->|
+| 10 bits | 10 bits | 12 bits |
+    |         |         |
+    +---------(---------(------ page directory index
+              |         |
+              +---------(------ page table index
+                        |
+                        +------ page frame offset
+</pre>
+#### Higher Half
+The x86 system supports an address space of 4-GiB; for reasons of compatibility and linker convention, the kernel space is mapped to the higer part of the virtual address space (above 0xc000 0000 in myOS); this is called a higher half kernel.
+
+#### Enable Paging
+To enable Paging, we need to do the following
+* Setup page directory and page tables (at least for the kernel)
+* Load page directory address to the cr3 register
+* Set bit 32 (paging-enabling bit) of the cr0 register
+
+Some tips:
+* The kernel should be compiled starting at 0xc000 0000 but must be loaded at the lower part of the memory, we need to use linker script directives . and AT to do this (. is for indicating the compiling starting address; AT is for grub to know where in the mem to put the binary).
+* At the very beginning, we should make an extra identity map of the lower part of the memory. After enabling paging, we should jump to the higer space and clear the identity map.
