@@ -1,11 +1,13 @@
 ; some constants
 
-%macro magic_bp 0
+%macro MAGICBP 0
 xchg bx, bx
 %endmacro
 
 
 [section .constant]
+kernel_space_base_addr: equ 0xc0000000
+
 kernel_stk_top:  equ 0x00cfffff
 usr_stk_top:     equ 0x0c800000
 

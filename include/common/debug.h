@@ -3,7 +3,6 @@
 
 #include <sys/isr.h>
 
-void debugMagicBreakpoint();
 void printISRParam(const isrp_t* p);
 
 void panic_spin(
@@ -16,6 +15,14 @@ void panic_spin(
 // NDEBUG = no debug
 
 #define KDEBUG
+
+#ifndef KDEBUG
+#define MAGICBP ((void)0)
+#else
+#define MAGICBP do { \
+    __asm__ volatile("xchg bx, bx"); \
+} while (0)
+#endif
 
 #ifndef KDEBUG
 #define ASSERT(CONDITION) ((void)0)

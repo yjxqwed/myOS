@@ -36,6 +36,11 @@ extern void flushGDT();
 
 extern tss_entry_t *tss;
 
+void gdt_enable_paging() {
+    _gdt = (seg_des_t*)GDT_BASE_ADDR;
+    _gp.base_ = (uint32_t)_gdt;
+}
+
 void setGlobalDescriptorTable() {
     setSegmentDescriptor(&(_gdt[0]), 0, 0, 0xc, 0);           // null         0x00
     setSegmentDescriptor(&(_gdt[1]), 0, 0, 0xc, 0);           // unused       0x08

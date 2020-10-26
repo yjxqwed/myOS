@@ -8,6 +8,7 @@
 #include <string.h>
 #include <kprintf.h>
 #include <sys/gdt.h>
+#include <sys/global.h>
 
 // cpu exception
 extern void isr0();

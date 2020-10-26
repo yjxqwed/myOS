@@ -12,30 +12,35 @@
     dd FLAG
     dd CHECK_SUM
 
+extern ksetup_before_paging
+extern ksetup_after_paging
 extern kernelMain
-extern usr_test
+
 [section .text]
 global loader
-
 loader:
     mov esp, kernel_stk_top
     mov ebp, esp
+
     push eax
     push ebx
-    call kernelMain
+    call ksetup_before_paging
+    ; jmp to the higher half
+    lea eax, [after_paging]
+    jmp eax
+after_paging:
+    call ksetup_after_paging
+    jmp kernelMain
 
-    ; xchg bx, bx
-    ; magic_bp
 
-    ; go to ring 3
-    mov ax, tss_sel
-    ltr ax
+    ; mov ax, tss_sel
+    ; ltr ax
+
     ; push usr_data_sel  ; usr ss
     ; push usr_stk_top   ; usr esp
     ; push usr_code_sel  ; usr code
     ; push usr_test      ; usr func
     ; retf
-    jmp $
 
 global flushGDT
 extern _gp  ; _gp is the gdt pointer
@@ -60,18 +65,14 @@ flushIDT:
 global flushPD
 extern _pd  ; page directory base address
 flushPD:
-    magic_bp
-
-    add dword [_gp + 2], 0xc0000000
-
-    mov eax, [_pd]
+    ; _pd is vaddr, we need paddr here
+    mov eax, [_pd - kernel_space_base_addr]
     mov cr3, eax
 
-    ; enable paging
-    mov eax, cr0
-    or eax, 0x80000000
+    mov eax, cr0  ; enable paging
+    or eax, 0x80000000  ; bit 31 of cr0 is to enable paging
     mov cr0, eax
-    lgdt [_gp]
+
     ret
 
 

@@ -4,12 +4,6 @@
 #include <kprintf.h>
 #include <sys/interrupt.h>
 
-void debugMagicBreakpoint() {
-    #ifdef KDEBUG
-        __asm__ volatile ("xchg %bx, %bx");
-    #endif
-}
-
 void printISRParam(const isrp_t* p) {
     kprintf(KPL_PANIC, " {eip=%x; errco=%x}", p->eip, p->err_code);
 }

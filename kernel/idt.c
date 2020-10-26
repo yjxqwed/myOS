@@ -24,12 +24,9 @@ extern void flushIDT();
 void setInterruptDescriptorTable() {
     // clear all gates
     memset((uint8_t*)_idt, 0, 256 * sizeof(Gate));
-    
+
     // Add interrupt descriptor here
-
     setISRs();
-
-
     // Add interrupt descriptor above
 
     _ip.base_ = (uint32_t)_idt;

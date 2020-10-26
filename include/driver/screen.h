@@ -1,9 +1,10 @@
 #ifndef __SCREEN_H__
 #define __SCREEN_H__
 
+#include <sys/global.h>
+
 #define MAXCOL 80
 #define MAXROW 25
-#define VIDEO_MEM 0x000B8000
 #define TAB_WIDTH 8
 
 
@@ -54,4 +55,6 @@ void enable_cursor(int cursor_start, int cursor_end);
 void disable_cursor();
 
 void init_screen();
+
+void video_mem_enable_paging();
 #endif

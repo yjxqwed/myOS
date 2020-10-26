@@ -3,27 +3,27 @@ OUTPUT_FORMAT(elf32-i386)
 OUTPUT_ARCH(i386:i386)
 
 SECTIONS {
-    . = 0x0100000;
+    . = 0xc0100000;
 
-    .text : ALIGN(8) {
+    .text ALIGN(8) : AT(ADDR(.text) - 0xc0000000) {
         KEEP(*(.multiboot));
         *(.text*)
+
+    }
+
+    .rodata ALIGN(8) : AT(ADDR(.rodata) - 0xc0000000) {
         *(.rodata)
         *(.constant)
     }
 
-    .data : {
+    .data ALIGN(8) : AT(ADDR(.data) - 0xc0000000) {
         KEEP(*( .init_array ));
         KEEP(*(SORT_BY_INIT_PRIORITY( .init_array.* )));
         *(.data)
     }
 
-    .bss : {
+    .bss ALIGN(8) : AT(ADDR(.bss) - 0xc0000000) {
+        *(COMMON)
         *(.bss)
-    }
-
-    /DISCARD/ : {
-        *(.fini_array*)
-        *(.comment)
     }
 }
