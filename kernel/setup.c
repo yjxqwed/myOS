@@ -9,6 +9,7 @@
 #include <driver/pit.h>
 #include <multiboot/multiboot.h>
 #include <mm/pager.h>
+#include <mm/mem.h>
 #include <sys/interrupt.h>
 
 static void test_magic_number(uint32_t magic_number) {
@@ -34,6 +35,5 @@ void ksetup_after_paging() {
     video_mem_enable_paging();
     setGlobalDescriptorTable();
     setInterruptDescriptorTable();
-    MAGICBP;
     enable_int();
 }

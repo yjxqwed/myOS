@@ -12,16 +12,12 @@ void panic_spin(
 
 #define PANIC(...) panic_spin(__FILE__, __LINE__, __func__, __VA_ARGS__)
 
-// NDEBUG = no debug
-
 #define KDEBUG
 
 #ifndef KDEBUG
 #define MAGICBP ((void)0)
 #else
-#define MAGICBP do { \
-    __asm__ volatile("xchg bx, bx"); \
-} while (0)
+#define MAGICBP do { __asm__ volatile("xchg bx, bx"); } while (0)
 #endif
 
 #ifndef KDEBUG

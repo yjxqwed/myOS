@@ -14,7 +14,6 @@
 
 extern ksetup_before_paging
 extern ksetup_after_paging
-extern kernelMain
 
 [section .text]
 global loader
@@ -25,13 +24,19 @@ loader:
     push eax
     push ebx
     call ksetup_before_paging
+    add esp, 8
     ; jmp to the higher half
     lea eax, [after_paging]
+    MAGICBP
     jmp eax
 after_paging:
+    add esp, kernel_space_base_addr
+    add ebp, kernel_space_base_addr
     call ksetup_after_paging
-    jmp kernelMain
 
+
+    ; setup done, jmp to the kernel
+    jmp kernel_entry
 
     ; mov ax, tss_sel
     ; ltr ax
@@ -75,6 +80,11 @@ flushPD:
 
     ret
 
+extern kernelMain
+; start of the kernel
+kernel_entry:
+    call kernelMain
+    jmp $
 
 [section .data]
 one: db 0x01

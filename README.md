@@ -12,4 +12,5 @@ From 2020.9
 * <a href="http://littleosbook.github.io/#linking-the-kernel"> The little book about OS development </a>
 * <a href="https://book.douban.com/subject/3735649/"> 《Orange'S:一个操作系统的实现》 于渊 </a>
 * <a href="https://book.douban.com/subject/26745156/"> 《操作系统真象还原》 郑钢 </a>
+* <a href=""> 《Linux 内核源代码情景分析》 毛德操，胡希明 </a>
 

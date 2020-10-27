@@ -71,12 +71,8 @@ void set_pte_ppage_number(pte_t *pte, uint32_t phy_page_number);
 
 void set_pde_attr(pte_t *pte, int attr, int val);
 
-void print_mem_info(multiboot_info_t *mbi);
-
-// myOS requires at least 254 MiB free mem
-#define MEM_LIMIT 254 * 1024 * 1024
-// memory management init
-void mm_init(multiboot_info_t *mbi);
+// init paging system
+void init_paging();
 
 // clear low memory mapping after enabling paging
 void clear_low_mem_mapping();

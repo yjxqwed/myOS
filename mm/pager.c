@@ -5,20 +5,11 @@
 #include <kprintf.h>
 #include <bitmap.h>
 
+#define NPDE (PAGE_SIZE / sizeof(pde_t))
+#define NPTE (PAGE_SIZE / sizeof(pte_t))
+
 pde_t *page_directory = (pde_t *)__pa(PD_BASE_ADDR);
 uint32_t _pd = 0;  // for loader.s
-
-
-// the memory pool is page (4 KiB) granular and a continuous region
-// @members:
-//  btmp is the bitmap for acclocating pages
-//  num_total_pages is the total amount of pages in this pool
-//  start_page_number is the starting page's index of this pool
-typedef struct MemoryPool {
-    btmp_t btmp;
-    uint32_t num_total_pages;
-    uint32_t start_page_number;
-} MemoryPool;
 
 
 // both pde and pte hold physical page number
@@ -84,9 +75,9 @@ void init_paging() {
         pte_t *pt = (pte_t *)((page_directory[0x300 + i] >> 12) << 12);
         memset((uint8_t *)pt, 0, PAGE_SIZE);
         // each page table has 1024 entries
-        for (j = 0; j < 1024; j++) {
+        for (j = 0; j < NPTE; j++) {
             pte_t *pte = &(pt[j]);
-            set_pte_ppage_number(pte, i * 1024 + j);
+            set_pte_ppage_number(pte, i * NPTE + j);
             set_pte_attr(pte, PTE_SUPERUSER, 1);
             set_pte_attr(pte, PTE_RW, 1);
             set_pte_attr(pte, PTE_PRESENT, 1);
@@ -97,50 +88,7 @@ void init_paging() {
 }
 
 
-#define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
-void print_mem_info(multiboot_info_t *mbi) {
-    kprintf(KPL_NOTICE, "================ Memory Info ================\n");
-    kprintf(KPL_NOTICE, "Flags = 0x%x\n", (uint32_t)mbi->flags);
 
-    // check mem
-    if (CHECK_FLAG(mbi->flags, 0)) {
-        kprintf(
-            KPL_NOTICE, "mem_lower = 0x%xKB, mem_upper = 0x%xKB\n",
-            (uint32_t)mbi->mem_lower, (uint32_t)mbi->mem_upper
-        );
-    }
-
-    // check mmap
-    if (CHECK_FLAG (mbi->flags, 6)) {
-        kprintf(
-            KPL_NOTICE, "mmap_addr = 0x%X, mmap_length = 0x%X\n",
-            (uint32_t)mbi->mmap_addr, (uint32_t)mbi->mmap_length
-        );
-        for (
-            multiboot_memory_map_t *mmap =
-                (multiboot_memory_map_t *)mbi->mmap_addr;
-
-            (uint32_t)mmap < mbi->mmap_addr + mbi->mmap_length;
-
-            mmap = (multiboot_memory_map_t *)(
-                (uint32_t)mmap + mmap->size + sizeof(mmap->size)
-            )
-        ) {
-            kprintf(
-                KPL_NOTICE, 
-                " size = 0x%x, base_addr = 0x%X,"
-                " length = 0x%X, type = 0x%x\n",
-                (uint32_t) mmap->size,
-                // (uint32_t) (mmap->addr >> 32),
-                (uint32_t) (mmap->addr & 0xffffffff),
-                // (uint32_t) (mmap->len >> 32),
-                (uint32_t) (mmap->len & 0xffffffff),
-                (uint32_t) mmap->type
-            );
-        }
-    }
-    kprintf(KPL_NOTICE, "=============================================\n");
-}
 
 void clear_low_mem_mapping() {
     // TO FIGURE OUT: Does the low 1MiB memory need identity map?
@@ -149,29 +97,4 @@ void clear_low_mem_mapping() {
     for (int i = 0; i < 4; i++) {
         pd[i] = (pde_t)0;
     }
-}
-
-void mm_init(multiboot_info_t *mbi) {
-    if (CHECK_FLAG(mbi->flags, 0)) {
-        uint32_t high_free_mem = mbi->mem_upper * 1024;
-        if (high_free_mem < MEM_LIMIT) {
-            kprintf(
-                KPL_PANIC, 
-                "Not Enough Memory; "
-                "try with >= 256 MiB mem. System Halted.\n"
-            );
-            while (1);
-        }
-        uint32_t high_free_pages = high_free_mem / 4096;
-        kprintf(
-            KPL_NOTICE,
-            "Free mem: 0x%X byte(s); "
-            "free pages: 0x%X page(s).\n",
-            high_free_mem, high_free_pages
-        );
-    } else {
-        kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
-        while (1);
-    }
-    init_paging();
 }

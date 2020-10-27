@@ -18,7 +18,7 @@ kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \
 lib_objs = lib/debug.elf32 lib/system.elf32 lib/utils.elf32 \
            lib/string.elf32 lib/kprintf.elf32
 
-mm_objs = mm/pager.elf32
+mm_objs = mm/pager.elf32 mm/mem.elf32
 
 usr_asm_objs = usr/asm/test.elf32
 
