@@ -2,6 +2,7 @@
 #include <mm/pager.h>
 #include <bitmap.h>
 #include <kprintf.h>
+#include <common/types.h>
 
 // the memory pool is page (4 KiB) granular and a continuous region
 // @members:
@@ -12,7 +13,7 @@ typedef struct MemoryPool {
     btmp_t btmp;
     uint32_t num_total_pages;
     uint32_t start_page_number;
-} MemoryPool;
+} mp_t;
 
 #define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
 void print_mem_info(multiboot_info_t *mbi) {
@@ -59,7 +60,9 @@ void print_mem_info(multiboot_info_t *mbi) {
     kprintf(KPL_NOTICE, "=============================================\n");
 }
 
-void mm_init(multiboot_info_t *mbi) {
+// not always return
+// if pass memory check, return number of free pages (from 0x00100000)
+static uint32_t check_memory(multiboot_info_t *mbi) {
     if (CHECK_FLAG(mbi->flags, 0)) {
         uint32_t high_free_mem = mbi->mem_upper * 1024;
         if (high_free_mem < MEM_LIMIT) {
@@ -77,9 +80,33 @@ void mm_init(multiboot_info_t *mbi) {
             "free pages: 0x%X page(s).\n",
             high_free_mem, high_free_pages
         );
+        return high_free_pages;
     } else {
         kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
         while (1);
     }
+    // never reach here
+    return 0;
+}
+
+// kernel memory pool
+static mp_t kpool;
+// user memory pool
+static mp_t upool;
+
+static void init_pool(
+    mp_t *pool, uint32_t start_page_no,
+    uint32_t num_pages, uint32_t btmp_base
+) {
+    pool->num_total_pages = num_pages;
+    pool->start_page_number = start_page_no;
+    // TODO: what if num_pages % 8 != 0?
+    pool->btmp.byte_num_ = num_pages / 8;
+    pool->btmp.bits_ = (uint8_t *)btmp_base;
+}
+
+void mm_init(multiboot_info_t *mbi) {
+    uint32_t num_free_pages = check_memory(mbi);
+
     init_paging();
 }
