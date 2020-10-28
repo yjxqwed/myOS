@@ -33,7 +33,10 @@ int bitmap_scan(btmp_t *btmp, uint32_t len) {
         return -1;
     }
     uint32_t byte_idx = 0;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3bfbe784c7a06bfa4588a6979d5016863d842ce6
     while (byte_idx < btmp->byte_num_ && 0xff == btmp->bits_[byte_idx]) {
         byte_idx++;
     }
@@ -46,11 +49,14 @@ int bitmap_scan(btmp_t *btmp, uint32_t len) {
         return bit_idx;
     }
 
+<<<<<<< HEAD
     uint32_t cnt = 1;
     uint32_t idx = bit_idx + 1;
     while (!bitmap_bit_test(btmp, idx++) && cnt < len) {
         cnt++;
     }
+=======
+>>>>>>> 3bfbe784c7a06bfa4588a6979d5016863d842ce6
 }
 
 void bitmap_set(btmp_t *btmp, uint32_t bit_idx, int value) {
