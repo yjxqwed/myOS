@@ -46,7 +46,15 @@
 |  entries  |
 |           |   0x0070 0aff
 +-----------+
-|   Free    |   0x0070 0b00 ~ 0x007f ffff
+|           |   0x0070 0b00
+|  kppool   |    0x1c KiB (0x38000 p-pages at most)
+|   btmp    |   0x0070 7aff
++-----------+
+|           |   0x0070 7b00
+|  uppool   |    0x64 KiB (0xc8000 p-pages at most)
+|   btmp    |   0x0072 0aff
++-----------+
+|   free    |   0x0072 0b00 ~ 0x007f ffff
 +-----------+ --------------------------------------------------
 |           |   0x0080 0000
 |    PD     |      4 KiB

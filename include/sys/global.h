@@ -14,6 +14,12 @@
 #define TSS_BASE_ADDR  (0x00700100 + KERNEL_SPACE_BASE_ADDR)
 // interrupt descriptor table base address
 #define IDT_BASE_ADDR  (0x00700300 + KERNEL_SPACE_BASE_ADDR)
+
+// kernel physical memory pool bitmap base addr
+#define KPPOOL_BTMP_BASE_ADDR (0x00700b00 + KERNEL_SPACE_BASE_ADDR)
+// user physical memory pool bitmap base addr
+#define UPPOOL_BTMP_BASE_ADDR (0x00707b00 + KERNEL_SPACE_BASE_ADDR)
+
 // page directory base address
 #define PD_BASE_ADDR   (0x00800000 + KERNEL_SPACE_BASE_ADDR)
 
