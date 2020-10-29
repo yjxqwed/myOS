@@ -1,5 +1,5 @@
 # build flags
-G_PARAMS = -m32 -I include -I include/lib -nostdlib -fno-builtin \
+G_PARAMS = -Wall -m32 -I include -I include/lib -nostdlib -fno-builtin \
            -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel
 NASM_PARAMS = -I include -f elf32
 LD_PARAMS = -m elf_i386
@@ -16,7 +16,7 @@ kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \
                 kernel/tss.elf32 kernel/proc.elf32 \
                 kernel/interrupt.elf32 kernel/setup.elf32
 lib_objs = lib/debug.elf32 lib/system.elf32 lib/utils.elf32 \
-           lib/string.elf32 lib/kprintf.elf32
+           lib/string.elf32 lib/kprintf.elf32 lib/bitmap.elf32
 
 mm_objs = mm/pager.elf32 mm/mem.elf32
 

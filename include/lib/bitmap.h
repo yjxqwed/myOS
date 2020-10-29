@@ -4,9 +4,10 @@
 #include <common/types.h>
 
 typedef struct BITMAP {
-    uint32_t first_zero_bit_idx;  // idx of first free bit
+    int first_zero_bit;  // btmp is used for pages (at most 16777216)
+    uint32_t num_zero;   // number of zeros in this map
     uint32_t byte_num_;  // number of bytes of this map
-    uint8_t *bits_;  // bits
+    uint8_t *bits_;      // bits
 } btmp_t;
 
 // always call this function when init a bitmap
