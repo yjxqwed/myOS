@@ -153,3 +153,9 @@ To enable Paging, we need to do the following
 Some tips:
 * The kernel should be compiled starting at 0xc000 0000 but must be loaded at the lower part of the memory, we need to use linker script directives . and AT to do this (. is for indicating the compiling starting address; AT is for grub to know where in the mem to put the binary).
 * At the very beginning, we should make an extra identity map of the lower part of the memory. After enabling paging, we should jump to the higer space and clear the identity map.
+
+## Thread and Process
+
+Thread is the execution flow. Each thread has its own registers and stack. Every thread belongs to a certain process. Process provides its threads with resources. Thread is the unit of cpu scheduling; process is the unit of the OS resources allocation.
+
+Mathematically, process = thread(s) + resources.
