@@ -9,6 +9,19 @@
 // page size = 4kb
 #define PAGE_SIZE 0x1000
 
+#define PDE_OFFSET 22
+#define PTE_OFFSET 12
+
+// x86 use 10-bit index for pde and pte
+#define PG_IDX_MASK 0b1111111111
+
+#define PG_START_ADDRESS_MASK 0xfffff000
+
+#define __pg_start_addr(x) ((x) & PG_START_ADDRESS_MASK)
+
+#define __pde_idx(x) ((x) >> PDE_OFFSET)
+#define __pte_idx(x) (((x) & (PG_IDX_MASK << PTE_OFFSET)) >> PTE_OFFSET)
+
 // ========== Page Directory ==========
 
 typedef uint32_t PageDirectoryEntry;

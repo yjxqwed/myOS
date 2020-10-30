@@ -145,6 +145,10 @@ static void init_ppools(uint32_t num_free_pages) {
     print_pool(&uppool, "user ppool");
 }
 
+static void init_kvpool() {
+    
+}
+
 void mm_init(multiboot_info_t *mbi) {
     print_mem_info(mbi);
     uint32_t num_pages = check_memory(mbi);

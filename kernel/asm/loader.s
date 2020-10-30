@@ -27,7 +27,6 @@ loader:
     add esp, 8
     ; jmp to the higher half
     lea eax, [after_paging]
-    MAGICBP
     jmp eax
 after_paging:
     add esp, kernel_space_base_addr

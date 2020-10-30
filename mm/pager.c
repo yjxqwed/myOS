@@ -4,9 +4,15 @@
 #include <string.h>
 #include <kprintf.h>
 #include <bitmap.h>
+#include <mm/mem.h>
 
+// number of pdes in a pg_dir (1024)
 #define NPDE (PAGE_SIZE / sizeof(pde_t))
+// number of ptes in a pg_tab (1024)
 #define NPTE (PAGE_SIZE / sizeof(pte_t))
+
+// amount of memory controlled by a pg_tab (4 MiB)
+#define MEM_SIZE_PER_PGTABLE (NPTE * PAGE_SIZE)
 
 pde_t *page_directory = (pde_t *)__pa(PD_BASE_ADDR);
 uint32_t _pd = 0;  // for loader.s
@@ -59,9 +65,9 @@ void init_paging() {
     // the last pde refers the PD itself.
     set_pde_ppage_number(&(page_directory[0x3ff]), first_pt_ppage_no);
 
-    // pdes 0x0 ~ 0x3 are for vaddr 0x0 ~ 0x00bfffff
+    // pdes 0x0 ~ 0x8 are for vaddr 0x0 ~ 0x01ffffff
     // for cpu to move to paging mode
-    for (i = 0, j = 0; i < 4; i++, j++) {
+    for (i = 0, j = 0; i < 8; i++, j++) {
         pde_t *pde = &(page_directory[i]);
         set_pde_ppage_number(pde, first_pt_ppage_no + j);
         set_pde_attr(pde, PDE_SUPERUSER, 1);
@@ -69,10 +75,13 @@ void init_paging() {
         set_pde_attr(pde, PDE_PRESENT, 1);
     }
 
-    // init the first 4 page tables of the kernel space;
-    // 0xc0000000 ~ 0xc1000000 -> 0x00000000 ~ 0x01000000
-    for (i = 0; i < 4; i++) {
-        pte_t *pt = (pte_t *)((page_directory[0x300 + i] >> 12) << 12);
+    // init the first 8 page tables of the kernel space;
+    // 0xc0000000 ~ 0xc1ffffff -> 0x00000000 ~ 0x01ffffff
+    int num_reserved_pages = FREE_MEM_BASE / MEM_SIZE_PER_PGTABLE;
+    for (i = 0; i < num_reserved_pages; i++) {
+        pte_t *pt = (pte_t *)(
+            page_directory[0x300 + i] >> 12 << 12
+        );
         memset((uint8_t *)pt, 0, PAGE_SIZE);
         // each page table has 1024 entries
         for (j = 0; j < NPTE; j++) {
@@ -94,7 +103,7 @@ void clear_low_mem_mapping() {
     // TO FIGURE OUT: Does the low 1MiB memory need identity map?
     // (for bios/grub/hw use maybe)
     pde_t *pd = (pde_t *)__va(page_directory);
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 8; i++) {
         pd[i] = (pde_t)0;
     }
 }
