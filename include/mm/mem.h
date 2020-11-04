@@ -5,6 +5,7 @@
 #include <mm/pager.h>
 #include <bitmap.h>
 #include <common/types.h>
+#include <sys/global.h>
 
 // myOS requires at least 254 MiB free mem
 // 254 = 256 - low 1 MiB - high 1 MiB
@@ -26,14 +27,24 @@
 // myOS kernel only uses up to 512 MiB physical mem
 #define K_NEEDED_MEM 0x20000000
 
+// myOS kernel doesn't have normal zone
+#define K_NORMAL_ZONE_SIZE 0
+
+// myOS kernel allocate virtual pages from 0xd0000000
+#define K_VM_BASE_ADDR (KERNEL_SPACE_BASE_ADDR + FREE_MEM_BASE + K_NORMAL_ZONE_SIZE)
+
 
 void print_mem_info(multiboot_info_t *mbi);
 
 // memory management init
 void mm_init(multiboot_info_t *mbi);
 
-// get 
-void *kernel_get_pages(uint32_t pg_cnt);
+// get pg_cnt number pages of memory in the kernel virtual space
+//     the physical pages is not guaranteed to be continuous
+// reutrn the starting address; NULL if the request is not satisfied 
+//     (not enough virtual space or no physical pages)
+void *vm_kernel_get_pages(uint32_t pg_cnt);
 
+void vm_kernel_free_pages();
 
 #endif

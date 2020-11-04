@@ -50,14 +50,18 @@
 |           |   0x0070 0aff
 +-----------+
 |           |   0x0070 0b00
-|  kppool   |    0x1c KiB (0x38000 p-pages at most)
-|   btmp    |   0x0070 7aff
+|  kppool   |    0x20 KiB (0x40000 p-pages at most)
+|   btmp    |   0x0070 8aff
 +-----------+
-|           |   0x0070 7b00
-|  uppool   |    0x64 KiB (0xc8000 p-pages at most)
+|           |   0x0070 8b00
+|  uppool   |    0x60 KiB (0xc0000 p-pages at most)
 |   btmp    |   0x0072 0aff
 +-----------+
-|   free    |   0x0072 0b00 ~ 0x007f ffff
+|           |   0x0072 0b00
+|  kvpool   |    0x20 KiB (0x40000 v-pages at most)
+|   btmp    |   0x0072 8aff
++-----------+
+|   free    |   0x0072 8b00 ~ 0x007f ffff
 +-----------+ --------------------------------------------------
 |           |   0x0080 0000
 |    PD     |      4 KiB
@@ -153,6 +157,15 @@ To enable Paging, we need to do the following
 Some tips:
 * The kernel should be compiled starting at 0xc000 0000 but must be loaded at the lower part of the memory, we need to use linker script directives . and AT to do this (. is for indicating the compiling starting address; AT is for grub to know where in the mem to put the binary).
 * At the very beginning, we should make an extra identity map of the lower part of the memory. After enabling paging, we should jump to the higer space and clear the identity map.
+
+#### Linux Kernel Space
+* This section is for Linux Memory Management
+
+The kernel space is high 1G (0xc000 0000 ~ 0xffff ffff). Linux devides the kernel space into 3 Zones: DMA(low 16M), NORMAL(16 ~ 896M), HIGHMEM(896M ~).
+* DMA zone is for hardwares
+* NORMAL zone is direct mapped (physical addr = linear addr - page_offset)
+    * I think the use for NORMAL zone is for high efficiency (Maybe)
+* HIGHMEM zone is for dynamically mapping
 
 ## Thread and Process
 

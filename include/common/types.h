@@ -12,10 +12,10 @@ typedef int int32_t;
 typedef float float32_t;
 typedef double float64_t;
 
-#define NULL 0
+#define NULL (void *)0
 
-#define true (uint8_t)1
-#define false (uint8_t)0
-typedef uint8_t bool;
+#define true 1
+#define false 0
+typedef int bool;
 
 #endif

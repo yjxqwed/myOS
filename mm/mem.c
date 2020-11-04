@@ -145,13 +145,27 @@ static void init_ppools(uint32_t num_free_pages) {
     print_pool(&uppool, "user ppool");
 }
 
-static void init_kvpool() {
-    
+static void init_vpools() {
+    // init kvpool
+    init_pool(
+        &kvpool, __page_number(K_VM_BASE_ADDR),
+        kppool.num_total_pages, KVPOOL_BTMP_BASE_ADDR
+    );
+    print_pool(&kvpool, "kernel vpool");
 }
 
 void mm_init(multiboot_info_t *mbi) {
     print_mem_info(mbi);
     uint32_t num_pages = check_memory(mbi);
     init_ppools(num_pages);
+    init_vpools();
     init_paging();
+}
+
+void *vm_kernel_get_pages(uint32_t page_cnt) {
+    // allocate at most 256 pages in one request
+    if (page_cnt == 0 || page_cnt > 256) {
+        return NULL;
+    }
+    
 }

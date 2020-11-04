@@ -18,7 +18,9 @@
 // kernel physical memory pool bitmap base addr
 #define KPPOOL_BTMP_BASE_ADDR (0x00700b00 + KERNEL_SPACE_BASE_ADDR)
 // user physical memory pool bitmap base addr
-#define UPPOOL_BTMP_BASE_ADDR (0x00707b00 + KERNEL_SPACE_BASE_ADDR)
+#define UPPOOL_BTMP_BASE_ADDR (0x00708b00 + KERNEL_SPACE_BASE_ADDR)
+// kernel virtual memory pool bitmap base addr
+#define KVPOOL_BTMP_BASE_ADDR (0x00720b00 + KERNEL_SPACE_BASE_ADDR)
 
 // page directory base address
 #define PD_BASE_ADDR   (0x00800000 + KERNEL_SPACE_BASE_ADDR)
