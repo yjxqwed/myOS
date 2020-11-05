@@ -33,6 +33,8 @@
 // myOS kernel allocate virtual pages from 0xd0000000
 #define K_VM_BASE_ADDR (KERNEL_SPACE_BASE_ADDR + FREE_MEM_BASE + K_NORMAL_ZONE_SIZE)
 
+// start (virtual) address of the kernel heap
+#define KERNEL_HEAP_BASE_ADDR (KERNEL_SPACE_BASE_ADDR + FREE_MEM_BASE)
 
 void print_mem_info(multiboot_info_t *mbi);
 
@@ -46,5 +48,23 @@ void mm_init(multiboot_info_t *mbi);
 void *vm_kernel_get_pages(uint32_t pg_cnt);
 
 void vm_kernel_free_pages();
+
+typedef enum PHY_POOL_FLAG {
+    PPF_KERNEL,
+    PPF_USER,
+    PPF_SIZE
+} PHY_POOL_FLAG;
+
+// get a physical page from the physical page pool
+// return the (physical) base address of the page
+//        NULL otherwise
+void *get_ppage(PHY_POOL_FLAG flag);
+
+// get pg_cnt number pages of memory in the kernel virtual space
+//     the physical pages is not guaranteed to be continuous
+// reutrn the starting address; NULL if the request is not satisfied 
+//     (not enough virtual space or no physical pages)
+// the pages are get above K_VM_BASE_ADDR
+void *kernel_vmalloc(uint32_t pg_cnt);
 
 #endif

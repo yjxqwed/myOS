@@ -65,23 +65,23 @@ char* uitosh(uint32_t number, char out[UINT32LEN]) {
     return out;
 }
 
-uint8_t* memset(uint8_t* mem, uint8_t val, uint32_t size) {
+void* memset(void* mem, uint8_t val, uint32_t size) {
     if (mem == NULL) {
         return NULL;
     }
     // TODO: what if mem + size > 4GiB
     for (int i = 0; i < size; i++) {
-        mem[i] = val;
+        ((uint8_t *)mem)[i] = val;
     }
     return mem;
 }
 
-uint16_t* memsetw(uint16_t* mem, uint16_t val, uint32_t size) {
+void* memsetw(void* mem, uint16_t val, uint32_t size) {
     if (mem == NULL) {
         return NULL;
     }
     for (int i = 0; i < size; i++) {
-        mem[i] = val;
+        ((uint16_t *)mem)[i] = val;
     }
     return mem;
 }

@@ -4,6 +4,7 @@
 #include <kprintf.h>
 #include <common/types.h>
 #include <sys/global.h>
+#include <common/debug.h>
 
 #define __page_number(x) (x / PAGE_SIZE)
 
@@ -115,9 +116,11 @@ static void print_pool(const mpp_t *pool, const char* name) {
     kprintf(
         KPL_DUMP,
         "%s: { start_page_number = 0x%x, num_total_pages = 0x%x, "
-        "btmp = { byte_num = 0x%x, bits = 0x%X } }\n",
+        "btmp = { byte_num = 0x%x, bits = 0x%X, "
+        "first_zero_bit = 0x%x, num_zero = 0x%x} }\n",
         name, pool->start_page_number, pool->num_total_pages,
-        pool->btmp.byte_num_, (uint32_t)pool->btmp.bits_
+        pool->btmp.byte_num_, (uint32_t)pool->btmp.bits_,
+        (uint32_t)pool->btmp.first_zero_bit, pool->btmp.num_zero
     );
 }
 
@@ -148,7 +151,7 @@ static void init_ppools(uint32_t num_free_pages) {
 static void init_vpools() {
     // init kvpool
     init_pool(
-        &kvpool, __page_number(K_VM_BASE_ADDR),
+        &kvpool, __page_number(KERNEL_HEAP_BASE_ADDR),
         kppool.num_total_pages, KVPOOL_BTMP_BASE_ADDR
     );
     print_pool(&kvpool, "kernel vpool");
@@ -162,10 +165,29 @@ void mm_init(multiboot_info_t *mbi) {
     init_paging();
 }
 
-void *vm_kernel_get_pages(uint32_t page_cnt) {
-    // allocate at most 256 pages in one request
-    if (page_cnt == 0 || page_cnt > 256) {
+// void *vm_kernel_get_pages(uint32_t page_cnt) {
+//     // allocate at most 256 pages in one request
+//     if (page_cnt == 0 || page_cnt > 256) {
+//         return NULL;
+//     }
+    
+// }
+
+void *get_ppage(PHY_POOL_FLAG kernel_flag) {
+    mpp_t *pool = (kernel_flag == PPF_KERNEL) ? &kppool : &uppool;
+    btmp_t *btmp = &(pool->btmp);
+    int bit_idx = bitmap_scan(btmp, 1);
+    if (bit_idx == -1) {
         return NULL;
     }
-    
+    bitmap_set(btmp, bit_idx, 1);
+    ASSERT(bitmap_bit_test(btmp, bit_idx));
+
+    if (kernel_flag == PPF_KERNEL) {
+        print_pool(&kppool, "kernel ppool");
+    } else {
+        print_pool(&uppool, "uppool");
+    }
+
+    return (void *)((pool->start_page_number + bit_idx) * PAGE_SIZE);
 }
