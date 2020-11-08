@@ -87,7 +87,7 @@ void irq_remap(void) {
     outportb(PIC_S_CTLMASK, 0x0);
 }
 
-extern Gate* _idt;
+extern Gate _idt[IDT_SIZE];
 void setISRs() {
     SETINTDES(0);
     SETINTDES(1);

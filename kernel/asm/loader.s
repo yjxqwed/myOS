@@ -33,18 +33,9 @@ after_paging:
     add ebp, kernel_space_base_addr
     call ksetup_after_paging
 
-
     ; setup done, jmp to the kernel
     jmp kernel_entry
 
-    ; mov ax, tss_sel
-    ; ltr ax
-
-    ; push usr_data_sel  ; usr ss
-    ; push usr_stk_top   ; usr esp
-    ; push usr_code_sel  ; usr code
-    ; push usr_test      ; usr func
-    ; retf
 
 global flushGDT
 extern _gp  ; _gp is the gdt pointer
@@ -63,6 +54,7 @@ flush2:
 global flushIDT
 extern _ip  ; the idt pointer
 flushIDT:
+    MAGICBP
     lidt [_ip]
     ret
 

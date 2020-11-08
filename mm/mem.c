@@ -157,6 +157,11 @@ static void init_vpools() {
     print_pool(&kvpool, "kernel vpool");
 }
 
+extern uint32_t kernel_image_end;
+
+// _end is the end of the kernel binary image
+static uint32_t _end = (uint32_t)&kernel_image_end;
+
 void mm_init(multiboot_info_t *mbi) {
     print_mem_info(mbi);
     uint32_t num_pages = check_memory(mbi);

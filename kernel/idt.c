@@ -3,10 +3,12 @@
 #include <sys/isr.h>
 #include <string.h>
 #include <sys/global.h>
+#include <common/debug.h>
 
 
 
-Gate* _idt = (Gate*)IDT_BASE_ADDR;
+// Gate* _idt = (Gate*)IDT_BASE_ADDR;
+Gate _idt[IDT_SIZE];
 idt_ptr_t _ip;
 
 void setInterruptDescriptor(
@@ -23,13 +25,13 @@ extern void flushIDT();
 
 void setInterruptDescriptorTable() {
     // clear all gates
-    memset((uint8_t*)_idt, 0, 256 * sizeof(Gate));
+    memset(_idt, 0, IDT_SIZE * sizeof(Gate));
 
     // Add interrupt descriptor here
     setISRs();
     // Add interrupt descriptor above
 
     _ip.base_ = (uint32_t)_idt;
-    _ip.size_ = 256 * sizeof(Gate) - 1;
+    _ip.size_ = IDT_SIZE * sizeof(Gate) - 1;
     flushIDT();
 }

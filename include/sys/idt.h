@@ -3,6 +3,8 @@
 
 #include <common/types.h>
 
+#define IDT_SIZE 256
+
 // IDT entry. More info: https://wiki.osdev.org/IDT
 struct InterruptDescriptor {
    uint16_t offset_1; // offset bits 0..15

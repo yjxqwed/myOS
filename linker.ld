@@ -26,4 +26,6 @@ SECTIONS {
         *(COMMON)
         *(.bss)
     }
+
+    kernel_image_end = .;
 }

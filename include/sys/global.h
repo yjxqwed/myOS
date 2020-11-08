@@ -8,13 +8,6 @@
 // vaddr 0xc0000000 - 0xffffffff is kernel space
 #define KERNEL_SPACE_BASE_ADDR (0xc0000000)
 
-// global descriptor table base address
-#define GDT_BASE_ADDR  (0x00700000 + KERNEL_SPACE_BASE_ADDR)
-// tss base address (task state segment base address)
-#define TSS_BASE_ADDR  (0x00700100 + KERNEL_SPACE_BASE_ADDR)
-// interrupt descriptor table base address
-#define IDT_BASE_ADDR  (0x00700300 + KERNEL_SPACE_BASE_ADDR)
-
 // kernel physical memory pool bitmap base addr
 #define KPPOOL_BTMP_BASE_ADDR (0x00700b00 + KERNEL_SPACE_BASE_ADDR)
 // user physical memory pool bitmap base addr

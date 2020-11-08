@@ -1,11 +1,16 @@
 #include <sys/gdt.h>
 #include <sys/tss.h>
 #include <sys/global.h>
+#include <string.h>
 
-seg_des_t* _gdt = (seg_des_t*)GDT_BASE_ADDR;
+// we give gdt 8 entries
+#define GDT_SIZE 8
+
+// seg_des_t* _gdt = (seg_des_t*)GDT_BASE_ADDR;
+seg_des_t _gdt[GDT_SIZE];
 gdt_ptr_t _gp;
 
-#define GDT_SIZE 32
+
 
 
 void setSegmentDescriptor(
@@ -34,22 +39,24 @@ void setSegmentDescriptor(
 
 extern void flushGDT();
 
-extern tss_entry_t *tss;
+extern tss_entry_t tss;
 
-void gdt_enable_paging() {
-    _gdt = (seg_des_t*)GDT_BASE_ADDR;
-    _gp.base_ = (uint32_t)_gdt;
-}
+// void gdt_enable_paging() {
+//     _gdt = (seg_des_t*)GDT_BASE_ADDR;
+//     _gp.base_ = (uint32_t)_gdt;
+// }
 
 void setGlobalDescriptorTable() {
+    // zero _gdt
+    memset(_gdt, 0, GDT_SIZE * sizeof(seg_des_t));
     setSegmentDescriptor(&(_gdt[0]), 0, 0, 0xc, 0);           // null         0x00
     setSegmentDescriptor(&(_gdt[1]), 0, 0, 0xc, 0);           // unused       0x08
     setSegmentDescriptor(&(_gdt[2]), 0, 0xfffff, 0xc ,0x9a);  // kernel code  0x10
     setSegmentDescriptor(&(_gdt[3]), 0, 0xfffff, 0xc, 0x92);  // kernel data  0x18
     // setTssEntry0();
-    init_tss();
+    init_tss(&tss);
     setSegmentDescriptor(
-        &(_gdt[4]), (uint32_t)tss, 103, 0x04, 0x89
+        &(_gdt[4]), (uint32_t)(&tss), sizeof(tss_entry_t) - 1, 0x04, 0x89
     );                                                        // tss          0x20
     setSegmentDescriptor(&(_gdt[5]), 0, 0xfffff, 0xc, 0xfa);  // user code    0x2B
     setSegmentDescriptor(&(_gdt[6]), 0, 0xfffff, 0xc, 0xf2);  // user data    0x33
