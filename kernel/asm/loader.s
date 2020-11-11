@@ -54,7 +54,6 @@ flush2:
 global flushIDT
 extern _ip  ; the idt pointer
 flushIDT:
-    MAGICBP
     lidt [_ip]
     ret
 

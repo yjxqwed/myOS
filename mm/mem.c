@@ -6,18 +6,11 @@
 #include <sys/global.h>
 #include <common/debug.h>
 
-#define __page_number(x) (x / PAGE_SIZE)
+#define __page_number(x) (uint32_t)(((uint32_t)(x)) / PAGE_SIZE)
 
-// the memory page pool is page (4 KiB) granular and a continuous region
-// @members:
-//  btmp is the bitmap for acclocating pages
-//  num_total_pages is the total amount of pages in this pool
-//  start_page_number is the starting page's index of this pool
-typedef struct MemoryPagePool {
-    btmp_t btmp;
-    uint32_t num_total_pages;
-    uint32_t start_page_number;
-} mpp_t;
+extern uint32_t kernel_image_end;
+// _end is the end of the kernel binary image
+static uint32_t _end = (uint32_t)&kernel_image_end;
 
 #define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
 void print_mem_info(multiboot_info_t *mbi) {
@@ -61,6 +54,7 @@ void print_mem_info(multiboot_info_t *mbi) {
             );
         }
     }
+    kprintf(KPL_NOTICE, "_end=0x%X\n", _end);
     kprintf(KPL_NOTICE, "=============================================\n");
 }
 
@@ -98,8 +92,11 @@ static mpp_t kppool;
 // user physical memory page pool
 static mpp_t uppool;
 
-// kernel virtual memory page pool
-static mpp_t kvpool;
+// // kernel virtual memory page pool
+// static mpp_t kvpool;
+
+// virtual memory area of kernel's heap.
+static vma_t kernel_heap;
 
 static void init_pool(
     mpp_t *pool, uint32_t start_page_no,
@@ -140,33 +137,30 @@ static void init_ppools(uint32_t num_free_pages) {
     uint32_t u_free_pages = num_pages - free_page_no - k_free_pages;
     kprintf(KPL_NOTICE, "\nkfp: %x; ufp: %x\n", k_free_pages, u_free_pages);
     init_pool(&kppool, free_page_no, k_free_pages, KPPOOL_BTMP_BASE_ADDR);
-    print_pool(&kppool, "kernel ppool");
+    // print_pool(&kppool, "kernel ppool");
     init_pool(
         &uppool, free_page_no + k_free_pages,
         u_free_pages, UPPOOL_BTMP_BASE_ADDR
     );
-    print_pool(&uppool, "user ppool");
+    // print_pool(&uppool, "user ppool");
 }
 
-static void init_vpools() {
-    // init kvpool
-    init_pool(
-        &kvpool, __page_number(KERNEL_HEAP_BASE_ADDR),
-        kppool.num_total_pages, KVPOOL_BTMP_BASE_ADDR
-    );
-    print_pool(&kvpool, "kernel vpool");
-}
+// static void init_vpools() {
+//     // init kvpool
+//     init_pool(
+//         &kvpool, __page_number(KERNEL_HEAP_BASE_ADDR),
+//         kppool.num_total_pages, KVPOOL_BTMP_BASE_ADDR
+//     );
+//     // print_pool(&kvpool, "kernel vpool");
+// }
 
-extern uint32_t kernel_image_end;
 
-// _end is the end of the kernel binary image
-static uint32_t _end = (uint32_t)&kernel_image_end;
 
 void mm_init(multiboot_info_t *mbi) {
     print_mem_info(mbi);
     uint32_t num_pages = check_memory(mbi);
     init_ppools(num_pages);
-    init_vpools();
+    // init_vpools();
     init_paging();
 }
 
@@ -178,8 +172,7 @@ void mm_init(multiboot_info_t *mbi) {
     
 // }
 
-void *get_ppage(PHY_POOL_FLAG kernel_flag) {
-    mpp_t *pool = (kernel_flag == PPF_KERNEL) ? &kppool : &uppool;
+void *get_ppage(mpp_t *pool) {
     btmp_t *btmp = &(pool->btmp);
     int bit_idx = bitmap_scan(btmp, 1);
     if (bit_idx == -1) {
@@ -187,12 +180,38 @@ void *get_ppage(PHY_POOL_FLAG kernel_flag) {
     }
     bitmap_set(btmp, bit_idx, 1);
     ASSERT(bitmap_bit_test(btmp, bit_idx));
+    return (void *)(
+        (pool->start_page_number + (uint32_t)bit_idx) * PAGE_SIZE
+    );
+}
 
-    if (kernel_flag == PPF_KERNEL) {
-        print_pool(&kppool, "kernel ppool");
-    } else {
-        print_pool(&uppool, "uppool");
+static int pool_has_enough_free_pages(mpp_t *pool, uint32_t pg_cnt) {
+    return pool->btmp.num_zero >= pg_cnt;
+}
+
+static void bind_page(int vpfn, int ppfn) {
+
+}
+
+void *kernel_vmalloc(uint32_t pg_cnt) {
+    if (pg_cnt > 256) {
+        return NULL;
     }
-
-    return (void *)((pool->start_page_number + bit_idx) * PAGE_SIZE);
+    // check that the physical page pool has enough pages
+    // if (!pool_has_enough_free_pages(&kvpool, pg_cnt)) {
+    //     return NULL;
+    // }
+    // check that the virtual address pool has enough space
+    // int vbit_idx = bitmap_scan(&(kvpool.btmp), pg_cnt);
+    // if (vbit_idx == -1) {
+    //     return NULL;
+    // }
+    // bind vpage and ppage
+    // for (int i = 0; i < pg_cnt; i++) {
+    //     // int vpfn = kvpool.start_page_number + vbit_idx + i;
+    //     bitmap_set(&(kvpool.btmp), vbit_idx + i, 1);
+    //     ASSERT(bitmap_bit_test(&(kvpool.btmp), vbit_idx + i));
+    //     int ppfn = __page_number(get_ppage(&kvpool));
+    //     bind_page(vpfn, ppfn);
+    // }
 }
