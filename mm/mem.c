@@ -92,9 +92,6 @@ static mpp_t kppool;
 // user physical memory page pool
 static mpp_t uppool;
 
-// // kernel virtual memory page pool
-// static mpp_t kvpool;
-
 // virtual memory area of kernel's heap.
 static vma_t kernel_heap;
 
@@ -154,12 +151,21 @@ static void init_ppools(uint32_t num_free_pages) {
 //     // print_pool(&kvpool, "kernel vpool");
 // }
 
+void init_kernel_heap() {
+    kernel_heap.vm_start = KERNEL_HEAP_BASE_ADDR;
+    kernel_heap.vm_size_in_page = kppool.num_total_pages;
+    kernel_heap.vm_end =
+        kernel_heap.vm_start + kernel_heap.vm_size_in_page * PAGE_SIZE - 1;
+    kernel_heap.btmp.bits_ = (uint8_t *)KVPOOL_BTMP_BASE_ADDR;
+    bitmap_init(&(kernel_heap.btmp), kernel_heap.vm_size_in_page / 8);
+}
 
 
 void mm_init(multiboot_info_t *mbi) {
     print_mem_info(mbi);
     uint32_t num_pages = check_memory(mbi);
     init_ppools(num_pages);
+    init_kernel_heap();
     // init_vpools();
     init_paging();
 }
@@ -189,6 +195,7 @@ static int pool_has_enough_free_pages(mpp_t *pool, uint32_t pg_cnt) {
     return pool->btmp.num_zero >= pg_cnt;
 }
 
+// map vpfn -> ppfn
 static void bind_page(int vpfn, int ppfn) {
 
 }
@@ -198,20 +205,30 @@ void *kernel_vmalloc(uint32_t pg_cnt) {
         return NULL;
     }
     // check that the physical page pool has enough pages
-    // if (!pool_has_enough_free_pages(&kvpool, pg_cnt)) {
-    //     return NULL;
-    // }
-    // check that the virtual address pool has enough space
-    // int vbit_idx = bitmap_scan(&(kvpool.btmp), pg_cnt);
-    // if (vbit_idx == -1) {
-    //     return NULL;
-    // }
-    // bind vpage and ppage
-    // for (int i = 0; i < pg_cnt; i++) {
-    //     // int vpfn = kvpool.start_page_number + vbit_idx + i;
-    //     bitmap_set(&(kvpool.btmp), vbit_idx + i, 1);
-    //     ASSERT(bitmap_bit_test(&(kvpool.btmp), vbit_idx + i));
-    //     int ppfn = __page_number(get_ppage(&kvpool));
-    //     bind_page(vpfn, ppfn);
-    // }
+    if (!pool_has_enough_free_pages(&kppool, pg_cnt)) {
+        return NULL;
+    }
+    void *vaddr_start = get_vaddr(&kernel_heap, pg_cnt);
+    if (vaddr_start == NULL) {
+        return NULL;
+    }
+    uint32_t vpfn = __page_number(vaddr_start);
+    for (int i = 0; i < pg_cnt; i++) {
+        void *p = get_ppage(&kppool);
+        ASSERT(p != NULL);
+        uint32_t ppfn = __page_number(p);
+        bind_page(vpfn + i, ppfn);
+    }
+}
+
+void *get_vaddr(vma_t *vma, uint32_t pg_cnt) {
+    int bit_idx = bitmap_scan(&(vma->btmp), pg_cnt);
+    if (bit_idx == -1) {
+        return NULL;
+    }
+    for (int i = 0; i < pg_cnt; i++) {
+        bitmap_set(&(vma->btmp), bit_idx + i, 1);
+        ASSERT(bitmap_bit_test(&(vma->btmp), bit_idx + i));
+    }
+    return (void *)(vma->vm_start + (uint32_t)bit_idx * PAGE_SIZE);
 }

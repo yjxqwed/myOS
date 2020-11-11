@@ -71,11 +71,13 @@ typedef struct MemoryPagePool {
 //   btmp is the btmp
 //   vm_start is the start address of the area
 //   vm_end is the end address of the area
+//   vm_size_in_page = (vm_end - vm_start + 1) / page_size
 //   - vma should be page aligned
 typedef struct VirtualMemoryArea {
     btmp_t btmp;
     uint32_t vm_start;
     uint32_t vm_end;
+    uint32_t vm_size_in_page;
 } vma_t;
 
 // get a physical page from a physical page pool

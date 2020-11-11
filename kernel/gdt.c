@@ -49,8 +49,8 @@ extern tss_entry_t tss;
 void setGlobalDescriptorTable() {
     // zero _gdt
     memset(_gdt, 0, GDT_SIZE * sizeof(seg_des_t));
-    setSegmentDescriptor(&(_gdt[0]), 0, 0, 0xc, 0);           // null         0x00
-    setSegmentDescriptor(&(_gdt[1]), 0, 0, 0xc, 0);           // unused       0x08
+    // setSegmentDescriptor(&(_gdt[0]), 0, 0, 0xc, 0);           // null         0x00
+    // setSegmentDescriptor(&(_gdt[1]), 0, 0, 0xc, 0);           // unused       0x08
     setSegmentDescriptor(&(_gdt[2]), 0, 0xfffff, 0xc ,0x9a);  // kernel code  0x10
     setSegmentDescriptor(&(_gdt[3]), 0, 0xfffff, 0xc, 0x92);  // kernel data  0x18
     // setTssEntry0();
