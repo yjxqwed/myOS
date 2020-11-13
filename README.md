@@ -5,6 +5,7 @@ By Jiaxing Yang
 From 2020.9
 
 # References
+* <a href="https://pdos.csail.mit.edu/6.828/2018/"> MIT 6.828 (2018) </a>
 * <a href="wiki.osdev.org"> osdev.org </a>
 * <a href="http://www.osdever.net/bkerndev/Docs/title.htm"> bkerndev </a>
 * <a href="http://skelix.net/skelixos/index_en.html"> skelix os </a>

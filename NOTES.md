@@ -70,6 +70,8 @@ Using gates can raise the privilege while there is only one way to lower the pri
 The <a href="https://wiki.osdev.org/GRUB">GRUB</a> will do this for us. But we still need to override the GDT with the lgdt instruction.
 
 ## Memory Management
+
+
 ### Paging
 
 #### x86 Paging 
@@ -84,8 +86,6 @@ The x86 cpu uses 2-level paging. The 32-bit address is used as 3 parts, as below
                         |
                         +------ page frame offset
 </pre>
-#### Higher Half
-The x86 system supports an address space of 4-GiB; for reasons of compatibility and linker convention, the kernel space is mapped to the higer part of the virtual address space (above 0xc000 0000 in myOS); this is called a higher half kernel.
 
 #### Enable Paging
 To enable Paging, we need to do the following
@@ -97,10 +97,21 @@ Some tips:
 * The kernel should be compiled starting at 0xc000 0000 but must be loaded at the lower part of the memory, we need to use linker script directives . and AT to do this (. is for indicating the compiling starting address; AT is for grub to know where in the mem to put the binary).
 * At the very beginning, we should make an extra identity map of the lower part of the memory. After enabling paging, we should jump to the higer space and clear the identity map.
 
+### Bootstrap
+The memory management subsystem itself also needs memory, and it can't magically initialize itself -- it's like a chicken-egg (鸡生蛋，蛋生鸡) problem. To handle this, we need to write a very weak but simple memory allocator (like a boot_mem_allocator) for allocating memory for the strong but complex allocating system.
+
+
+### Address Space
+
+#### Higher Half
+The x86 system supports an address space of 4-GiB; for reasons of compatibility and linker convention, the kernel space is mapped to the higer part of the virtual address space (above 0xc000 0000 in myOS); this is called a higher half kernel.
+
+
+
 #### Linux Kernel Space
 * This section is for Linux Memory Management
 
-The kernel space is high 1G (0xc000 0000 ~ 0xffff ffff). Linux devides the kernel space into 3 Zones: DMA(low 16M), NORMAL(16 ~ 896M), HIGHMEM(896M ~).
+The kernel space is high 1G (0xc000 0000 ~ 0xffff ffff). Linux devides the physical memory into 3 Zones: DMA(low 16M), NORMAL(16 ~ 896M), HIGHMEM(896M ~).
 * DMA zone is for hardwares
 * NORMAL zone is direct mapped (physical addr = linear addr - page_offset)
     * I think the use for NORMAL zone is for high efficiency (Maybe)
