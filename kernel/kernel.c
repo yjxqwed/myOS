@@ -13,9 +13,9 @@ void kernelMain() {
     // kprintf(KPL_DUMP, "%s is a test string\n", "#abcdefg$");
     // kprintf(KPL_DUMP, "%c and %% are test characters\n", '@');
 
-    void *a = get_ppage(PPF_KERNEL);
-    kprintf(KPL_NOTICE, "a = %X\n", (uint32_t)a);
-    void *b = get_ppage(PPF_USER);
-    kprintf(KPL_NOTICE, "b = %X\n", (uint32_t)b);
+    // void *a = get_ppage(PPF_KERNEL);
+    // kprintf(KPL_NOTICE, "a = %X\n", (uint32_t)a);
+    // void *b = get_ppage(PPF_USER);
+    // kprintf(KPL_NOTICE, "b = %X\n", (uint32_t)b);
     while (1);
 }

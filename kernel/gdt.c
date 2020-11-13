@@ -1,16 +1,12 @@
 #include <sys/gdt.h>
 #include <sys/tss.h>
-#include <sys/global.h>
 #include <string.h>
 
 // we give gdt 8 entries
 #define GDT_SIZE 8
 
-// seg_des_t* _gdt = (seg_des_t*)GDT_BASE_ADDR;
 seg_des_t _gdt[GDT_SIZE];
 gdt_ptr_t _gp;
-
-
 
 
 void setSegmentDescriptor(

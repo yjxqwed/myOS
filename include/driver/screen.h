@@ -1,7 +1,10 @@
 #ifndef __SCREEN_H__
 #define __SCREEN_H__
 
-#include <sys/global.h>
+#include <myos.h>
+
+// virtual address of video memory
+#define VIDEO_MEM (__va(0x000B8000))
 
 #define MAXCOL 80
 #define MAXROW 25

@@ -1,5 +1,4 @@
 #include <sys/tss.h>
-#include <sys/global.h>
 #include <string.h>
 #include <common/types.h>
 #include <sys/gdt.h>

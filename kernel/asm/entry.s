@@ -1,4 +1,4 @@
-; file loader.s
+; file entry.s: start point of kernel
 [bits 32]
 
 %include "sys/asm/inc.s"
@@ -12,26 +12,26 @@
     dd FLAG
     dd CHECK_SUM
 
-extern ksetup_before_paging
-extern ksetup_after_paging
+extern entry_setup
+extern ksetup
 
 [section .text]
-global loader
-loader:
-    mov esp, kernel_stk_top
+global entry
+entry:
+    mov esp, boot_stk - kernel_space_base_addr
     mov ebp, esp
 
     push eax
     push ebx
-    call ksetup_before_paging
+    call entry_setup
     add esp, 8
     ; jmp to the higher half
-    lea eax, [after_paging]
+    lea eax, [paging_relocation]
     jmp eax
-after_paging:
+paging_relocation:
     add esp, kernel_space_base_addr
     add ebp, kernel_space_base_addr
-    call ksetup_after_paging
+    call ksetup
 
     ; setup done, jmp to the kernel
     jmp kernel_entry
@@ -70,6 +70,17 @@ flushPD:
 
     ret
 
+global flush_boot_pd
+extern _boot_pd
+flush_boot_pd:
+    mov eax, [_boot_pd - kernel_space_base_addr]
+    mov cr3, eax
+    mov eax, cr0  ; enable paging
+    or eax, 0x80000000  ; bit 31 of cr0 is to enable paging
+    mov cr0, eax
+    ret
+
+
 extern kernelMain
 ; start of the kernel
 kernel_entry:
@@ -77,4 +88,5 @@ kernel_entry:
     jmp $
 
 [section .data]
-one: db 0x01
+times 1024 dw 0
+boot_stk:

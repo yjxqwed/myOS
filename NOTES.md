@@ -20,52 +20,6 @@
 > bochs -q  
 
 
-## Temp Memory Layout of myOS
-
-* Low 32 MiB is dirrected mapped memory region
-
-<pre>
-+-----------+ -------------------------------------------------
-|           |   unused in myOS (low 1MiB memory)      1 MiB
-+-----------+ -------------------------------------------------
-|           |   0x0010 0000
-|  kernel   |
-|  binary   |                                         6 MiB
-|           |   0x006f ffff
-+-----------+ -------------------------------------------------
-+-----------+
-|           |   0x0070 0b00
-|  kppool   |    0x20 KiB (0x40000 p-pages at most)
-|   btmp    |   0x0070 8aff
-+-----------+
-|           |   0x0070 8b00
-|  uppool   |    0x60 KiB (0xc0000 p-pages at most)
-|   btmp    |   0x0072 0aff
-+-----------+
-|           |   0x0072 0b00
-|  kvpool   |    0x20 KiB (0x40000 v-pages at most)
-|   btmp    |   0x0072 8aff
-+-----------+
-|   free    |   0x0072 8b00 ~ 0x007f ffff
-+-----------+ --------------------------------------------------
-|           |   0x0080 0000
-|    PD     |      4 KiB
-|           |   0x0080 0fff
-+-----------+                                         1 MiB
-|           |   0x0080 1000
-|   kernel  |      255 * 4 KiB
-|    PTS    |
-|           |   0x008f ffff
-+-----------+ --------------------------------------------------
-|   free    |   0x0090 0000 ~ 0x01bf ffff
-+-----------+ --------------------------------------------------
-|           |   0x01C0 0000
-|  k_stack  |                                         4 MiB
-|           |   0x01ff ffff
-+-----------+ --------------------------------------------------
-|           |
-</pre>
-
 ## Boot the computer
 ### BIOS  
 After the computer is powered on, the hardware will automatically load the BIOS into the memory and jump to the start point of the BIOS (by seeting cs:ip = 0xF000:0xFFF0). The BIOS will perform many operations like POST (Power On Self Test) and will try to load the boot sector from bootable devices (floppy, hard disk, optical and etc)

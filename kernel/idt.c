@@ -2,7 +2,6 @@
 #include <sys/system.h>
 #include <sys/isr.h>
 #include <string.h>
-#include <sys/global.h>
 #include <common/debug.h>
 
 
