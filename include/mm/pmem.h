@@ -4,9 +4,19 @@
 // physical memory management
 
 #include <multiboot/multiboot.h>
+#include <common/types.h>
 
 // high mem starts at 1MiB
 #define HIGH_MEM_BASE 0x00100000
+
+typedef struct PhysicalPageInfo {
+    // pointer to the next free ppage
+    // if I'm free, next_free_ppage != NULL and vice versa
+    struct PhysicalPageInfo *next_free_ppage;
+    // num of references to this ppage
+    // if num_ref == 0, I'm free
+    uint32_t num_ref;
+} ppage_t;
 
 
 // setup physical memory management system

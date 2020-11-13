@@ -25,11 +25,12 @@
 #define PT_IDX_MASK (0x3ff << PT_IDX_SHIFT)
 
 #define PG_START_ADDRESS_MASK 0xfffff000
+#define PG_OFFSET_MASK 0xfff
 
-#define __pg_start_addr(x) ((x) & PG_START_ADDRESS_MASK)
+#define __pg_start_addr(x) ((uintptr_t)(x) & PG_START_ADDRESS_MASK)
 
-#define __pde_idx(x) ((x) >> PD_IDX_SHIFT)
-#define __pte_idx(x) (((x) & PT_IDX_MASK) >> PT_IDX_SHIFT)
+#define __pde_idx(x) ((uintptr_t)(x) >> PD_IDX_SHIFT)
+#define __pte_idx(x) (((uintptr_t)(x) & PT_IDX_MASK) >> PT_IDX_SHIFT)
 
 #define __pg_entry(ppage_no, attr) (uint32_t)(((ppage_no) * PAGE_SIZE) | (attr))
 
