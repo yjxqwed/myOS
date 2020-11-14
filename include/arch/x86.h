@@ -98,7 +98,9 @@ typedef PageTableEntry pte_t;
 // amount of memory controlled by a pg_tab (4 MiB)
 #define MEM_SIZE_PER_PGTABLE (NRPTE * PAGE_SIZE)
 
-// ===================== End of MMU ===========================
+// ====================== Register ============================
+
+#define CR0_PG 0x80000000
 
 // ================== Inline Assembly =========================
 

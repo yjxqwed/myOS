@@ -11,8 +11,9 @@ extern void *kernel_image_end;
 // _end is the (physical) end of the kernel binary image
 static uintptr_t _end = __pa(&kernel_image_end);
 
-uint32_t max_high_pfn = 0;
+static uint32_t max_high_pfn = 0;
 static uint32_t min_high_pfn = 0;
+static uint32_t nppages = 0;
 
 // the array of ppage_t, this array is used for page allocating
 static ppage_t *pmap = NULL;
@@ -63,9 +64,7 @@ static void print_mem_info(multiboot_info_t *mbi) {
     kprintf(KPL_NOTICE, "=============================================\n");
 }
 
-// not always return
-// if pass memory check, return the max page frame number
-static uint32_t check_memory(multiboot_info_t *mbi) {
+void setup_memory(multiboot_info_t *mbi) {
     if (CHECK_FLAG(mbi->flags, 0)) {
         // mbi->mem_upper is given in KiB
         uint32_t high_free_mem = mbi->mem_upper * 1024;
@@ -77,20 +76,20 @@ static uint32_t check_memory(multiboot_info_t *mbi) {
             );
             while (1);
         }
-        uint32_t max_pfn = __page_number(HIGH_MEM_BASE + high_free_mem - 1);
-        return max_pfn;
+        max_high_pfn = __page_number(HIGH_MEM_BASE + high_free_mem - 1);
+        // min_high_pfn is after the kernel image
+        min_high_pfn = __page_number(_end) + 2;
+        nppages = max_high_pfn - min_high_pfn + 1;
     } else {
         kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
         while (1);
     }
-    // never reach here
-    return 0;
 }
 
 // The allocator is only for allocating pages for initializing
 // mm structures
 // On success, return the virtual address; NULL otherwise.
-static void *boot_alloc(uint32_t n, bool page_alligned) {
+void *boot_alloc(uint32_t n, bool page_alligned) {
 
     static uintptr_t next_free_byte = NULL;
 
@@ -115,33 +114,14 @@ static void *boot_alloc(uint32_t n, bool page_alligned) {
         addr = next_free_byte;
     }
     next_free_byte = addr + n;
-    return (void *)__va(addr);
+    void *va = (void *)__va(addr);
+    memset(va, 0, n);
+    return va;
 }
 
-void setup_memory(multiboot_info_t *mbi) {
-    print_mem_info(mbi);
-    max_high_pfn = check_memory(mbi);
-    // min_high_pfn is after the kernel image
-    min_high_pfn = __page_number(_end) + 2;
+// init the pmem management structures
+void pmem_init() {
+    // initialize pmap
+    pmap = boot_alloc(sizeof(ppage_t) * nppages, false);
 
-    kprintf(
-        KPL_NOTICE, "min_hign_pfn = 0x%x, max_high_pfn = 0x%x\n",
-        min_high_pfn, max_high_pfn
-    );
-
-    void *a = boot_alloc(0, false);
-    void *b = boot_alloc(29, false);
-    void *c = boot_alloc(31, false);
-    void *d = boot_alloc(13, true);
-    void *e = boot_alloc(PAGE_SIZE, true);
-    void *f = boot_alloc(0, false);
-    void *g = boot_alloc(0x40000000, true);
-
-    kprintf(KPL_DEBUG, "a=0x%X\n", (uintptr_t)a);
-    kprintf(KPL_DEBUG, "b=0x%X\n", (uintptr_t)b);
-    kprintf(KPL_DEBUG, "c=0x%X\n", (uintptr_t)c);
-    kprintf(KPL_DEBUG, "d=0x%X\n", (uintptr_t)d);
-    kprintf(KPL_DEBUG, "e=0x%X\n", (uintptr_t)e);
-    kprintf(KPL_DEBUG, "f=0x%X\n", (uintptr_t)f);
-    kprintf(KPL_DEBUG, "g=0x%X\n", (uintptr_t)g);
 }

@@ -3,7 +3,8 @@
 #include <string.h>
 #include <kprintf.h>
 #include <bitmap.h>
-#include <mm/mem.h>
+// #include <mm/mem.h>
+#include <mm/pmem.h>
 #include <arch/x86.h>
 #include <myos.h>
 
@@ -15,8 +16,9 @@
 __PAGE_ALLIGNED pde_t boot_pg_dir[NRPDE];
 __PAGE_ALLIGNED pte_t boot_pg_tab[NRPTE];
 
+// the page directory used by kernel
+static pte_t *kern_pg_dir = NULL;
 
-uint32_t _boot_pd = __pa(boot_pg_dir);
 void install_boot_pg(void) {
     pte_t *ppg = (pte_t *)__pa(boot_pg_tab);
     for (int i = 0; i < NRPTE; i++) {
@@ -33,23 +35,19 @@ void install_boot_pg(void) {
     ppd[0] = pde;
     ppd[__pde_idx(KERNEL_BASE)] = pde;
 
-    lcr3(0x19971125);
-    uint32_t cr3 = scr3();
-    kprintf(KPL_DEBUG, "cr3=0x%X\n", cr3);
-    while (1);
-
-    extern void flush_boot_pd();
-    // kprintf(KPL_DEBUG, "boot_pg_dir=0x%X, &boot_pg_dir=0x%X, _boot_pd=0x%X\n", boot_pg_dir, &boot_pg_dir, _boot_pd);
-    // kprintf(KPL_DEBUG, "pd[0]=0x%X\n", boot_pg_dir[0]);
-    // kprintf(KPL_DEBUG, "pd[0x%x]=0x%X\n", __pde_idx(KERNEL_BASE), boot_pg_dir[__pde_idx(KERNEL_BASE)]);
-    flush_boot_pd();
+    // load the address of boot pg_dir to cr3
+    lcr3(__pa(boot_pg_dir));
+    // enable paging
+    uint32_t cr0 = scr0();
+    cr0 |= CR0_PG;
+    lcr0(cr0);
 }
 
-
-extern void flushPD();
-
 // enable paging, init pd and pts.
-void init_paging() {
+void kernel_init_paging() {
+
+    kern_pg_dir = boot_alloc(PAGE_SIZE, true);
+    
     // memset((uint8_t *)page_directory, 0, PAGE_SIZE);  // set pd to all 0s
     // _pd = (uint32_t)page_directory;
     // // the first pt starts at after the pd.

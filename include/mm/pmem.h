@@ -18,6 +18,7 @@ typedef struct PhysicalPageInfo {
     uint32_t num_ref;
 } ppage_t;
 
+void *boot_alloc(uint32_t n, bool page_alligned);
 
 // setup physical memory management system
 void setup_memory(multiboot_info_t *mbi);

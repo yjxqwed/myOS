@@ -1,11 +1,11 @@
-// #include <mm/mem.h>
-// #include <mm/pager.h>
+#include <mm/mem.h>
+#include <mm/pager.h>
+#include <mm/pmem.h>
 // #include <bitmap.h>
-// #include <kprintf.h>
+#include <kprintf.h>
 // #include <common/types.h>
-// #include <sys/global.h>
-// #include <common/debug.h>
-// #include <string.h>
+#include <common/debug.h>
+#include <string.h>
 
 // extern void *kernel_image_end;
 // // _end is the (physical) end of the kernel binary image
@@ -155,24 +155,9 @@
 // // }
 
 
-// void mm_init(multiboot_info_t *mbi) {
-//     print_mem_info(mbi);
-//     // the min and max page frame number of the high mem (above 1MiB)
-//     uint32_t max_high_pfn = check_memory(mbi);
-//     // min_high_pfn is after the kernel image
-//     uint32_t min_hign_pfn = __page_number(_end) + 2;
-
-//     kprintf(
-//         KPL_NOTICE, "min_hign_pfn = 0x%x, max_high_pfn = 0x%x\n",
-//         min_hign_pfn, max_high_pfn
-//     );
-
-//     while (1);
-//     // init_ppools(num_pages);
-//     // init_kernel_heap();
-//     // init_vpools();
-//     init_paging();
-// }
+void mm_init() {
+    
+}
 
 // // void *vm_kernel_get_pages(uint32_t page_cnt) {
 // //     // allocate at most 256 pages in one request
