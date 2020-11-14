@@ -1,7 +1,7 @@
 #include <common/types.h>
 #include <driver/screen.h>
 #include <string.h>
-#include <sys/system.h>  // for inb outb
+#include <arch/x86.h>
 
 static int cursor_row = 0;
 static int cursor_col = 0;

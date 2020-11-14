@@ -8,7 +8,7 @@
 #include <myos.h>
 
 // pde_t *page_directory = (pde_t *)__pa(PD_BASE_ADDR);
-uintptr_t _pd = 0;  // for loader.s
+// uintptr_t _pd = 0;  // for loader.s
 
 #define __PAGE_ALLIGNED __attribute__((aligned(PAGE_SIZE)))
 
@@ -32,6 +32,12 @@ void install_boot_pg(void) {
     pde_t *ppd = (pde_t *)__pa(boot_pg_dir);
     ppd[0] = pde;
     ppd[__pde_idx(KERNEL_BASE)] = pde;
+
+    lcr3(0x19971125);
+    uint32_t cr3 = scr3();
+    kprintf(KPL_DEBUG, "cr3=0x%X\n", cr3);
+    while (1);
+
     extern void flush_boot_pd();
     // kprintf(KPL_DEBUG, "boot_pg_dir=0x%X, &boot_pg_dir=0x%X, _boot_pd=0x%X\n", boot_pg_dir, &boot_pg_dir, _boot_pd);
     // kprintf(KPL_DEBUG, "pd[0]=0x%X\n", boot_pg_dir[0]);

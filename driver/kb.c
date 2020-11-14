@@ -1,11 +1,5 @@
-// #include "kb.h"
-// #include "system.h"
-// #include "screen.h"
-// #include "utils.h"
-// #include "string.h"
-
 #include <driver/kb.h>
-#include <sys/system.h>
+#include <arch/x86.h>
 #include <driver/screen.h>
 #include <common/utils.h>
 #include <string.h>

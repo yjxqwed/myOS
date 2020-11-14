@@ -11,7 +11,7 @@ extern void *kernel_image_end;
 // _end is the (physical) end of the kernel binary image
 static uintptr_t _end = __pa(&kernel_image_end);
 
-static uint32_t max_high_pfn = 0;
+uint32_t max_high_pfn = 0;
 static uint32_t min_high_pfn = 0;
 
 // the array of ppage_t, this array is used for page allocating
@@ -89,6 +89,7 @@ static uint32_t check_memory(multiboot_info_t *mbi) {
 
 // The allocator is only for allocating pages for initializing
 // mm structures
+// On success, return the virtual address; NULL otherwise.
 static void *boot_alloc(uint32_t n, bool page_alligned) {
 
     static uintptr_t next_free_byte = NULL;
@@ -98,7 +99,10 @@ static void *boot_alloc(uint32_t n, bool page_alligned) {
         next_free_byte = min_high_pfn * PAGE_SIZE;
     }
 
-    ASSERT(next_free_byte + n < (max_high_pfn + 1) * PAGE_SIZE);
+    // ASSERT(next_free_byte + n <= (max_high_pfn + 1) * PAGE_SIZE);
+    if (next_free_byte + n > (max_high_pfn + 1) * PAGE_SIZE) {
+        return NULL;
+    }
 
     uintptr_t addr = NULL;
 
@@ -111,7 +115,7 @@ static void *boot_alloc(uint32_t n, bool page_alligned) {
         addr = next_free_byte;
     }
     next_free_byte = addr + n;
-    return (void *)addr;
+    return (void *)__va(addr);
 }
 
 void setup_memory(multiboot_info_t *mbi) {
@@ -125,19 +129,19 @@ void setup_memory(multiboot_info_t *mbi) {
         min_high_pfn, max_high_pfn
     );
 
-    // void *a = boot_alloc(0, false);
-    // void *b = boot_alloc(29, false);
-    // void *c = boot_alloc(31, false);
-    // void *d = boot_alloc(13, true);
-    // void *e = boot_alloc(PAGE_SIZE, true);
-    // void *f = boot_alloc(0, false);
-    // void *g = boot_alloc(0x40000000, true);
+    void *a = boot_alloc(0, false);
+    void *b = boot_alloc(29, false);
+    void *c = boot_alloc(31, false);
+    void *d = boot_alloc(13, true);
+    void *e = boot_alloc(PAGE_SIZE, true);
+    void *f = boot_alloc(0, false);
+    void *g = boot_alloc(0x40000000, true);
 
-    // kprintf(KPL_DEBUG, "a=0x%X\n", (uintptr_t)a);
-    // kprintf(KPL_DEBUG, "b=0x%X\n", (uintptr_t)b);
-    // kprintf(KPL_DEBUG, "c=0x%X\n", (uintptr_t)c);
-    // kprintf(KPL_DEBUG, "d=0x%X\n", (uintptr_t)d);
-    // kprintf(KPL_DEBUG, "e=0x%X\n", (uintptr_t)e);
-    // kprintf(KPL_DEBUG, "f=0x%X\n", (uintptr_t)f);
-    // kprintf(KPL_DEBUG, "g=0x%X\n", (uintptr_t)g);
+    kprintf(KPL_DEBUG, "a=0x%X\n", (uintptr_t)a);
+    kprintf(KPL_DEBUG, "b=0x%X\n", (uintptr_t)b);
+    kprintf(KPL_DEBUG, "c=0x%X\n", (uintptr_t)c);
+    kprintf(KPL_DEBUG, "d=0x%X\n", (uintptr_t)d);
+    kprintf(KPL_DEBUG, "e=0x%X\n", (uintptr_t)e);
+    kprintf(KPL_DEBUG, "f=0x%X\n", (uintptr_t)f);
+    kprintf(KPL_DEBUG, "g=0x%X\n", (uintptr_t)g);
 }

@@ -6,8 +6,8 @@
 // myOS requires at least 128 MiB physical memory
 #define MIN_MEMORY_LIMIT (126 * 1024 * 1024)
 
-// myOS kernel use high 1G virtual address space
-#define KERNEL_BASE (0xc0000000)
+// myOS kernel use high 2G virtual address space
+#define KERNEL_BASE (0x80000000)
 
 // kernel space physical address
 #define __pa(x) (uintptr_t)((uintptr_t)(x) - KERNEL_BASE)

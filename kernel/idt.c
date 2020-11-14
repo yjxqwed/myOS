@@ -1,5 +1,5 @@
 #include <sys/idt.h>
-#include <sys/system.h>
+#include <arch/x86.h>
 #include <sys/isr.h>
 #include <string.h>
 #include <common/debug.h>

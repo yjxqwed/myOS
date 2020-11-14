@@ -1,5 +1,5 @@
 #include <driver/pit.h>
-#include <sys/system.h>
+#include <arch/x86.h>
 #include <kprintf.h>
 
 #define TIMER0 0

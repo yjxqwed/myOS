@@ -1,7 +1,7 @@
 #include <sys/idt.h>
 #include <sys/isr.h>
 #include <driver/screen.h>
-#include <sys/system.h>
+#include <arch/x86.h>
 #include <common/debug.h>
 #include <driver/kb.h>
 #include <driver/pit.h>

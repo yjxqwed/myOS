@@ -58,17 +58,17 @@ flushIDT:
     ret
 
 global flushPD
-extern _pd  ; page directory base address
-flushPD:
-    ; _pd is vaddr, we need paddr here
-    mov eax, [_pd - kernel_space_base_addr]
-    mov cr3, eax
+; extern _pd  ; page directory base address
+; flushPD:
+;     ; _pd is vaddr, we need paddr here
+;     mov eax, [_pd - kernel_space_base_addr]
+;     mov cr3, eax
 
-    mov eax, cr0  ; enable paging
-    or eax, 0x80000000  ; bit 31 of cr0 is to enable paging
-    mov cr0, eax
+;     mov eax, cr0  ; enable paging
+;     or eax, 0x80000000  ; bit 31 of cr0 is to enable paging
+;     mov cr0, eax
 
-    ret
+;     ret
 
 global flush_boot_pd
 extern _boot_pd

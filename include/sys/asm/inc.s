@@ -6,7 +6,7 @@ xchg bx, bx
 
 
 [section .constant]
-kernel_space_base_addr: equ 0xc0000000
+kernel_space_base_addr: equ 0x80000000
 
 kernel_stk_top:  equ 0x01ffffff
 usr_stk_top:     equ 0x0c800000

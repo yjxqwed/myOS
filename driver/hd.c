@@ -1,7 +1,7 @@
 #include <driver/hd.h>
 #include <kprintf.h>
 #include <common/types.h>
-#include <sys/system.h>
+#include <arch/x86.h>
 
 // ATA0
 #define DEVICE_REG_PRIMARY_PORT 0x1F6

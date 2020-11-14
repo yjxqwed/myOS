@@ -100,5 +100,104 @@ typedef PageTableEntry pte_t;
 
 // ===================== End of MMU ===========================
 
+// ================== Inline Assembly =========================
+
+#define __attr_always_inline __attribute__((always_inline))
+
+// read a byte from io port
+static inline uint8_t inportb(uint16_t port) __attr_always_inline;
+// write a byte to io port
+static inline void outportb(uint16_t port, uint8_t val) __attr_always_inline;
+
+// load gdt
+static inline void lgdt(void *gp) __attr_always_inline;
+
+// load idt
+static inline void lidt(void *ip) __attr_always_inline;
+
+// load cr0
+static inline void lcr0(uint32_t x) __attr_always_inline;
+// store cr0
+static inline uint32_t scr0() __attr_always_inline;
+
+// load cr3
+static inline void lcr3(uint32_t x) __attr_always_inline;
+// store cr3
+static inline uint32_t scr3() __attr_always_inline;
+
+#define __asm_volatile __asm__ volatile
+
+static inline uint8_t inportb(uint16_t port) {
+    uint8_t val;
+    __asm_volatile (
+        "inb %0, %1\n\t"
+        "nop\n\t"
+        "nop"         // introduce some delay
+        : "=a"(val)   // output
+        : "Nd"(port)  // input
+        :             // clobbered regs
+    );
+    return val;
+}
+
+static inline void outportb(uint16_t port, uint8_t val) {
+    __asm_volatile (
+        "outb %1, %0\n\t"
+        "nop\n\t"
+        "nop"         // introduce some delay
+        :             // output
+        : "a"(val), "Nd"(port)  // input
+        :             // clobbered regs
+    );
+}
+
+static inline void lgdt(void *gp) {
+    __asm_volatile (
+        "lgdt %0"
+        :
+        : "r"(gp)  // input
+        :
+    );
+}
+
+static inline void lcr0(uint32_t x) {
+    __asm_volatile (
+        "mov cr0, %0"
+        :
+        : "r"(x)
+        :
+    );
+}
+
+static inline uint32_t scr0() {
+    uint32_t cr0;
+    __asm_volatile (
+        "mov %0, cr0"
+        : "=r"(cr0)
+        :
+        :
+    );
+    return cr0;
+}
+
+static inline void lcr3(uint32_t x) {
+    __asm_volatile (
+        "mov cr3, %0"
+        :
+        : "r"(x)
+        :
+    );
+}
+
+static inline uint32_t scr3() {
+    uint32_t cr3;
+    __asm_volatile (
+        "mov %0, cr3"
+        : "=r"(cr3)
+        :
+        :
+    );
+    return cr3;
+}
 
 #endif
