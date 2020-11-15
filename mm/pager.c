@@ -66,7 +66,7 @@ void kernel_init_paging() {
     }
 
     // the last page_table might be half used
-    do {
+    {
         pte_t *pg_tab = boot_alloc(PAGE_SIZE, true);
         ASSERT(pg_tab != NULL);
         for (int j = 0; j <= __pte_idx(va); j++, pfn++) {
@@ -77,9 +77,7 @@ void kernel_init_paging() {
         kern_pg_dir[__pde_idx(va)] = (pde_t)__pg_entry(
             __page_number(__pa(pg_tab)), PTE_USER | PTE_PRESENT
         );
-    } while (0);
+    }
 
     lcr3(__pa(kern_pg_dir));
-    kprintf(KPL_DUMP, "0x%X\n", boot_alloc(0, true));
-    kprintf(KPL_DUMP, "0x%X\n", boot_alloc(0, true));
 }

@@ -26,4 +26,5 @@ void setup_memory(multiboot_info_t *mbi);
 // The max page frame number of the machine
 extern uint32_t max_high_pfn;
 
+void pmem_init();
 #endif

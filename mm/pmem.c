@@ -17,6 +17,7 @@ static uint32_t nppages = 0;
 
 // the array of ppage_t, this array is used for page allocating
 static ppage_t *pmap = NULL;
+static ppage_t *free_pages_list = NULL;
 
 #define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
 static void print_mem_info(multiboot_info_t *mbi) {
@@ -80,7 +81,8 @@ void setup_memory(multiboot_info_t *mbi) {
         max_high_pfn = __page_number(HIGH_MEM_BASE + high_free_mem - 1);
         // min_high_pfn is after the kernel image
         min_high_pfn = __page_number(_end) + 2;
-        nppages = max_high_pfn - min_high_pfn + 1;
+        nppages = max_high_pfn + 1;
+        kprintf(KPL_NOTICE, "minpfn=0x%x, maxpfn=0x%x, npages=0x%x\n", min_high_pfn, max_high_pfn, nppages);
     } else {
         kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
         while (1);
@@ -119,9 +121,40 @@ void *boot_alloc(uint32_t n, bool page_alligned) {
     return va;
 }
 
+static void print_page_t(uint32_t pfn) {
+    ASSERT(pfn < nppages);
+    ppage_t *p = &(pmap[pfn]);
+    kprintf(
+        KPL_DEBUG, "page_t(0x%X){link=0x%X, ref=%d}\n",
+        (uintptr_t)p, p->next_free_ppage, p->num_ref
+    );
+}
+
 // init the pmem management structures
 void pmem_init() {
     // initialize pmap
     pmap = boot_alloc(sizeof(ppage_t) * nppages, false);
 
+    // fpn is the next page after pages allocated by boot_alloc
+    // pages after fpn may be used in further operations
+    int fpn = __page_number(__pa(boot_alloc(0, true)));
+    ASSERT(fpn < max_high_pfn);
+    kprintf(KPL_DEBUG, "pmap=0x%X\n", pmap);
+    kprintf(KPL_DEBUG, "nppages=0x%x\nfree_page=0x%x\n", nppages, fpn);
+    // These pages will never be freed or reused!
+    for (int i = 0; i < fpn; i++) {
+        pmap[i].next_free_ppage = NULL;
+        pmap[i].num_ref = 1;
+    }
+    for (int i = fpn; i <= max_high_pfn; i++) {
+        pmap[i].next_free_ppage = free_pages_list;
+        pmap[i].num_ref = 0;
+        free_pages_list = &(pmap[i]);
+    }
+
+    print_page_t(0);
+    print_page_t(fpn - 1);
+    print_page_t(fpn);
+    print_page_t(fpn + 1);
+    print_page_t(max_high_pfn);
 }

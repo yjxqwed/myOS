@@ -40,8 +40,8 @@ void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
 
 // setup gdt, idt, etc
 void ksetup() {
-    kprintf(KPL_DUMP, "set new page directory and tables\n");
     kernel_init_paging();
+    pmem_init();
     while (1);
     enable_int();
 }
