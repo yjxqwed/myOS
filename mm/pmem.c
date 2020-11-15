@@ -121,13 +121,20 @@ void *boot_alloc(uint32_t n, bool page_alligned) {
     return va;
 }
 
-static void print_page_t(uint32_t pfn) {
-    ASSERT(pfn < nppages);
-    ppage_t *p = &(pmap[pfn]);
+static void print_page_t(ppage_t *p) {
+    ASSERT(p != NULL);
     kprintf(
         KPL_DEBUG, "page_t(0x%X){link=0x%X, ref=%d}\n",
         (uintptr_t)p, p->next_free_ppage, p->num_ref
     );
+}
+
+static inline void *page2kva(ppage_t *p) {
+    return (void *)((p - pmap) * PAGE_SIZE);
+}
+
+static inline void *page2pa(ppage_t *p) {
+    return __pa(page2kva(p));
 }
 
 // init the pmem management structures
@@ -151,10 +158,17 @@ void pmem_init() {
         pmap[i].num_ref = 0;
         free_pages_list = &(pmap[i]);
     }
+}
 
-    print_page_t(0);
-    print_page_t(fpn - 1);
-    print_page_t(fpn);
-    print_page_t(fpn + 1);
-    print_page_t(max_high_pfn);
+ppage_t *page_alloc(uint32_t gfp_flags) {
+    if (free_pages_list == NULL) {
+        return NULL;
+    }
+    ppage_t *fp = free_pages_list;
+    free_pages_list = free_pages_list->next_free_ppage;
+    fp->next_free_ppage = NULL;
+    if (gfp_flags & GFP_ZERO) {
+        memset(page2kva(fp), 0, PAGE_SIZE);
+    }
+    return fp;
 }

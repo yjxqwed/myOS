@@ -27,4 +27,12 @@ void setup_memory(multiboot_info_t *mbi);
 extern uint32_t max_high_pfn;
 
 void pmem_init();
+
+
+// Get Free Page flags
+#define GFP_ZERO 0x1
+
+// alloc a physical page
+ppage_t *page_alloc(uint32_t gfp_flags);
+
 #endif
