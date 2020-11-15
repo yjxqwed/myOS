@@ -11,7 +11,7 @@
 
 #define args_start(ap, fmt) do {\
     ap = (char *)((unsigned int)(&fmt) + _arg_stack_size(&fmt)); \
-} while (0)
+} while (0);
 
 #define args_end(ap)
 

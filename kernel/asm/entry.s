@@ -38,9 +38,7 @@ paging_relocation:
 
 
 global flushGDT
-extern _gp  ; _gp is the gdt pointer
 flushGDT:
-    lgdt [_gp]
     mov ax, kernel_data_sel
     mov ds, ax
     mov es, ax
@@ -50,14 +48,6 @@ flushGDT:
     jmp kernel_code_sel:flush2
 flush2:
     ret
-
-global flushIDT
-extern _ip  ; the idt pointer
-flushIDT:
-    lidt [_ip]
-    ret
-
-
 
 
 extern kernelMain

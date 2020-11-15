@@ -155,9 +155,18 @@ static inline void outportb(uint16_t port, uint8_t val) {
 
 static inline void lgdt(void *gp) {
     __asm_volatile (
-        "lgdt %0"
+        "lgdt [%0]"
         :
         : "r"(gp)  // input
+        :
+    );
+}
+
+static inline void lidt(void *ip) {
+    __asm_volatile (
+        "lidt [%0]"
+        :
+        : "r"(ip)  // input
         :
     );
 }
@@ -201,5 +210,7 @@ static inline uint32_t scr3() {
     );
     return cr3;
 }
+
+
 
 #endif

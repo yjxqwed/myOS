@@ -63,7 +63,7 @@ extern void isr47();
 
 #define SETINTDES(x) do { \
     setInterruptDescriptor(&(_idt[x]), (uint32_t)isr##x, SELECTOR_KCODE, 0x8e); \
-} while (0)
+} while (0);
 
 /* Normally, IRQs 0 to 7 are mapped to entries 8 to 15. This
 *  is a problem in protected mode, because IDT entry 8 is a

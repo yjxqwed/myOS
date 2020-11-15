@@ -17,7 +17,7 @@ void panic_spin(
 #ifndef KDEBUG
 #define MAGICBP ((void)0)
 #else
-#define MAGICBP do { __asm__ volatile("xchg bx, bx"); } while (0)
+#define MAGICBP do { __asm__ volatile("xchg bx, bx"); } while (0);
 #endif
 
 #ifndef KDEBUG

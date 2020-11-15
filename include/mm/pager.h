@@ -4,11 +4,6 @@
 #include <common/types.h>
 #include <multiboot/multiboot.h>
 
-// init paging system
-void init_paging();
-
-// clear low memory mapping after enabling paging
-void clear_low_mem_mapping();
-
 void install_boot_pg(void);
+void kernel_init_paging(void);
 #endif

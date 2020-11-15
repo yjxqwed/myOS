@@ -20,8 +20,6 @@ void setInterruptDescriptor(
     gate->type_attr = attr;
 }
 
-extern void flushIDT();
-
 void setInterruptDescriptorTable() {
     // clear all gates
     memset(_idt, 0, IDT_SIZE * sizeof(Gate));
@@ -32,5 +30,5 @@ void setInterruptDescriptorTable() {
 
     _ip.base_ = (uint32_t)_idt;
     _ip.size_ = IDT_SIZE * sizeof(Gate) - 1;
-    flushIDT();
+    lidt(&_ip);
 }

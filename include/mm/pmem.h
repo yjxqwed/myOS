@@ -23,4 +23,7 @@ void *boot_alloc(uint32_t n, bool page_alligned);
 // setup physical memory management system
 void setup_memory(multiboot_info_t *mbi);
 
+// The max page frame number of the machine
+extern uint32_t max_high_pfn;
+
 #endif

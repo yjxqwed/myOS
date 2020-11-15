@@ -11,7 +11,7 @@ extern void *kernel_image_end;
 // _end is the (physical) end of the kernel binary image
 static uintptr_t _end = __pa(&kernel_image_end);
 
-static uint32_t max_high_pfn = 0;
+uint32_t max_high_pfn = 0;
 static uint32_t min_high_pfn = 0;
 static uint32_t nppages = 0;
 
@@ -65,6 +65,7 @@ static void print_mem_info(multiboot_info_t *mbi) {
 }
 
 void setup_memory(multiboot_info_t *mbi) {
+    print_mem_info(mbi);
     if (CHECK_FLAG(mbi->flags, 0)) {
         // mbi->mem_upper is given in KiB
         uint32_t high_free_mem = mbi->mem_upper * 1024;
@@ -93,12 +94,11 @@ void *boot_alloc(uint32_t n, bool page_alligned) {
 
     static uintptr_t next_free_byte = NULL;
 
-    // init at the first call
+    // init at the very first call
     if (next_free_byte == NULL) {
         next_free_byte = min_high_pfn * PAGE_SIZE;
     }
 
-    // ASSERT(next_free_byte + n <= (max_high_pfn + 1) * PAGE_SIZE);
     if (next_free_byte + n > (max_high_pfn + 1) * PAGE_SIZE) {
         return NULL;
     }
