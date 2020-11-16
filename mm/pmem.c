@@ -305,3 +305,15 @@ pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool create) {
     return &(pg_tab[pte_idx]);
 }
 
+
+
+
+void page_unmap(pde_t *pgdir, void *va) {
+    ASSERT(!((uintptr_t)va & PG_OFFSET_MASK));
+    pte_t *pte = pgdir_walk(pgdir, va, false);
+    if (!(pte && (*pte & PTE_PRESENT))) {
+        return;
+    }
+
+}
+

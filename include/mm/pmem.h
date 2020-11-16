@@ -7,6 +7,7 @@
 
 #include <multiboot/multiboot.h>
 #include <common/types.h>
+#include <arch/x86.h>
 
 // high mem starts at 1MiB
 #define HIGH_MEM_BASE 0x00100000
@@ -48,4 +49,9 @@ void page_decref(ppage_t *p);
 
 void install_boot_pg(void);
 void kernel_init_paging(void);
+
+// unmap the page mapped at va; if no page mapped, do nothing
+//     pgdir page directory
+//     va is page alligned
+void page_unmap(pde_t *pgdir, void *va);
 #endif
