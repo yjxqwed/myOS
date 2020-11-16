@@ -7,7 +7,6 @@
 #include <kprintf.h>
 #include <driver/pit.h>
 #include <multiboot/multiboot.h>
-#include <mm/pager.h>
 #include <mm/mem.h>
 #include <mm/pmem.h>
 #include <sys/interrupt.h>

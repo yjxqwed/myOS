@@ -2,7 +2,6 @@
 #define __MEM_H__
 
 // #include <multiboot/multiboot.h>
-// #include <mm/pager.h>
 // #include <bitmap.h>
 // #include <common/types.h>
 // #include <sys/global.h>

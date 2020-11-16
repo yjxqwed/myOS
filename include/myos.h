@@ -1,6 +1,8 @@
 #ifndef __MYOS_H__
 #define __MYOS_H__
 
+#include <arch/x86.h>
+
 // Here are some information of myOS
 
 // myOS requires at least 128 MiB physical memory
@@ -13,5 +15,7 @@
 #define __pa(x) (uintptr_t)((uintptr_t)(x) - KERNEL_BASE)
 // kernel space virtual address
 #define __va(x) (uintptr_t)((uintptr_t)(x) + KERNEL_BASE)
+
+#define __pte_kvaddr(pde) (pte_t *)__va((pde) & PG_START_ADDRESS_MASK)
 
 #endif

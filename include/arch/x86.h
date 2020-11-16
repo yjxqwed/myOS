@@ -15,6 +15,9 @@
 // page size = 4kb
 #define PAGE_SIZE 0x1000
 
+// page alligned
+#define __PAGE_ALLIGNED __attribute__((aligned(PAGE_SIZE)))
+
 // page directory shift -- the high 10 bits is page directory idx
 #define PD_IDX_SHIFT 22
 // page table shift -- the mid 10 bit2 is page table idx

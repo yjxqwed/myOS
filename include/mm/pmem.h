@@ -1,7 +1,9 @@
 #ifndef __PMEM_H__
 #define __PMEM_H__
 
-// physical memory management
+/**
+ *    Physical Memory Management
+ */
 
 #include <multiboot/multiboot.h>
 #include <common/types.h>
@@ -18,8 +20,6 @@ typedef struct PhysicalPageInfo {
     uint32_t num_ref;
 } ppage_t;
 
-void *boot_alloc(uint32_t n, bool page_alligned);
-
 // setup physical memory management system
 void setup_memory(multiboot_info_t *mbi);
 
@@ -34,5 +34,18 @@ void pmem_init();
 
 // alloc a physical page
 ppage_t *page_alloc(uint32_t gfp_flags);
+// alloc a physical page and get its kernel virtual address
+// for kernel use only
+void *kv_get_page(uint32_t gfp_flags);
+// free a page
+void page_free(ppage_t *p);
+// decrease the reference to p, free it if no more referrence
+void page_decref(ppage_t *p);
 
+/**
+ *    Paging Management
+ */
+
+void install_boot_pg(void);
+void kernel_init_paging(void);
 #endif

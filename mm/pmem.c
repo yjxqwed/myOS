@@ -7,10 +7,6 @@
 #include <myos.h>
 #include <arch/x86.h>
 
-extern void *kernel_image_end;
-// _end is the (physical) end of the kernel binary image
-static uintptr_t _end = __pa(&kernel_image_end);
-
 uint32_t max_high_pfn = 0;
 static uint32_t min_high_pfn = 0;
 static uint32_t nppages = 0;
@@ -61,7 +57,6 @@ static void print_mem_info(multiboot_info_t *mbi) {
             );
         }
     }
-    kprintf(KPL_NOTICE, "        _end=0x%X\n", _end);
     kprintf(KPL_NOTICE, "=============================================\n");
 }
 
@@ -80,6 +75,9 @@ void setup_memory(multiboot_info_t *mbi) {
         }
         max_high_pfn = __page_number(HIGH_MEM_BASE + high_free_mem - 1);
         // min_high_pfn is after the kernel image
+        extern void *kernel_image_end;
+        // _end is the (physical) end of the kernel binary image
+        uintptr_t _end = __pa(&kernel_image_end);
         min_high_pfn = __page_number(_end) + 2;
         nppages = max_high_pfn + 1;
         kprintf(KPL_NOTICE, "minpfn=0x%x, maxpfn=0x%x, npages=0x%x\n", min_high_pfn, max_high_pfn, nppages);
@@ -91,8 +89,8 @@ void setup_memory(multiboot_info_t *mbi) {
 
 // The allocator is only for allocating pages for initializing
 // mm structures
-// On success, return the virtual address; NULL otherwise.
-void *boot_alloc(uint32_t n, bool page_alligned) {
+// On success, return the kernel virtual address; NULL otherwise.
+static void *boot_alloc(uint32_t n, bool page_alligned) {
 
     static uintptr_t next_free_byte = NULL;
 
@@ -129,12 +127,22 @@ static void print_page_t(ppage_t *p) {
     );
 }
 
+// page to kernel virtual address
 static inline void *page2kva(ppage_t *p) {
     return (void *)((p - pmap) * PAGE_SIZE);
 }
 
+// page to physical address
 static inline void *page2pa(ppage_t *p) {
     return __pa(page2kva(p));
+}
+
+static inline ppage_t *kva2page(void *kva) {
+    return pmap + (uintptr_t)kva / PAGE_SIZE;
+}
+
+static inline ppage_t *pa2page(void *pa) {
+    return kva2page(__va(pa));
 }
 
 // init the pmem management structures
@@ -172,3 +180,128 @@ ppage_t *page_alloc(uint32_t gfp_flags) {
     }
     return fp;
 }
+
+void *kv_get_page(uint32_t gfp_flags) {
+    ppage_t *p = page_alloc(gfp_flags);
+    if (p == NULL) {
+        return NULL;
+    }
+    return page2kva(p);
+}
+
+void page_free(ppage_t *p) {
+    ASSERT(p->num_ref == 0);
+    ASSERT(p->next_free_ppage == NULL);
+    p->next_free_ppage = free_pages_list;
+    free_pages_list = p;
+}
+
+void page_decref(ppage_t *p) {
+    ASSERT(p->num_ref > 0);
+    ASSERT(p->next_free_ppage == NULL);
+    p->num_ref--;
+    if (p->num_ref == 0) {
+        page_free(p);
+    }
+}
+
+
+/**
+ *  Paging Management
+ */
+
+// For bootstrap paging use
+__PAGE_ALLIGNED pde_t boot_pg_dir[NRPDE];
+__PAGE_ALLIGNED pte_t boot_pg_tab[NRPTE];
+
+void install_boot_pg(void) {
+    pte_t *ppg = (pte_t *)__pa(boot_pg_tab);
+    for (int i = 0; i < NRPTE; i++) {
+        ppg[i] = (pte_t)__pg_entry(i, PTE_PRESENT | PTE_WRITABLE);
+    }
+    memset(boot_pg_dir, 0, PAGE_SIZE);
+    pde_t pde = (pde_t)__pg_entry(
+        __page_number(__pa(boot_pg_tab)), PTE_PRESENT | PTE_WRITABLE
+    );
+    pde_t *ppd = (pde_t *)__pa(boot_pg_dir);
+    ppd[0] = pde;
+    ppd[__pde_idx(KERNEL_BASE)] = pde;
+
+    // load the address of boot pg_dir to cr3
+    lcr3(__pa(boot_pg_dir));
+    // enable paging
+    uint32_t cr0 = scr0();
+    cr0 |= CR0_PG;
+    lcr0(cr0);
+}
+
+
+// the page directory used by kernel
+static pte_t *kern_pg_dir = NULL;
+
+void kernel_init_paging() {
+    kern_pg_dir = boot_alloc(PAGE_SIZE, true);
+    kprintf(KPL_DEBUG, "kern_pg_dir=0x%X\n", (uintptr_t)kern_pg_dir);
+    int pfn = 0;
+    uintptr_t va = __va(max_high_pfn * PAGE_SIZE);
+    kprintf(KPL_DEBUG, "va=0x%X\n", va);
+    for (
+        int i = __pde_idx(KERNEL_BASE);
+        i < __pde_idx(va);
+        i++
+    ) {
+        pte_t *pg_tab = boot_alloc(PAGE_SIZE, true);
+        ASSERT(pg_tab != NULL);
+        for (int j = 0; j < NRPTE; j++, pfn++) {
+            pg_tab[j] = (pte_t)__pg_entry(
+                pfn, PTE_USER | PTE_PRESENT
+            );
+        }
+        kern_pg_dir[i] = (pde_t)__pg_entry(
+            __page_number(__pa(pg_tab)), PTE_USER | PTE_PRESENT
+        );
+    }
+
+    // the last page_table might be half used
+    {
+        pte_t *pg_tab = boot_alloc(PAGE_SIZE, true);
+        ASSERT(pg_tab != NULL);
+        for (int j = 0; j <= __pte_idx(va); j++, pfn++) {
+            pg_tab[j] = (pte_t)__pg_entry(
+                pfn, PTE_USER | PTE_PRESENT
+            );
+        }
+        kern_pg_dir[__pde_idx(va)] = (pde_t)__pg_entry(
+            __page_number(__pa(pg_tab)), PTE_USER | PTE_PRESENT
+        );
+    }
+
+    lcr3(__pa(kern_pg_dir));
+}
+
+pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool create) {
+    ASSERT(pgdir != NULL);
+    uint32_t pde_idx = __pde_idx(va);
+    pte_t *pg_tab = NULL;
+    if (!(pgdir[pde_idx] & PDE_PRESENT)) {
+        // pde is not present now
+        if (!create) {
+            return NULL;
+        } else {
+            ppage_t *fp = page_alloc(GFP_ZERO);
+            if (fp == NULL) {
+                return NULL;
+            }
+            pg_tab = page2kva(fp);
+            pgdir[pde_idx] = (pde_t)__pg_entry(
+                __page_number(__pa(pg_tab)),
+                PDE_PRESENT | PDE_WRITABLE | PDE_USER
+            );
+        }
+    } else {
+        pg_tab = __pte_kvaddr(pgdir[pde_idx]);
+    }
+    uint32_t pte_idx = __pte_idx(va);
+    return &(pg_tab[pte_idx]);
+}
+
