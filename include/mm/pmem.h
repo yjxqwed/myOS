@@ -21,37 +21,56 @@ typedef struct PhysicalPageInfo {
     uint32_t num_ref;
 } ppage_t;
 
-// setup physical memory management system
-void setup_memory(multiboot_info_t *mbi);
+// detect physical memory information
+void detect_memory(multiboot_info_t *mbi);
 
 // The max page frame number of the machine
 extern uint32_t max_high_pfn;
 
 void pmem_init();
 
-
 // Get Free Page flags
 #define GFP_ZERO 0x1
 
 // alloc a physical page
 ppage_t *page_alloc(uint32_t gfp_flags);
-// alloc a physical page and get its kernel virtual address
-// for kernel use only
-void *kv_get_page(uint32_t gfp_flags);
+
 // free a page
+// panic if p can not be freed
 void page_free(ppage_t *p);
-// decrease the reference to p, free it if no more referrence
+
+// decrease the reference to p, free it if no referrence
 void page_decref(ppage_t *p);
+
+// page to its kernel virtual address
+void *page2kva(ppage_t *p);
+// page to its physical address
+void *page2pa(ppage_t *p);
+// kernel virtual address to page
+ppage_t *kva2page(void *kva);
+// physical address to page
+ppage_t *pa2page(void *pa);
 
 /**
  *    Paging Management
  */
 
+// install the pre-mapped pd and pt for bootstrap
 void install_boot_pg(void);
+
+// init the kernel's static mappings
 void kernel_init_paging(void);
 
-// unmap the page mapped at va; if no page mapped, do nothing
-//     pgdir page directory
-//     va is page alligned
+// unmap the page mapped and including va; 
+// if no page mapped, do nothing
+// kernel won't use this
+// @param pgdir page directory
+// @param va virtual address
 void page_unmap(pde_t *pgdir, void *va);
+
+// map the page p at virtual address va;
+// @param pgdir page directory
+// @param va virtual address, should be page alligned
+// @param p the physical page
+int page_map(pde_t *pgdir, void *va, ppage_t *p);
 #endif

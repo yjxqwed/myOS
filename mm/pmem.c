@@ -60,7 +60,7 @@ static void print_mem_info(multiboot_info_t *mbi) {
     kprintf(KPL_NOTICE, "=============================================\n");
 }
 
-void setup_memory(multiboot_info_t *mbi) {
+void detect_memory(multiboot_info_t *mbi) {
     print_mem_info(mbi);
     if (CHECK_FLAG(mbi->flags, 0)) {
         // mbi->mem_upper is given in KiB
@@ -90,6 +90,8 @@ void setup_memory(multiboot_info_t *mbi) {
 // The allocator is only for allocating pages for initializing
 // mm structures
 // On success, return the kernel virtual address; NULL otherwise.
+// @param n number of bytes required
+// @param page_alligned whether the block should be page alligned
 static void *boot_alloc(uint32_t n, bool page_alligned) {
 
     static uintptr_t next_free_byte = NULL;
@@ -128,20 +130,20 @@ static void print_page_t(ppage_t *p) {
 }
 
 // page to kernel virtual address
-static inline void *page2kva(ppage_t *p) {
+void *page2kva(ppage_t *p) {
     return (void *)((p - pmap) * PAGE_SIZE);
 }
 
 // page to physical address
-static inline void *page2pa(ppage_t *p) {
+void *page2pa(ppage_t *p) {
     return __pa(page2kva(p));
 }
 
-static inline ppage_t *kva2page(void *kva) {
+ppage_t *kva2page(void *kva) {
     return pmap + (uintptr_t)kva / PAGE_SIZE;
 }
 
-static inline ppage_t *pa2page(void *pa) {
+ppage_t *pa2page(void *pa) {
     return kva2page(__va(pa));
 }
 
@@ -168,6 +170,7 @@ void pmem_init() {
     }
 }
 
+// alloc a physical page
 ppage_t *page_alloc(uint32_t gfp_flags) {
     if (free_pages_list == NULL) {
         return NULL;
@@ -181,20 +184,13 @@ ppage_t *page_alloc(uint32_t gfp_flags) {
     return fp;
 }
 
-void *kv_get_page(uint32_t gfp_flags) {
-    ppage_t *p = page_alloc(gfp_flags);
-    if (p == NULL) {
-        return NULL;
-    }
-    return page2kva(p);
-}
-
 void page_free(ppage_t *p) {
     ASSERT(p->num_ref == 0);
     ASSERT(p->next_free_ppage == NULL);
     p->next_free_ppage = free_pages_list;
     free_pages_list = p;
 }
+
 
 void page_decref(ppage_t *p) {
     ASSERT(p->num_ref > 0);
@@ -279,7 +275,12 @@ void kernel_init_paging() {
     lcr3(__pa(kern_pg_dir));
 }
 
-pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool create) {
+// get the pate table entry for va
+// @param pgidr the target page directory
+// @param va the vitual address
+// @param create when no such pte for va: if create is true, create one;
+//               otherwise, does nothing
+static pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool create) {
     ASSERT(pgdir != NULL);
     uint32_t pde_idx = __pde_idx(va);
     pte_t *pg_tab = NULL;
@@ -306,14 +307,19 @@ pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool create) {
 }
 
 
-
-
 void page_unmap(pde_t *pgdir, void *va) {
-    ASSERT(!((uintptr_t)va & PG_OFFSET_MASK));
+    // ASSERT(!((uintptr_t)va & PG_OFFSET_MASK));
     pte_t *pte = pgdir_walk(pgdir, va, false);
     if (!(pte && (*pte & PTE_PRESENT))) {
+        // if there is no mapped page, return
         return;
     }
-
+    uintptr_t page_pa = *pte & PG_START_ADDRESS_MASK;
+    ppage_t *p = pa2page(page_pa);
+    page_decref(p);
+    *pte = 0;
 }
 
+int page_map(pde_t *pgdir, void *va, ppage_t *p) {
+    return ERR_NO_ERR;
+}

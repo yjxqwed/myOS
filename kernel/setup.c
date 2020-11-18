@@ -28,7 +28,7 @@ static void test_magic_number(uint32_t magic_number) {
 void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
     test_magic_number(magic_number);
     // get information of the physical memory installed
-    setup_memory(mbi);
+    detect_memory(mbi);
     // install page directory for bootstrap
     install_boot_pg();
     // change video mem to vaddr

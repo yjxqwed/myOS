@@ -1,11 +1,11 @@
 #include <mm/mem.h>
-#include <mm/pager.h>
-#include <mm/pmem.h>
-// #include <bitmap.h>
-#include <kprintf.h>
-// #include <common/types.h>
-#include <common/debug.h>
-#include <string.h>
+// #include <mm/pager.h>
+// #include <mm/pmem.h>
+// // #include <bitmap.h>
+// #include <kprintf.h>
+// // #include <common/types.h>
+// #include <common/debug.h>
+// #include <string.h>
 
 // extern void *kernel_image_end;
 // // _end is the (physical) end of the kernel binary image

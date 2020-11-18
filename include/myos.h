@@ -18,4 +18,9 @@
 
 #define __pte_kvaddr(pde) (pte_t *)__va((pde) & PG_START_ADDRESS_MASK)
 
+enum {
+    ERR_NO_ERR = 0,              // No err
+    ERR_MEMORY_SHORTAGE,         // Operation failed due to memory shortage
+};
+
 #endif
