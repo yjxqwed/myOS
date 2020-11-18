@@ -1,11 +1,14 @@
-#ifndef __MEM_H__
-#define __MEM_H__
+#ifndef __VMM_H__
+#define __VMM_H__
 
 // #include <multiboot/multiboot.h>
 // #include <bitmap.h>
 // #include <common/types.h>
 // #include <sys/global.h>
 // #include <arch/x86.h>
+
+#include <mm/pmem.h>
+#include <common/types.h>
 
 // // myOS requires at least 254 MiB free mem
 // // 254 = 256 - low 1 MiB - high 1 MiB
@@ -95,5 +98,20 @@
 
 // // get a region from vma with size of pg_cnt pages
 // void *get_vaddr(vma_t *vma, uint32_t pg_cnt);
+
+// get a page of memory and its kernel virtual address
+// for kernel use only
+//     @param gfp_flags get free page flags, refer to mm/pmem.h
+void *k_get_free_page(uint32_t gfp_flags);
+
+// free a page at va
+// for kernel use only
+//     @param va kernel virtual address
+void k_free_page(void *va);
+
+
+void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags);
+
+void k_free_pages(void *va, uint32_t pgcnt);
 
 #endif

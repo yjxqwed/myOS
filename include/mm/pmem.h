@@ -64,13 +64,14 @@ void kernel_init_paging(void);
 // unmap the page mapped and including va; 
 // if no page mapped, do nothing
 // kernel won't use this
-// @param pgdir page directory
-// @param va virtual address
+//     @param pgdir page directory
+//     @param va virtual address
 void page_unmap(pde_t *pgdir, void *va);
 
-// map the page p at virtual address va;
-// @param pgdir page directory
-// @param va virtual address, should be page alligned
-// @param p the physical page
-int page_map(pde_t *pgdir, void *va, ppage_t *p);
+// map the page p at virtual address va; 
+// panic if there's already a page mapped at va
+//     @param pgdir page directory
+//     @param va virtual address, should be page alligned
+//     @param p the physical page
+int page_map(pde_t *pgdir, void *va, ppage_t *p, uint32_t perm);
 #endif

@@ -2,7 +2,6 @@
 
 #include <kprintf.h>
 
-#include <mm/mem.h>
 
 void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");

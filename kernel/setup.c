@@ -7,7 +7,6 @@
 #include <kprintf.h>
 #include <driver/pit.h>
 #include <multiboot/multiboot.h>
-#include <mm/mem.h>
 #include <mm/pmem.h>
 #include <sys/interrupt.h>
 
@@ -33,12 +32,12 @@ void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
     install_boot_pg();
     // change video mem to vaddr
     video_mem_enable_paging();
-    setGlobalDescriptorTable();
-    setInterruptDescriptorTable();
 }
 
 // setup gdt, idt, etc
 void ksetup() {
+    setGlobalDescriptorTable();
+    setInterruptDescriptorTable();
     kernel_init_paging();
     pmem_init();
     while (1);

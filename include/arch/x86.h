@@ -35,7 +35,7 @@
 #define __pde_idx(x) ((uintptr_t)(x) >> PD_IDX_SHIFT)
 #define __pte_idx(x) (((uintptr_t)(x) & PT_IDX_MASK) >> PT_IDX_SHIFT)
 
-#define __pg_entry(ppage_no, attr) (uint32_t)(((ppage_no) * PAGE_SIZE) | (attr))
+#define __pg_entry(page_pa, attr) ((uintptr_t)(page_pa) | (attr))
 
 #define __page_number(x) (uint32_t)(((uintptr_t)(x)) / PAGE_SIZE)
 
@@ -130,6 +130,9 @@ static inline void lcr3(uint32_t x) __attr_always_inline;
 // store cr3
 static inline uint32_t scr3() __attr_always_inline;
 
+// invlpg
+static inline void invlpg(void *va) __attr_always_inline;
+
 #define __asm_volatile __asm__ volatile
 
 static inline uint8_t inportb(uint16_t port) {
@@ -214,6 +217,13 @@ static inline uint32_t scr3() {
     return cr3;
 }
 
-
+static inline void invlpg(void *va) {
+    __asm_volatile (
+        "invlpg [%0]"
+        :
+        : "r"(va)
+        : "memory"
+    );
+}
 
 #endif

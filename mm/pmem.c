@@ -185,6 +185,7 @@ ppage_t *page_alloc(uint32_t gfp_flags) {
 }
 
 void page_free(ppage_t *p) {
+    ASSERT(p != NULL);
     ASSERT(p->num_ref == 0);
     ASSERT(p->next_free_ppage == NULL);
     p->next_free_ppage = free_pages_list;
@@ -193,6 +194,7 @@ void page_free(ppage_t *p) {
 
 
 void page_decref(ppage_t *p) {
+    ASSERT(p != NULL);
     ASSERT(p->num_ref > 0);
     ASSERT(p->next_free_ppage == NULL);
     p->num_ref--;
@@ -213,11 +215,11 @@ __PAGE_ALLIGNED pte_t boot_pg_tab[NRPTE];
 void install_boot_pg(void) {
     pte_t *ppg = (pte_t *)__pa(boot_pg_tab);
     for (int i = 0; i < NRPTE; i++) {
-        ppg[i] = (pte_t)__pg_entry(i, PTE_PRESENT | PTE_WRITABLE);
+        ppg[i] = (pte_t)__pg_entry(i * PAGE_SIZE, PTE_PRESENT | PTE_WRITABLE);
     }
     memset(boot_pg_dir, 0, PAGE_SIZE);
     pde_t pde = (pde_t)__pg_entry(
-        __page_number(__pa(boot_pg_tab)), PTE_PRESENT | PTE_WRITABLE
+        __pa(boot_pg_tab), PTE_PRESENT | PTE_WRITABLE
     );
     pde_t *ppd = (pde_t *)__pa(boot_pg_dir);
     ppd[0] = pde;
@@ -250,11 +252,11 @@ void kernel_init_paging() {
         ASSERT(pg_tab != NULL);
         for (int j = 0; j < NRPTE; j++, pfn++) {
             pg_tab[j] = (pte_t)__pg_entry(
-                pfn, PTE_USER | PTE_PRESENT
+                pfn * PAGE_SIZE, PTE_USER | PTE_PRESENT
             );
         }
         kern_pg_dir[i] = (pde_t)__pg_entry(
-            __page_number(__pa(pg_tab)), PTE_USER | PTE_PRESENT
+            __pa(pg_tab), PTE_USER | PTE_PRESENT
         );
     }
 
@@ -264,11 +266,11 @@ void kernel_init_paging() {
         ASSERT(pg_tab != NULL);
         for (int j = 0; j <= __pte_idx(va); j++, pfn++) {
             pg_tab[j] = (pte_t)__pg_entry(
-                pfn, PTE_USER | PTE_PRESENT
+                pfn * PAGE_SIZE, PTE_USER | PTE_PRESENT
             );
         }
         kern_pg_dir[__pde_idx(va)] = (pde_t)__pg_entry(
-            __page_number(__pa(pg_tab)), PTE_USER | PTE_PRESENT
+            __pa(pg_tab), PTE_USER | PTE_PRESENT
         );
     }
 
@@ -295,8 +297,7 @@ static pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool create) {
             }
             pg_tab = page2kva(fp);
             pgdir[pde_idx] = (pde_t)__pg_entry(
-                __page_number(__pa(pg_tab)),
-                PDE_PRESENT | PDE_WRITABLE | PDE_USER
+                __pa(pg_tab), PDE_PRESENT | PDE_WRITABLE | PDE_USER
             );
         }
     } else {
@@ -308,7 +309,6 @@ static pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool create) {
 
 
 void page_unmap(pde_t *pgdir, void *va) {
-    // ASSERT(!((uintptr_t)va & PG_OFFSET_MASK));
     pte_t *pte = pgdir_walk(pgdir, va, false);
     if (!(pte && (*pte & PTE_PRESENT))) {
         // if there is no mapped page, return
@@ -317,9 +317,20 @@ void page_unmap(pde_t *pgdir, void *va) {
     uintptr_t page_pa = *pte & PG_START_ADDRESS_MASK;
     ppage_t *p = pa2page(page_pa);
     page_decref(p);
+    invlpg(va);
     *pte = 0;
 }
 
-int page_map(pde_t *pgdir, void *va, ppage_t *p) {
+int page_map(pde_t *pgdir, void *va, ppage_t *p, uint32_t perm) {
+    pte_t *pte = pgdir_walk(pgdir, va, true);
+    if (pte == NULL) {
+        return ERR_MEMORY_SHORTAGE;
+    }
+
+    // panic if there's already a page mapped there
+    ASSERT(!(*pte & PTE_PRESENT));
+
+    *pte = (pte_t)__pg_entry(page2pa(p), PTE_PRESENT | perm);
+
     return ERR_NO_ERR;
 }
