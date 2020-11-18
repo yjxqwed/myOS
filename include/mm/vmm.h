@@ -106,12 +106,18 @@ void *k_get_free_page(uint32_t gfp_flags);
 
 // free a page at va
 // for kernel use only
-//     @param va kernel virtual address
-void k_free_page(void *va);
+//     @param kva kernel virtual address
+void k_free_page(void *kva);
 
-
+// get pgcnt pages of continuous memory
+// return kva on success or NULL on failure
+// for kernel use only
+//     @param pgcnt number of pages requested
 void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags);
 
-void k_free_pages(void *va, uint32_t pgcnt);
+// free pgcnt pages of continuous memory from va
+//     @param kva
+//     @param pgcnt number of pages to be freed
+void k_free_pages(void *kva, uint32_t pgcnt);
 
 #endif
