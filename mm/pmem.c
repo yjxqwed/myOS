@@ -7,7 +7,7 @@
 #include <myos.h>
 #include <arch/x86.h>
 
-uint32_t max_high_pfn = 0;
+static uint32_t max_high_pfn = 0;
 static uint32_t min_high_pfn = 0;
 static uint32_t nppages = 0;
 
@@ -80,7 +80,10 @@ void detect_memory(multiboot_info_t *mbi) {
         uintptr_t _end = __pa(&kernel_image_end);
         min_high_pfn = __page_number(_end) + 2;
         nppages = max_high_pfn + 1;
-        kprintf(KPL_NOTICE, "minpfn=0x%x, maxpfn=0x%x, npages=0x%x\n", min_high_pfn, max_high_pfn, nppages);
+        kprintf(
+            KPL_NOTICE, "minpfn=0x%x, maxpfn=0x%x, npages=0x%x\n",
+            min_high_pfn, max_high_pfn, nppages
+        );
     } else {
         kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
         while (1);
@@ -92,7 +95,7 @@ void detect_memory(multiboot_info_t *mbi) {
 // On success, return the kernel virtual address; NULL otherwise.
 // @param n number of bytes required
 // @param page_alligned whether the block should be page alligned
-static void *boot_alloc(uint32_t n, bool page_alligned) {
+static void *boot_alloc(uint32_t n, bool_t page_alligned) {
 
     static uintptr_t next_free_byte = NULL;
 
@@ -131,30 +134,30 @@ static void print_page_t(ppage_t *p) {
 
 // page to kernel virtual address
 void *page2kva(ppage_t *p) {
-    return (void *)((p - pmap) * PAGE_SIZE);
+    return __va(page2pa(p));
 }
 
 // page to physical address
 void *page2pa(ppage_t *p) {
-    return __pa(page2kva(p));
+    return (p - pmap) * PAGE_SIZE;
 }
 
 ppage_t *kva2page(void *kva) {
-    return pmap + (uintptr_t)kva / PAGE_SIZE;
+    return pa2page(__pa(kva));
 }
 
 ppage_t *pa2page(void *pa) {
-    return kva2page(__va(pa));
+    return pmap + (uintptr_t)pa / PAGE_SIZE;
 }
 
 // init the pmem management structures
 void pmem_init() {
     // initialize pmap
-    pmap = boot_alloc(sizeof(ppage_t) * nppages, false);
+    pmap = boot_alloc(sizeof(ppage_t) * nppages, False);
 
     // fpn is the next page after pages allocated by boot_alloc
     // pages after fpn may be used in further operations
-    int fpn = __page_number(__pa(boot_alloc(0, true)));
+    int fpn = __page_number(__pa(boot_alloc(0, True)));
     ASSERT(fpn < max_high_pfn);
     kprintf(KPL_DEBUG, "pmap=0x%X\n", pmap);
     kprintf(KPL_DEBUG, "nppages=0x%x\nfree_page=0x%x\n", nppages, fpn);
@@ -163,10 +166,14 @@ void pmem_init() {
         pmap[i].next_free_ppage = NULL;
         pmap[i].num_ref = 1;
     }
-    for (int i = fpn; i <= max_high_pfn; i++) {
-        pmap[i].next_free_ppage = free_pages_list;
+    free_pages_list = &(pmap[fpn]);
+    for (int i = fpn; i < max_high_pfn; i++) {
+        pmap[i].next_free_ppage = &(pmap[i + 1]);
         pmap[i].num_ref = 0;
-        free_pages_list = &(pmap[i]);
+    }
+    {
+        pmap[max_high_pfn].next_free_ppage = NULL;
+        pmap[max_high_pfn].num_ref = 0;
     }
 }
 
@@ -192,6 +199,23 @@ void page_free(ppage_t *p) {
     free_pages_list = p;
 }
 
+ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
+
+}
+
+void pages_free(ppage_t *p, uint32_t pg_cnt) {
+    ASSERT(p - pmap + pg_cnt <= nppages);
+    for (uint32_t i = 0; i < pg_cnt; i++) {
+        page_free(&(p[i]));
+    }
+}
+
+
+void page_incref(ppage_t *p) {
+    ASSERT(p != NULL);
+    ASSERT(p->next_free_ppage == NULL);
+    p->num_ref++;
+}
 
 void page_decref(ppage_t *p) {
     ASSERT(p != NULL);
@@ -238,7 +262,7 @@ void install_boot_pg(void) {
 static pte_t *kern_pg_dir = NULL;
 
 void kernel_init_paging() {
-    kern_pg_dir = boot_alloc(PAGE_SIZE, true);
+    kern_pg_dir = boot_alloc(PAGE_SIZE, True);
     kprintf(KPL_DEBUG, "kern_pg_dir=0x%X\n", (uintptr_t)kern_pg_dir);
     int pfn = 0;
     uintptr_t va = __va(max_high_pfn * PAGE_SIZE);
@@ -248,7 +272,7 @@ void kernel_init_paging() {
         i < __pde_idx(va);
         i++
     ) {
-        pte_t *pg_tab = boot_alloc(PAGE_SIZE, true);
+        pte_t *pg_tab = boot_alloc(PAGE_SIZE, True);
         ASSERT(pg_tab != NULL);
         for (int j = 0; j < NRPTE; j++, pfn++) {
             pg_tab[j] = (pte_t)__pg_entry(
@@ -262,7 +286,7 @@ void kernel_init_paging() {
 
     // the last page_table might be half used
     {
-        pte_t *pg_tab = boot_alloc(PAGE_SIZE, true);
+        pte_t *pg_tab = boot_alloc(PAGE_SIZE, True);
         ASSERT(pg_tab != NULL);
         for (int j = 0; j <= __pte_idx(va); j++, pfn++) {
             pg_tab[j] = (pte_t)__pg_entry(
@@ -280,9 +304,9 @@ void kernel_init_paging() {
 // get the pate table entry for va
 // @param pgidr the target page directory
 // @param va the vitual address
-// @param create when no such pte for va: if create is true, create one;
+// @param create when no such pte for va: if create is True, create one;
 //               otherwise, does nothing
-static pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool create) {
+static pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool_t create) {
     ASSERT(pgdir != NULL);
     uint32_t pde_idx = __pde_idx(va);
     pte_t *pg_tab = NULL;
@@ -309,7 +333,7 @@ static pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool create) {
 
 
 void page_unmap(pde_t *pgdir, void *va) {
-    pte_t *pte = pgdir_walk(pgdir, va, false);
+    pte_t *pte = pgdir_walk(pgdir, va, False);
     if (!(pte && (*pte & PTE_PRESENT))) {
         // if there is no mapped page, return
         return;
@@ -322,7 +346,7 @@ void page_unmap(pde_t *pgdir, void *va) {
 }
 
 int page_map(pde_t *pgdir, void *va, ppage_t *p, uint32_t perm) {
-    pte_t *pte = pgdir_walk(pgdir, va, true);
+    pte_t *pte = pgdir_walk(pgdir, va, True);
     if (pte == NULL) {
         return ERR_MEMORY_SHORTAGE;
     }

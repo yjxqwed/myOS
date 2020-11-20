@@ -1,4 +1,6 @@
 #include <mm/vmm.h>
+#include <common/debug.h>
+#include <arch/x86.h>
 // #include <mm/pager.h>
 // #include <mm/pmem.h>
 // // #include <bitmap.h>
@@ -155,9 +157,9 @@
 // // }
 
 
-void mm_init() {
+// void mm_init() {
     
-}
+// }
 
 // // void *vm_kernel_get_pages(uint32_t page_cnt) {
 // //     // allocate at most 256 pages in one request
@@ -221,3 +223,32 @@ void mm_init() {
 // //     }
 // //     return (void *)(vma->vm_start + (uint32_t)bit_idx * PAGE_SIZE);
 // // }
+
+
+void *k_get_free_page(uint32_t gfp_flags) {
+    ppage_t *fp = page_alloc(gfp_flags);
+    if (!fp) {
+        return NULL;
+    }
+    page_incref(fp);
+    return page2kva(fp);
+}
+
+
+void k_free_page(void *kva) {
+    // kva has to be page alligned
+    ASSERT(!((uintptr_t)kva & PG_OFFSET_MASK));
+    ppage_t *p = kva2page(kva);
+    ASSERT(p->num_ref == 1);
+    page_decref(p);
+}
+
+
+void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags) {
+    return NULL;
+}
+
+
+void k_free_pages(void *kva, uint32_t pgcnt) {
+    return;
+}

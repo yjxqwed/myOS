@@ -24,9 +24,6 @@ typedef struct PhysicalPageInfo {
 // detect physical memory information
 void detect_memory(multiboot_info_t *mbi);
 
-// The max page frame number of the machine
-extern uint32_t max_high_pfn;
-
 void pmem_init();
 
 // Get Free Page flags
@@ -38,6 +35,16 @@ ppage_t *page_alloc(uint32_t gfp_flags);
 // free a page
 // panic if p can not be freed
 void page_free(ppage_t *p);
+
+// get pg_cnt number of continuous free pages
+// return the first page of the pg_cnt pages
+ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags);
+
+// free pg_cnt pages starting from p
+void pages_free(ppage_t *p, uint32_t pg_cnt);
+
+// increase the reference to p
+void page_incref(ppage_t *p);
 
 // decrease the reference to p, free it if no referrence
 void page_decref(ppage_t *p);

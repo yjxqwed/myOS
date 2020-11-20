@@ -17,8 +17,8 @@ typedef double float64_t;
 
 #define NULL (void *)0
 
-#define true 1
-#define false 0
-typedef int bool;
+#define True 1
+#define False 0
+typedef int bool_t;
 
 #endif

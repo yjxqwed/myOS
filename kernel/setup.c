@@ -8,6 +8,7 @@
 #include <driver/pit.h>
 #include <multiboot/multiboot.h>
 #include <mm/pmem.h>
+#include <mm/vmm.h>
 #include <sys/interrupt.h>
 
 static void test_magic_number(uint32_t magic_number) {
@@ -40,6 +41,18 @@ void ksetup() {
     setInterruptDescriptorTable();
     kernel_init_paging();
     pmem_init();
+    // void *a = k_get_free_page(GFP_ZERO);
+    // kprintf(KPL_DEBUG, "a = 0x%X\n", (uintptr_t)a);
+    // void *b = k_get_free_page(GFP_ZERO);
+    // kprintf(KPL_DEBUG, "b = 0x%X\n", (uintptr_t)b);
+    // *(uint32_t *)b = 0x19971125;
+    // kprintf(KPL_DEBUG, "%x\n", *(uint32_t *)b);
+    // k_free_page(a);
+    // k_free_page(b);
+    // void *c = k_get_free_page(GFP_ZERO);
+    // kprintf(KPL_DEBUG, "c = 0x%X\n", (uintptr_t)c);
+    // *(uint32_t *)c = 0x19971015;
+    // kprintf(KPL_DEBUG, "%x\n", *(uint32_t *)c);
     while (1);
     enable_int();
 }
