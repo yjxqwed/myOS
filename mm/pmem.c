@@ -7,6 +7,9 @@
 #include <myos.h>
 #include <arch/x86.h>
 
+// the page directory used by kernel
+static pte_t *kern_pg_dir = NULL;
+
 static uint32_t max_high_pfn = 0;
 static uint32_t min_high_pfn = 0;
 static uint32_t nppages = 0;
@@ -48,12 +51,12 @@ static void print_mem_info(multiboot_info_t *mbi) {
                 KPL_NOTICE, 
                 " size = 0x%x, base_addr = 0x%X,"
                 " length = 0x%X, type = 0x%x\n",
-                (uint32_t) mmap->size,
+                (uint32_t)mmap->size,
                 // (uint32_t) (mmap->addr >> 32),
-                (uint32_t) (mmap->addr & 0xffffffff),
+                (uint32_t)(mmap->addr & 0xffffffff),
                 // (uint32_t) (mmap->len >> 32),
-                (uint32_t) (mmap->len & 0xffffffff),
-                (uint32_t) mmap->type
+                (uint32_t)(mmap->len & 0xffffffff),
+                (uint32_t)mmap->type
             );
         }
     }
@@ -200,7 +203,7 @@ void page_free(ppage_t *p) {
 }
 
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
-
+    return NULL;
 }
 
 void pages_free(ppage_t *p, uint32_t pg_cnt) {
@@ -257,9 +260,6 @@ void install_boot_pg(void) {
     lcr0(cr0);
 }
 
-
-// the page directory used by kernel
-static pte_t *kern_pg_dir = NULL;
 
 void kernel_init_paging() {
     kern_pg_dir = boot_alloc(PAGE_SIZE, True);
@@ -355,6 +355,6 @@ int page_map(pde_t *pgdir, void *va, ppage_t *p, uint32_t perm) {
     ASSERT(!(*pte & PTE_PRESENT));
 
     *pte = (pte_t)__pg_entry(page2pa(p), PTE_PRESENT | perm);
-
+    page_incref(p);
     return ERR_NO_ERR;
 }
