@@ -46,5 +46,16 @@ void         list_insert_after(list_node_t *a, list_node_t *node);
 // return the first node that pred(node, args) is True
 list_node_t *list_pred(list_t *l, list_node_pred pred, void *args);
 
+#define __list_node_offset(struct_type, member) \
+    (uintptr_t)(&((struct_type*)0)->member)
+
+// get the struct from a list_node pointer
+// @param struct_type the type name of the target struct
+// @param member the field name of node_ptr
+// @param node_ptr the pointer to the list_node_t type
+#define __list_node_struct(struct_type, member, node_ptr) \
+    (struct_type*)( \
+        (uintptr_t)node_ptr - __list_node_offset(struct_type, member) \
+    )
 
 #endif

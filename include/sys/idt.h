@@ -30,5 +30,7 @@ struct InterruptDescriptorTablePointer {
 typedef struct InterruptDescriptorTablePointer idt_ptr_t;
 
 void setInterruptDescriptorTable();
-void setInterruptDescriptor(Gate* gate, uint32_t offset, uint16_t selector, uint8_t attr);
+void setInterruptDescriptor(
+    Gate* gate, uint32_t offset, uint16_t selector, uint8_t attr
+);
 #endif

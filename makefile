@@ -14,7 +14,7 @@ kernel_asm_objs = kernel/asm/entry.elf32 \
 kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \
                 kernel/isr.elf32 kernel/kernel.elf32 \
                 kernel/tss.elf32 kernel/proc.elf32 \
-                kernel/interrupt.elf32 kernel/setup.elf32
+                kernel/setup.elf32
 lib_objs = lib/debug.elf32 lib/utils.elf32 \
            lib/string.elf32 lib/kprintf.elf32 lib/bitmap.elf32 \
            lib/list.elf32
@@ -23,8 +23,10 @@ mm_objs = mm/vmm.elf32 mm/pmem.elf32
 
 usr_asm_objs = usr/asm/test.elf32
 
+arch_x86_objs = arch/x86/interrupt.elf32
+
 objects = $(driver_objs) $(kernel_asm_objs) $(kernel_c_objs) \
-          $(lib_objs) $(usr_asm_objs) $(mm_objs)
+          $(lib_objs) $(usr_asm_objs) $(mm_objs) $(arch_x86_objs)
 
 
 

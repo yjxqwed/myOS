@@ -73,7 +73,7 @@ extern void isr47();
 *  Interrupt Controller (PICs - also called the 8259's) in
 *  order to make IRQ0 to 15 be remapped to IDT entries 32 to
 *  47 */
-void irq_remap(void) {
+static void irq_remap(void) {
     outportb(PIC_M_CTL, 0x11);
     outportb(PIC_S_CTL, 0x11);
     outportb(PIC_M_CTLMASK, 0x20);
