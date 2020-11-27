@@ -9,7 +9,7 @@
 #include <multiboot/multiboot.h>
 #include <mm/pmem.h>
 #include <mm/vmm.h>
-#include <sys/interrupt.h>
+#include <arch/x86.h>
 
 static void test_magic_number(uint32_t magic_number) {
     // check magic number

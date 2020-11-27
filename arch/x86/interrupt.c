@@ -1,8 +1,5 @@
-#include <sys/interrupt.h>
+#include <arch/x86.h>
 #include <common/types.h>
-
-// IF is bit 9 of eflags
-#define EFLAGS_IF_MASK 0x00000200
 
 static uint32_t get_eflags() {
     uint32_t eflags;

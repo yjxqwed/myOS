@@ -2,7 +2,7 @@
 #include <driver/screen.h>
 #include <string.h>
 #include <kprintf.h>
-#include <sys/interrupt.h>
+#include <arch/x86.h>
 
 void printISRParam(const isrp_t* p) {
     kprintf(KPL_PANIC, " {eip=%x; errco=%x}", p->eip, p->err_code);
