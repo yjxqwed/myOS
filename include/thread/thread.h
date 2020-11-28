@@ -18,9 +18,15 @@ typedef enum TaskStatus {
 } task_status_e;
 
 typedef struct ThreadStack {
+    uint32_t ebp;
+    uint32_t ebx;
+    uint32_t edi;
+    uint32_t esi;
+    uint32_t eip;
 
-
-
+    uint32_t ret_addr_dummy;
+    thread_func_t func;
+    void *args;
 } thread_stk_t;
 
 #define TASK_NAME_LEN 16
