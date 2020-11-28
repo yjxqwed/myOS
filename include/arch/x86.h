@@ -245,4 +245,13 @@ INT_STATUS enable_int();
 // disable interrupt and return the previous status
 INT_STATUS disable_int();
 
+/**
+ * 8259A chip ports. More info: https://wiki.osdev.org/8259_PIC
+ * x86 Programable Interrupt Controller
+ */
+#define PIC_M_CTL     0x20
+#define PIC_M_CTLMASK 0x21
+#define PIC_S_CTL     0xA0
+#define PIC_S_CTLMASK 0xA1
+
 #endif

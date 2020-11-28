@@ -5,12 +5,6 @@
 
 #include <common/types.h>
 
-// 8259A chip ports. More info: https://wiki.osdev.org/8259_PIC
-#define PIC_M_CTL     0x20
-#define PIC_M_CTLMASK 0x21
-#define PIC_S_CTL     0xA0
-#define PIC_S_CTLMASK 0xA1
-
 // CPU exceptions. More info: https://wiki.osdev.org/Exceptions
 // #define DIVBYZERO 0x0
 // #define DEBUG 0x1
@@ -20,14 +14,22 @@
 // #define BDRANGEXCEEDED 0x5
 // #define INVALIDOP 0x6
 
-struct InterruptServiceRoutineParam {
-    uint32_t gs, fs, es, ds;      /* pushed the segs last */
-    uint32_t edi, esi, ebp, kernel_esp, ebx, edx, ecx, eax;  /* pushed by 'pushad' */
-    uint32_t int_no, err_code;    /* our 'push byte #' and ecodes do this */
-    uint32_t eip, cs, eflags, user_esp, ss;   /* pushed by the processor automatically */ 
+struct InterruptStack {
+    // == pushed the seg regs last ==
+    uint32_t gs, fs, es, ds;
+    // == pushed by 'pushad' ==
+    uint32_t edi, esi, ebp;
+    // unused, popad will ignore this
+    uint32_t esp_dummy;
+    uint32_t ebx, edx, ecx, eax;
+    // == interrupt number, error code ==
+    uint32_t int_no, err_code;
+    // == pushed by the processor automatically ==
+    uint32_t eip, cs, eflags, user_esp, ss;
 };
 
 void setISRs();
 
-typedef struct InterruptServiceRoutineParam isrp_t;
+typedef struct InterruptStack isrp_t;
+typedef struct InterruptStack istk_t;
 #endif
