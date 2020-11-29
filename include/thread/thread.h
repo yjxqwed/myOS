@@ -22,6 +22,7 @@ typedef struct ThreadStack {
     uint32_t ebx;
     uint32_t edi;
     uint32_t esi;
+
     uint32_t eip;
 
     uint32_t ret_addr_dummy;
@@ -49,5 +50,12 @@ typedef struct task_struct {
     uint32_t stack_guard;
 
 } task_t;
+
+
+// start a new thread
+// @param name name of this thread
+// @param func the function to be run
+// @param args the parameter(s) of func
+void thread_start(const char *name, thread_func_t func, void *args);
 
 #endif
