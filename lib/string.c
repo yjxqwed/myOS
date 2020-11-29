@@ -1,10 +1,7 @@
 #include <string.h>
 
 
-static char hex_char[16] = {
-    '0', '1', '2', '3', '4', '5', '6', '7',
-    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
-};
+static char hex_char[16] = "0123456789ABCDEF";
 
 char* itos(int32_t number, char out[INT32LEN]) {
     if (number == 0) {

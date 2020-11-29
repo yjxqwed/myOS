@@ -36,19 +36,19 @@ void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
     video_mem_enable_paging();
 }
 
-static void test(void *args) {
-    char *a = (char *)args;
-    kprintf(KPL_DEBUG, "test: %s\n", a);
+static void kmain(void *args) {
+    kprintf(KPL_DEBUG, "main thread!\n");
     while (1);
 }
 
 // setup gdt, idt, etc
-void ksetup() {
+void kinit() {
     setGlobalDescriptorTable();
     setInterruptDescriptorTable();
     kernel_init_paging();
     pmem_init();
-    thread_start("test", test, "test");
-    while (1);
-    enable_int();
+    thread_init();
+    thread_kmain(kmain, NULL);
+    // while (1);
+    // enable_int();
 }

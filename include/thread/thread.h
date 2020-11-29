@@ -3,6 +3,9 @@
 
 #include <common/types.h>
 #include <list.h>
+#include <arch/x86.h>
+
+#define MAX_TASKS 256
 
 // thread_func_t is a function pointer to a function
 // accepts void * and return void *
@@ -45,6 +48,17 @@ typedef struct task_struct {
 
     uint16_t priority;
     uint16_t ticks;
+    // number of ticks this task has been running
+    uint32_t elapsed_ticks;
+
+    // for general use
+    list_node_t general_tag;
+    // node in the list of all tasks
+    list_node_t list_all_tag;
+
+    // process has its own page directory
+    // (virtual address)
+    pde_t *pg_dir;
 
     // a magic number to guard this struct
     uint32_t stack_guard;
@@ -52,10 +66,19 @@ typedef struct task_struct {
 } task_t;
 
 
-// start a new thread
+// start a new thread; return 0 on scuess
 // @param name name of this thread
+// @param prio priority of this thread
 // @param func the function to be run
 // @param args the parameter(s) of func
-void thread_start(const char *name, thread_func_t func, void *args);
+int thread_start(
+    const char *name, uint16_t prio,
+    thread_func_t func, void *args
+);
 
+// init thread related structures
+void thread_init();
+
+// create the main thread and transfer the control flow to it 
+void thread_kmain(thread_func_t func, void *args);
 #endif

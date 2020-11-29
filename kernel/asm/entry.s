@@ -13,7 +13,7 @@
     dd CHECK_SUM
 
 extern entry_setup
-extern ksetup
+extern kinit
 
 [section .text]
 global entry
@@ -31,7 +31,7 @@ entry:
 paging_relocation:
     add esp, KERNEL_BASE
     add ebp, KERNEL_BASE
-    call ksetup
+    call kinit
 
     ; setup done, jmp to the kernel
     jmp kernel_entry
