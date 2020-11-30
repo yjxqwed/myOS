@@ -37,14 +37,14 @@ typedef struct ThreadStack {
 
 typedef struct task_struct {
 
+    // the stack pointer to the stack used by this task
+    // in the kernel mode
+    uintptr_t kernel_stack;
+
     uint16_t task_id;
     uint16_t parent_id;
     char task_name[TASK_NAME_LEN];
     task_status_e status;
-
-    // the stack pointer to the stack used by this task
-    // in the kernel mode
-    uintptr_t kernel_stack;
 
     uint16_t priority;
     uint16_t ticks;
@@ -81,4 +81,7 @@ void thread_init();
 
 // create the main thread and transfer the control flow to it 
 void thread_kmain(thread_func_t func, void *args);
+
+void time_scheduler();
+
 #endif

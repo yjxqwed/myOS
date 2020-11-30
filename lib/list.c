@@ -40,7 +40,9 @@ list_node_t *list_pop_back(list_t *l) {
 
 list_node_t *list_pop_front(list_t *l) {
     list_node_t *front = l->head.next;
-    if (front == &(l->tail));
+    if (front == &(l->tail)) {
+        return NULL;
+    }
     l->head.next = front->next;
     front->next->prev = &(l->head);
     front->next = front->prev = NULL;

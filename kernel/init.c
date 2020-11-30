@@ -36,8 +36,15 @@ void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
     video_mem_enable_paging();
 }
 
+static void test(void *args) {
+    char *a = (char *)args;
+    kprintf(KPL_DEBUG, "test: %s\n", a);
+    while (1);
+}
+
 static void kmain(void *args) {
     kprintf(KPL_DEBUG, "main thread!\n");
+    // thread_start("test1", 31, test, "abc");
     while (1);
 }
 

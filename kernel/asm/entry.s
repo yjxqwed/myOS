@@ -14,11 +14,15 @@
 
 extern entry_setup
 extern kinit
+extern kmain_stack_top
 
 [section .text]
 global entry
 entry:
-    mov esp, boot_stk - KERNEL_BASE
+    ; mov esp, boot_stk - KERNEL_BASE
+    MAGICBP
+    mov esp, [kmain_stack_top - KERNEL_BASE]
+    sub esp, KERNEL_BASE
     mov ebp, esp
 
     push eax

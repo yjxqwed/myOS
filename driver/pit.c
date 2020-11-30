@@ -1,6 +1,7 @@
 #include <driver/pit.h>
 #include <arch/x86.h>
 #include <kprintf.h>
+#include <thread/thread.h>
 
 #define TIMER0 0
 #define TIMER1 1
@@ -76,4 +77,5 @@ static void clock() {
 
 void do_timer(isrp_t *p) {
     // clock();
+    // time_scheduler();
 }

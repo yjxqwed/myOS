@@ -25,7 +25,7 @@ struct InterruptStack {
     // == interrupt number, error code ==
     uint32_t int_no, err_code;
     // == pushed by the processor automatically ==
-    uint32_t eip, cs, eflags, user_esp, ss;
+    uint32_t eip, cs, eflags, esp, ss;
 };
 
 void setISRs();

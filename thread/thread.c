@@ -6,7 +6,12 @@
 #include <common/debug.h>
 #include <common/types.h>
 
+static __PAGE_ALLIGNED uint8_t reserved_pcb[PAGE_SIZE];
+uint32_t kmain_stack_top = reserved_pcb + PAGE_SIZE;
+static task_t *kmain = NULL;
+
 static void thread_run_func(thread_func_t func, void *args) {
+    enable_int();
     func(args);
 }
 
@@ -20,36 +25,20 @@ static list_t task_exit_list;
 // list of all tasks
 static list_t task_all_list;
 
-// static void task_init(
-//     task_t *task, const char *name, uint16_t prio,
-//     thread_func_t func, void *args
-// ) {
-//     task->priority = prio;
-//     task->ticks = prio;
-//     strcpy(name, task->task_name);
-//     task->stack_guard = 0x19971125;
-//     task->kernel_stack = (uintptr_t)task + PAGE_SIZE;
-//     task->kernel_stack -= sizeof(istk_t);
-//     task->kernel_stack -= sizeof(thread_stk_t);
-//     thread_stk_t *ts = (thread_stk_t *)(task->kernel_stack);
-//     ts->eip = (uint32_t)thread_run_func;
-//     ts->args = args;
-//     ts->func = func;
-//     ts->ret_addr_dummy = 0;
-//     ts->ebp = ts->ebx = ts->esi = ts->edi = 0;
-//     __asm_volatile (
-//         "mov esp, %0\n\t"
-//         "xchg bx, bx\n\t"
-//         "pop ebp\n\t"
-//         "pop ebx\n\t"
-//         "pop edi\n\t"
-//         "pop esi\n\t"
-//         "ret"
-//         :
-//         : "g"(task->kernel_stack)
-//         :
-//     );
-// }
+static void task_init(
+    task_t *task, const char *name, uint16_t prio
+) {
+    task->priority = prio;
+    task->ticks = prio;
+    strcpy(name, task->task_name);
+    task->stack_guard = 0x19971125;
+    __asm_volatile (
+        "mov %0, esp"
+        :
+        : "=g"(task->kernel_stack)
+        :
+    );
+}
 
 static task_t *task_create(
     const char *name, uint16_t prio, thread_func_t func,
@@ -100,26 +89,29 @@ int thread_start(
 }
 
 void thread_kmain(thread_func_t func, void *args) {
-    static bool_t started = False;
-    ASSERT(!started);
-    started = True;
-    task_t *task = task_create("kmain", 31, func, args);
-    ASSERT(task != NULL);
-    task->status = TASK_RUNNING;
-    ASSERT(!list_find(&task_all_list, &(task->list_all_tag)));
-    list_push_back(&task_all_list, &(task->list_all_tag));
-    __asm_volatile (
-        "mov esp, %0\n\t"
-        "pop ebp\n\t"
-        "pop ebx\n\t"
-        "pop edi\n\t"
-        "pop esi\n\t"
-        "ret"
-        :
-        : "g"(task->kernel_stack)
-        :
-    );
+    // static bool_t started = False;
+    // ASSERT(!started);
+    // started = True;
+    // task_t *task = task_create("kmain", 31, func, args);
+    // ASSERT(task != NULL);
+    // task->status = TASK_RUNNING;
+    // current_task = task;
+    // ASSERT(!list_find(&task_all_list, &(task->list_all_tag)));
+    // list_push_back(&task_all_list, &(task->list_all_tag));
+    // __asm_volatile (
+    //     "mov esp, %0\n\t"
+    //     "pop ebp\n\t"
+    //     "pop ebx\n\t"
+    //     "pop edi\n\t"
+    //     "pop esi\n\t"
+    //     "ret"
+    //     :
+    //     : "g"(task->kernel_stack)
+    //     :
+    // );
 }
+
+
 
 void thread_init() {
     list_init(&task_ready_list);
@@ -127,3 +119,45 @@ void thread_init() {
     list_init(&task_exit_list);
 }
 
+static void switch_thread(task_t *prev, task_t *next) {
+    next->status = TASK_RUNNING;
+    current_task = next;
+    MAGICBP;
+    __asm_volatile (
+        "mov %0, esp\n\t"
+        "mov esp, %1"
+        : "=g"(prev->kernel_stack)
+        : "g"(next->kernel_stack)
+        :
+    );
+}
+
+static void schedule() {
+    task_t *old = current_task;
+    if (old->status == TASK_RUNNING) {
+        ASSERT(!list_find(&task_ready_list, &(old->general_tag)));
+        list_push_back(&task_ready_list, &(old->general_tag));
+        old->status = TASK_READY;
+        old->ticks = old->priority;
+    }
+    ASSERT(!list_empty(&task_ready_list));
+    task_t *next = NULL;
+    next = __list_node_struct(
+        task_t, general_tag, list_pop_front(&task_ready_list)
+    );
+    ASSERT(next->status == TASK_READY);
+    switch_thread(old, next);
+}
+
+void time_scheduler() {
+    // make sure the interrupt is disabled
+    ASSERT(get_int_status() == INTERRUPT_OFF);
+    // make sure the thread's stack is correct
+    ASSERT(current_task != NULL && current_task->stack_guard == 0x19971125);
+    (current_task->elapsed_ticks)++;
+    if (current_task->ticks == 0) {
+        schedule();
+    } else {
+        (current_task->ticks)--;
+    }
+}
