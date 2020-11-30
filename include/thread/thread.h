@@ -79,9 +79,10 @@ int thread_start(
 // init thread related structures
 void thread_init();
 
-// create the main thread and transfer the control flow to it 
-void thread_kmain(thread_func_t func, void *args);
+void thread_kmain();
 
 void time_scheduler();
+
+void print_all_tasks();
 
 #endif

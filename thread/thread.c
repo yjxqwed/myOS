@@ -5,6 +5,7 @@
 #include <mm/vmm.h>
 #include <common/debug.h>
 #include <common/types.h>
+#include <kprintf.h>
 
 static __PAGE_ALLIGNED uint8_t reserved_pcb[PAGE_SIZE];
 uint32_t kmain_stack_top = reserved_pcb + PAGE_SIZE;
@@ -32,12 +33,8 @@ static void task_init(
     task->ticks = prio;
     strcpy(name, task->task_name);
     task->stack_guard = 0x19971125;
-    __asm_volatile (
-        "mov %0, esp"
-        :
-        : "=g"(task->kernel_stack)
-        :
-    );
+    task->kernel_stack = (uintptr_t)task + PAGE_SIZE;
+    task->status = TASK_READY;
 }
 
 static task_t *task_create(
@@ -88,27 +85,12 @@ int thread_start(
     return 0;
 }
 
-void thread_kmain(thread_func_t func, void *args) {
-    // static bool_t started = False;
-    // ASSERT(!started);
-    // started = True;
-    // task_t *task = task_create("kmain", 31, func, args);
-    // ASSERT(task != NULL);
-    // task->status = TASK_RUNNING;
-    // current_task = task;
-    // ASSERT(!list_find(&task_all_list, &(task->list_all_tag)));
-    // list_push_back(&task_all_list, &(task->list_all_tag));
-    // __asm_volatile (
-    //     "mov esp, %0\n\t"
-    //     "pop ebp\n\t"
-    //     "pop ebx\n\t"
-    //     "pop edi\n\t"
-    //     "pop esi\n\t"
-    //     "ret"
-    //     :
-    //     : "g"(task->kernel_stack)
-    //     :
-    // );
+void thread_kmain() {
+    kmain = (task_t *)reserved_pcb;
+    task_init(kmain, "kmain", 31);
+    ASSERT(!list_find(&task_all_list, &(kmain->list_all_tag)));
+    list_push_back(&task_all_list, &(kmain->list_all_tag));
+    kmain->status = TASK_RUNNING;
 }
 
 
@@ -160,4 +142,17 @@ void time_scheduler() {
     } else {
         (current_task->ticks)--;
     }
+}
+
+void print_all_tasks() {
+    kprintf(KPL_DEBUG, "head->");
+    for (
+        list_node_t *p = task_all_list.head.next;
+        p != &(task_all_list.tail);
+        p = p->next
+    ) {
+        task_t *t = __list_node_struct(task_t, list_all_tag, p);
+        kprintf(KPL_DEBUG, "%s->", t->task_name);
+    }
+    kprintf(KPL_DEBUG, "tail");
 }

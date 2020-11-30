@@ -55,7 +55,8 @@ void kinit() {
     kernel_init_paging();
     pmem_init();
     thread_init();
-    thread_kmain(kmain, NULL);
-    // while (1);
-    // enable_int();
+    thread_kmain();
+    print_all_tasks();
+    enable_int();
+    while (1);
 }

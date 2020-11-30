@@ -20,7 +20,6 @@ extern kmain_stack_top
 global entry
 entry:
     ; mov esp, boot_stk - KERNEL_BASE
-    MAGICBP
     mov esp, [kmain_stack_top - KERNEL_BASE]
     sub esp, KERNEL_BASE
     mov ebp, esp
