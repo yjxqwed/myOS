@@ -8,13 +8,10 @@
 #include <kprintf.h>
 
 static __PAGE_ALLIGNED uint8_t reserved_pcb[PAGE_SIZE];
-uint32_t kmain_stack_top = reserved_pcb + PAGE_SIZE;
+uint32_t kmain_stack_top = (uintptr_t)reserved_pcb + PAGE_SIZE;
 static task_t *kmain = NULL;
 
-static void thread_run_func(thread_func_t func, void *args) {
-    enable_int();
-    func(args);
-}
+static void schedule();
 
 static task_t *current_task = NULL;
 static uint16_t num_tasks = 0;
@@ -26,6 +23,26 @@ static list_t task_exit_list;
 // list of all tasks
 static list_t task_all_list;
 
+
+static void thread_run_func(thread_func_t func, void *args) {
+    enable_int();
+    func(args);
+    // when the function is done executed
+    disable_int();
+    current_task->status = TASK_DEAD;
+
+    list_node_t *p = list_pop_front(&(current_task->join_list));
+    while (p) {
+        ASSERT(!list_find(&task_ready_list, p));
+        list_push_back(&task_ready_list, p);
+        task_t *t = __list_node_struct(task_t, general_tag, p);
+        t->status = TASK_READY;
+        p = list_pop_front(&(current_task->join_list));
+    }
+
+    schedule();
+}
+
 static void task_init(
     task_t *task, const char *name, uint16_t prio
 ) {
@@ -35,6 +52,7 @@ static void task_init(
     task->stack_guard = 0x19971125;
     task->kernel_stack = (uintptr_t)task + PAGE_SIZE;
     task->status = TASK_READY;
+    list_init(&(task->join_list));
 }
 
 static task_t *task_create(
@@ -70,7 +88,7 @@ static task_t *task_create(
     return task;
 }
 
-int thread_start(
+task_t *thread_start(
     const char *name, uint16_t prio,
     thread_func_t func, void *args
 ) {
@@ -78,13 +96,13 @@ int thread_start(
     // task_init(task, name, 31, func, args);
     task_t *task = task_create(name, prio, func, args);
     if (task == NULL) {
-        return -1;
+        return NULL;
     }
     ASSERT(!list_find(&task_ready_list, &(task->general_tag)));
     list_push_back(&task_ready_list, &(task->general_tag));
     ASSERT(!list_find(&task_all_list, &(task->list_all_tag)));
     list_push_back(&task_all_list, &(task->list_all_tag));
-    return 0;
+    return task;
 }
 
 void thread_kmain() {
@@ -104,37 +122,33 @@ void thread_init() {
     list_init(&task_exit_list);
 }
 
-// static void switch_thread(task_t *prev, task_t *next) {
-//     next->status = TASK_RUNNING;
-//     current_task = next;
-//     MAGICBP;
-//     __asm_volatile (
-//         "mov %0, esp"
-//         : "=g"(prev->kernel_stack)
-//         :
-//         :
-//     );
-//     __asm_volatile (
-//         "mov esp, %0"
-//         :
-//         : "g"(next->kernel_stack)
-//         :
-//     );
-//     // __asm_volatile (
-//     //     "pop esi\n\t"
-//     //     "pop edi\n\t"
-//     //     "pop ebx\n\t"
-//     //     "pop ebp\n\t"
-//     // );
-// }
+static void clear_exit_q() {
+    // print_exit_tasks();
+    // MAGICBP;
+    list_node_t *p = list_pop_front(&task_exit_list);
+    while (p) {
+        task_t *t = __list_node_struct(task_t, general_tag, p);
+        list_erase(&(t->list_all_tag));
+        k_free_page(t);
+        p = list_pop_front(&task_exit_list);
+    }
+}
 
 static void schedule() {
+    // print_ready_tasks();
+    // MAGICBP;
+    clear_exit_q();
     task_t *old = current_task;
     if (old->status == TASK_RUNNING) {
         ASSERT(!list_find(&task_ready_list, &(old->general_tag)));
         list_push_back(&task_ready_list, &(old->general_tag));
         old->status = TASK_READY;
         old->ticks = old->priority;
+    } else if (old->status == TASK_DEAD) {
+        ASSERT(!list_find(&task_exit_list, &(old->general_tag)));
+        list_push_back(&task_exit_list, &(old->general_tag));
+    } else if (old->status == TASK_WAITING) {
+
     }
     ASSERT(!list_empty(&task_ready_list));
     task_t *next = NULL;
@@ -186,4 +200,30 @@ void print_ready_tasks() {
         kprintf(KPL_DEBUG, "%s->", t->task_name);
     }
     kprintf(KPL_DEBUG, "tail");
+}
+
+void print_exit_tasks() {
+    kprintf(KPL_DEBUG, "exit: head->");
+    for (
+        list_node_t *p = task_exit_list.head.next;
+        p != &(task_exit_list.tail);
+        p = p->next
+    ) {
+        task_t *t = __list_node_struct(task_t, general_tag, p);
+        kprintf(KPL_DEBUG, "%s->", t->task_name);
+    }
+    kprintf(KPL_DEBUG, "tail");
+}
+
+void thread_join(task_t *task) {
+    disable_int();
+    if (task == NULL || task->status == TASK_DEAD) {
+        enable_int();
+        return;
+    }
+    ASSERT(task != current_task);
+    ASSERT(!list_find(&(task->join_list), &(current_task->general_tag)));
+    list_push_back(&(task->join_list), &(current_task->general_tag));
+    current_task->status = TASK_WAITING;
+    schedule();
 }

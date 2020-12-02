@@ -7,6 +7,8 @@
 
 #define MAX_TASKS 256
 
+typedef uint16_t thread_id_t;
+
 // thread_func_t is a function pointer to a function
 // accepts void * and return void *
 typedef void (* thread_func_t)(void *);
@@ -60,6 +62,8 @@ typedef struct task_struct {
     // (virtual address)
     pde_t *pg_dir;
 
+    list_t join_list;
+
     // a magic number to guard this struct
     uint32_t stack_guard;
 
@@ -67,14 +71,18 @@ typedef struct task_struct {
 
 
 // start a new thread; return 0 on scuess
+// @param tid will be id of this thread on success
 // @param name name of this thread
 // @param prio priority of this thread
 // @param func the function to be run
 // @param args the parameter(s) of func
-int thread_start(
+task_t *thread_start(
     const char *name, uint16_t prio,
     thread_func_t func, void *args
 );
+
+// wait for task
+void thread_join(task_t *task);
 
 // init thread related structures
 void thread_init();
@@ -85,5 +93,6 @@ void time_scheduler();
 
 void print_all_tasks();
 void print_ready_tasks();
+void print_exit_tasks();
 
 #endif

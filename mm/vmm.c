@@ -4,7 +4,7 @@
 // #include <mm/pager.h>
 // #include <mm/pmem.h>
 // // #include <bitmap.h>
-// #include <kprintf.h>
+#include <kprintf.h>
 // // #include <common/types.h>
 // #include <common/debug.h>
 // #include <string.h>
@@ -239,6 +239,7 @@ void k_free_page(void *kva) {
     // kva has to be page alligned
     ASSERT(!((uintptr_t)kva & PG_OFFSET_MASK));
     ppage_t *p = kva2page(kva);
+    // kprintf(KPL_DEBUG, "kva=0x%X, p->num_ref=%d\n", kva, p->num_ref);
     ASSERT(p->num_ref == 1);
     page_decref(p);
 }

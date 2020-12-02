@@ -38,12 +38,16 @@ void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
 
 static void test(void *args) {
     char *a = (char *)args;
-    for (int i = 0; ; i++) {
-        if (i % 1000000 == 0) {
-            kprintf(KPL_DEBUG, " test: %s ", a);
-            // print_ready_tasks();
-            i = 0;
-        }
+    // for (int i = 0; i < 1000000 * 10; i++) {
+    //     if (i % 1000000 == 0) {
+    //         kprintf(KPL_DEBUG, " test: %s ", a);
+    //         // print_ready_tasks();
+    //         i = 0;
+    //     }
+    // }
+    // kprintf(KPL_DEBUG, " test: %s ", a);
+    for (int i = 0; i < 10; i++) {
+        kprintf(KPL_DEBUG, " test: %s ", a);
     }
 }
 
@@ -63,14 +67,20 @@ void kinit() {
     thread_kmain();
     print_all_tasks();
     enable_int();
-    thread_start("test1", 15, test, "abcde");
-    thread_start("test2", 5, test, "hhhh");
-    for (int i = 0; ; i++) {
-        if (i % 1000000 == 0) {
-            // print_ready_tasks();
-            kprintf(KPL_DEBUG, " main ");
-            i = 0;
-        }
+
+    task_t *task1 = thread_start("test1", 15, test, "abcde");
+    task_t *task2 = thread_start("test2", 5, test, "hhhh");
+    // for (int i = 0; ; i++) {
+    //     if (i % 1000000 == 0) {
+    //         // print_ready_tasks();
+    //         kprintf(KPL_DEBUG, " main ");
+    //         i = 0;
+    //     }
+    // }
+    thread_join(task1);
+    thread_join(task2);
+    kprintf(KPL_DEBUG, " main ");
+    while (1) {
+        // kprintf(KPL_DEBUG, " main ");
     }
-    while (1);
 }
