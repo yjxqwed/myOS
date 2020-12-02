@@ -38,8 +38,12 @@ void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
 
 static void test(void *args) {
     char *a = (char *)args;
-    kprintf(KPL_DEBUG, "test: %s\n", a);
-    while (1);
+    for (int i = 0; ; i++) {
+        if (i % 1000000 == 0) {
+            kprintf(KPL_DEBUG, " test: %s ", a);
+            i = 0;
+        }
+    }
 }
 
 static void kmain(void *args) {
@@ -58,5 +62,12 @@ void kinit() {
     thread_kmain();
     print_all_tasks();
     enable_int();
+    thread_start("test1", 15, test, "abcde");
+    for (int i = 0; ; i++) {
+        if (i % 1000000 == 0) {
+            kprintf(KPL_DEBUG, " main ");
+            i = 0;
+        }
+    }
     while (1);
 }

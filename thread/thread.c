@@ -48,23 +48,25 @@ static task_t *task_create(
     if (task == NULL) {
         return NULL;
     }
-    ASSERT(strlen(name) < TASK_NAME_LEN);
-    strcpy(task->task_name, name);
-    task->status = TASK_READY;
-    task->kernel_stack = (uintptr_t)task + PAGE_SIZE;
-    task->kernel_stack -= sizeof(istk_t);
+    if (strlen(name) >= TASK_NAME_LEN) {
+        return NULL;
+    }
+    task_init(task, name, prio);
+    // task->kernel_stack -= sizeof(istk_t);
+
+    // init thread stack
     task->kernel_stack -= sizeof(thread_stk_t);
     thread_stk_t *ts = (thread_stk_t *)(task->kernel_stack);
     ts->eip = (uint32_t)thread_run_func;
-    ts->args = args;
-    ts->func = func;
     ts->ret_addr_dummy = 0;
+    ts->func = func;
+    ts->args = args;
+
     ts->ebp = ts->ebx = ts->esi = ts->edi = 0;
-    task->priority = prio;
-    task->ticks = prio;
+    // end of init thread stack
+
     task->elapsed_ticks = 0;
     task->pg_dir = NULL;
-    task->stack_guard = 0x19971125;
     return task;
 }
 
@@ -91,6 +93,7 @@ void thread_kmain() {
     ASSERT(!list_find(&task_all_list, &(kmain->list_all_tag)));
     list_push_back(&task_all_list, &(kmain->list_all_tag));
     kmain->status = TASK_RUNNING;
+    current_task = kmain;
 }
 
 
@@ -101,18 +104,29 @@ void thread_init() {
     list_init(&task_exit_list);
 }
 
-static void switch_thread(task_t *prev, task_t *next) {
-    next->status = TASK_RUNNING;
-    current_task = next;
-    MAGICBP;
-    __asm_volatile (
-        "mov %0, esp\n\t"
-        "mov esp, %1"
-        : "=g"(prev->kernel_stack)
-        : "g"(next->kernel_stack)
-        :
-    );
-}
+// static void switch_thread(task_t *prev, task_t *next) {
+//     next->status = TASK_RUNNING;
+//     current_task = next;
+//     MAGICBP;
+//     __asm_volatile (
+//         "mov %0, esp"
+//         : "=g"(prev->kernel_stack)
+//         :
+//         :
+//     );
+//     __asm_volatile (
+//         "mov esp, %0"
+//         :
+//         : "g"(next->kernel_stack)
+//         :
+//     );
+//     // __asm_volatile (
+//     //     "pop esi\n\t"
+//     //     "pop edi\n\t"
+//     //     "pop ebx\n\t"
+//     //     "pop ebp\n\t"
+//     // );
+// }
 
 static void schedule() {
     task_t *old = current_task;
@@ -128,7 +142,11 @@ static void schedule() {
         task_t, general_tag, list_pop_front(&task_ready_list)
     );
     ASSERT(next->status == TASK_READY);
-    switch_thread(old, next);
+
+    next->status = TASK_RUNNING;
+    current_task = next;
+    extern void switch_to(task_t *prev, task_t *next);
+    switch_to(old, next);
 }
 
 void time_scheduler() {

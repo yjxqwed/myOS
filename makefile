@@ -25,7 +25,7 @@ usr_asm_objs = usr/asm/test.elf32
 
 arch_x86_objs = arch/x86/interrupt.elf32
 
-thread_objs = thread/thread.elf32
+thread_objs = thread/thread.elf32 thread/switch.elf32
 
 objects = $(driver_objs) $(kernel_asm_objs) $(kernel_c_objs) \
           $(lib_objs) $(usr_asm_objs) $(mm_objs) $(arch_x86_objs) \

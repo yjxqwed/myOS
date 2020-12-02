@@ -77,5 +77,5 @@ static void clock() {
 
 void do_timer(isrp_t *p) {
     // clock();
-    // time_scheduler();
+    time_scheduler();
 }
