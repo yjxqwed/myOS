@@ -84,5 +84,6 @@ void thread_kmain();
 void time_scheduler();
 
 void print_all_tasks();
+void print_ready_tasks();
 
 #endif

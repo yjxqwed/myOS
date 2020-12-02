@@ -163,13 +163,26 @@ void time_scheduler() {
 }
 
 void print_all_tasks() {
-    kprintf(KPL_DEBUG, "head->");
+    kprintf(KPL_DEBUG, "all: head->");
     for (
         list_node_t *p = task_all_list.head.next;
         p != &(task_all_list.tail);
         p = p->next
     ) {
         task_t *t = __list_node_struct(task_t, list_all_tag, p);
+        kprintf(KPL_DEBUG, "%s->", t->task_name);
+    }
+    kprintf(KPL_DEBUG, "tail");
+}
+
+void print_ready_tasks() {
+    kprintf(KPL_DEBUG, "ready: head->");
+    for (
+        list_node_t *p = task_ready_list.head.next;
+        p != &(task_ready_list.tail);
+        p = p->next
+    ) {
+        task_t *t = __list_node_struct(task_t, general_tag, p);
         kprintf(KPL_DEBUG, "%s->", t->task_name);
     }
     kprintf(KPL_DEBUG, "tail");

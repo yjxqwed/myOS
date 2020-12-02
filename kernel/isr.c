@@ -187,6 +187,10 @@ void cpu_exception_handler(isrp_t *p) {
 
 void interrupt_request_handler(isrp_t *p) {
     uint32_t irq_no = p->int_no - 32;
+    if (irq_no >= 8) {
+        outportb(PIC_S_CTL, 0x20);
+    }
+    outportb(PIC_M_CTL, 0x20);
     switch(irq_no) {
         case 0: {
             do_timer(p);
@@ -199,10 +203,6 @@ void interrupt_request_handler(isrp_t *p) {
             break;
         }
     }
-    if (irq_no >= 8) {
-        outportb(PIC_S_CTL, 0x20);
-    }
-    outportb(PIC_M_CTL, 0x20);
 }
 
 void interrupt_handler(isrp_t *p) {

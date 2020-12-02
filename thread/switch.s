@@ -8,6 +8,7 @@ switch_to:
     push ebx
     push ebp
 
+    ; xchg bx, bx
     mov eax, [esp + 20]
     mov [eax], esp
 

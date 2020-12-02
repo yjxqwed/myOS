@@ -41,6 +41,7 @@ static void test(void *args) {
     for (int i = 0; ; i++) {
         if (i % 1000000 == 0) {
             kprintf(KPL_DEBUG, " test: %s ", a);
+            // print_ready_tasks();
             i = 0;
         }
     }
@@ -63,8 +64,10 @@ void kinit() {
     print_all_tasks();
     enable_int();
     thread_start("test1", 15, test, "abcde");
+    thread_start("test2", 5, test, "hhhh");
     for (int i = 0; ; i++) {
         if (i % 1000000 == 0) {
+            // print_ready_tasks();
             kprintf(KPL_DEBUG, " main ");
             i = 0;
         }
