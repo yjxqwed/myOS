@@ -137,6 +137,7 @@ static void clear_exit_q() {
 static void schedule() {
     // print_ready_tasks();
     // MAGICBP;
+    ASSERT(get_int_status() == INTERRUPT_OFF);
     clear_exit_q();
     task_t *old = current_task;
     if (old->status == TASK_RUNNING) {
@@ -165,7 +166,7 @@ static void schedule() {
 
 void time_scheduler() {
     // make sure the interrupt is disabled
-    ASSERT(get_int_status() == INTERRUPT_OFF);
+    // ASSERT(get_int_status() == INTERRUPT_OFF);
     // make sure the thread's stack is correct
     ASSERT(current_task != NULL && current_task->stack_guard == 0x19971125);
     (current_task->elapsed_ticks)++;
@@ -226,4 +227,5 @@ void thread_join(task_t *task) {
     list_push_back(&(task->join_list), &(current_task->general_tag));
     current_task->status = TASK_WAITING;
     schedule();
+    enable_int();
 }

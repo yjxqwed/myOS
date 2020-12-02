@@ -57,6 +57,25 @@ static void kmain(void *args) {
     while (1);
 }
 
+static int32_t x = 0;
+static void test1(void *args) {
+    char *name = (char *)args;
+    while (1) {
+        for (int i = 0; i < 1000000; i++);
+        kprintf(KPL_DUMP, "%s: x = %d\n", name, x);
+        x++;
+    }
+}
+
+static void test2(void *args) {
+    char *name = (char *)args;
+    while (1) {
+        for (int i = 0; i < 1000000; i++);
+        kprintf(KPL_DUMP, "%s: x = %d\n", name, x);
+        x--;
+    }
+}
+
 // setup gdt, idt, etc
 void kinit() {
     setGlobalDescriptorTable();
@@ -67,9 +86,11 @@ void kinit() {
     thread_kmain();
     print_all_tasks();
     enable_int();
-
-    task_t *task1 = thread_start("test1", 15, test, "abcde");
-    task_t *task2 = thread_start("test2", 5, test, "hhhh");
+    
+    // task_t *task1 = thread_start("test1", 15, test, "abcde");
+    // task_t *task2 = thread_start("test2", 5, test, "hhhh");
+    task_t *task1 = thread_start("test1", 15, test1, "test++");
+    task_t *task2 = thread_start("test2", 5, test2, "test--");
     // for (int i = 0; ; i++) {
     //     if (i % 1000000 == 0) {
     //         // print_ready_tasks();
@@ -77,9 +98,9 @@ void kinit() {
     //         i = 0;
     //     }
     // }
-    thread_join(task1);
-    thread_join(task2);
-    kprintf(KPL_DEBUG, " main ");
+    // thread_join(task1);
+    // thread_join(task2);
+    // kprintf(KPL_DEBUG, " main ");
     while (1) {
         // kprintf(KPL_DEBUG, " main ");
     }
