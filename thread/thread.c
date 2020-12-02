@@ -92,8 +92,6 @@ task_t *thread_start(
     const char *name, uint16_t prio,
     thread_func_t func, void *args
 ) {
-    // task_t *task = (task_t *)k_get_free_page(GFP_ZERO);
-    // task_init(task, name, 31, func, args);
     task_t *task = task_create(name, prio, func, args);
     if (task == NULL) {
         return NULL;
@@ -123,8 +121,6 @@ void thread_init() {
 }
 
 static void clear_exit_q() {
-    // print_exit_tasks();
-    // MAGICBP;
     list_node_t *p = list_pop_front(&task_exit_list);
     while (p) {
         task_t *t = __list_node_struct(task_t, general_tag, p);
@@ -135,8 +131,6 @@ static void clear_exit_q() {
 }
 
 static void schedule() {
-    // print_ready_tasks();
-    // MAGICBP;
     ASSERT(get_int_status() == INTERRUPT_OFF);
     clear_exit_q();
     task_t *old = current_task;
@@ -165,9 +159,6 @@ static void schedule() {
 }
 
 void time_scheduler() {
-    // make sure the interrupt is disabled
-    // ASSERT(get_int_status() == INTERRUPT_OFF);
-    // make sure the thread's stack is correct
     ASSERT(current_task != NULL && current_task->stack_guard == 0x19971125);
     (current_task->elapsed_ticks)++;
     if (current_task->ticks == 0) {

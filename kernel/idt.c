@@ -5,8 +5,6 @@
 #include <common/debug.h>
 
 
-
-// Gate* _idt = (Gate*)IDT_BASE_ADDR;
 Gate _idt[IDT_SIZE];
 idt_ptr_t _ip;
 
