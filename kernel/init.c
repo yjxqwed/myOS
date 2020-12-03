@@ -6,6 +6,7 @@
 #include <sys/idt.h>
 #include <kprintf.h>
 #include <driver/pit.h>
+#include <driver/kb.h>
 #include <multiboot/multiboot.h>
 #include <mm/pmem.h>
 #include <mm/vmm.h>
@@ -46,6 +47,8 @@ void kinit() {
     pmem_init();
     thread_init();
     thread_kmain();
-    print_all_tasks();
+    // print_all_tasks();
+    timer_init(100);
+    kb_init();
     enable_int();
 }

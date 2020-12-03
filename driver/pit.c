@@ -2,6 +2,7 @@
 #include <arch/x86.h>
 #include <kprintf.h>
 #include <thread/thread.h>
+#include <sys/isr.h>
 
 #define TIMER0 0
 #define TIMER1 1
@@ -46,7 +47,7 @@
 
 static uint32_t _hz_;
 
-void timer_install(uint32_t hz) {
+static void timer_install(uint32_t hz) {
     _hz_ = hz;
     uint32_t divisor = PIT_INPT_FREQ / hz;
     // outportb(TIMER_CTL_PORT, 0x36);
@@ -75,7 +76,12 @@ static void clock() {
     ticks++;
 }
 
-void do_timer(isrp_t *p) {
+static void do_timer(isrp_t *p) {
     // clock();
     time_scheduler();
+}
+
+void timer_init(uint32_t hz) {
+    timer_install(hz);
+    register_handler(INT_PIT, do_timer);
 }

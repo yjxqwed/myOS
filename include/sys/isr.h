@@ -14,6 +14,9 @@
 // #define BDRANGEXCEEDED 0x5
 // #define INVALIDOP 0x6
 
+#define INT_PIT 0x20
+#define INT_KB  0x21
+
 struct InterruptStack {
     // == pushed the seg regs last ==
     uint32_t gs, fs, es, ds;
@@ -32,4 +35,9 @@ void setISRs();
 
 typedef struct InterruptStack isrp_t;
 typedef struct InterruptStack istk_t;
+
+typedef void (*interrupt_handler_t)(isrp_t *p);
+
+// register handler for interrupt
+void register_handler(uint32_t int_no, interrupt_handler_t handler);
 #endif

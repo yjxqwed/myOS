@@ -3,8 +3,6 @@
 
 // for keyboard
 
-// #include "isr.h"
-#include <sys/isr.h>
+void kb_init();
 
-void kb_handler(isrp_t *p);
 #endif

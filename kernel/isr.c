@@ -1,10 +1,7 @@
 #include <sys/idt.h>
 #include <sys/isr.h>
-#include <driver/screen.h>
 #include <arch/x86.h>
 #include <common/debug.h>
-#include <driver/kb.h>
-#include <driver/pit.h>
 #include <string.h>
 #include <kprintf.h>
 #include <sys/gdt.h>
@@ -176,13 +173,19 @@ char* cpu_execption_msgs[] = {
     "31: Reserved",
 };
 
+static interrupt_handler_t handlers[IDT_SIZE] = {NULL};
+
 void cpu_exception_handler(isrp_t *p) {
-    uint32_t err_code = p->err_code;
-    uint32_t int_no = p->int_no;
-    kprintf(KPL_PANIC, cpu_execption_msgs[int_no]);
-    printISRParam(p);
-    kprintf(KPL_PANIC, " System Halted.\n");
-    while(1);
+    if (handlers[p->int_no] != NULL) {
+        handlers[p->int_no](p);
+    } else {
+        uint32_t err_code = p->err_code;
+        uint32_t int_no = p->int_no;
+        kprintf(KPL_PANIC, cpu_execption_msgs[int_no]);
+        printISRParam(p);
+        kprintf(KPL_PANIC, " System Halted.\n");
+        while(1);
+    }
 }
 
 void interrupt_request_handler(isrp_t *p) {
@@ -191,17 +194,22 @@ void interrupt_request_handler(isrp_t *p) {
         outportb(PIC_S_CTL, 0x20);
     }
     outportb(PIC_M_CTL, 0x20);
-    switch(irq_no) {
-        case 0: {
-            do_timer(p);
-            break;
-        } case 1: {
-            kb_handler(p);
-            break;
-        } default: {
-            kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
-            break;
-        }
+    // switch(irq_no) {
+    //     case 0: {
+    //         do_timer(p);
+    //         break;
+    //     } case 1: {
+    //         kb_handler(p);
+    //         break;
+    //     } default: {
+    //         kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
+    //         break;
+    //     }
+    // }
+    if (handlers[p->int_no] != NULL) {
+        handlers[p->int_no](p);
+    } else {
+        kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
     }
 }
 
@@ -218,3 +226,7 @@ void interrupt_handler(isrp_t *p) {
     }
 }
 
+void register_handler(uint32_t int_no, interrupt_handler_t handler) {
+    ASSERT(handlers[int_no] == NULL);
+    handlers[int_no] = handler;
+}
