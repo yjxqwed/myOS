@@ -37,3 +37,11 @@ INT_STATUS disable_int() {
 INT_STATUS get_int_status() {
     return (get_eflags() & EFLAGS_IF_MASK) ? INTERRUPT_ON : INTERRUPT_OFF;
 }
+
+void set_int_status(INT_STATUS status) {
+    if (status == INTERRUPT_OFF) {
+        disable_int();
+    } else {
+        enable_int();
+    }
+}

@@ -239,6 +239,7 @@ typedef enum INT_STATUS {
 // get current interrupt status
 INT_STATUS get_int_status();
 
+// set interrupt status
 void set_int_status(INT_STATUS status);
 
 // enable interrupt and return the previous status

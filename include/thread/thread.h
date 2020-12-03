@@ -62,6 +62,7 @@ typedef struct task_struct {
     // (virtual address)
     pde_t *pg_dir;
 
+    // list of threads join this thread
     list_t join_list;
 
     // a magic number to guard this struct
@@ -71,7 +72,6 @@ typedef struct task_struct {
 
 
 // start a new thread; return 0 on scuess
-// @param tid will be id of this thread on success
 // @param name name of this thread
 // @param prio priority of this thread
 // @param func the function to be run
@@ -87,6 +87,9 @@ void thread_join(task_t *task);
 // init thread related structures
 void thread_init();
 
+// init the main thread's task_struct
+// main thread is the execution flow that have been executing
+// after the bootstrap
 void thread_kmain();
 
 void time_scheduler();
@@ -94,5 +97,20 @@ void time_scheduler();
 void print_all_tasks();
 void print_ready_tasks();
 void print_exit_tasks();
+
+
+// thread block self and set self status 
+// only called when int is disabled
+// @param status the target status
+void thread_block_self(task_status_e status);
+
+// put task in the ready queue 
+// only called when int is disabled 
+// and when task is blocked
+// @param task the task to be unblocked
+void thread_unblock(task_t *task);
+
+// get the running thread
+task_t *get_current_thread();
 
 #endif

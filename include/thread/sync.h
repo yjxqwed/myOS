@@ -20,9 +20,13 @@ void sem_up(sem_t *sem);
 void sem_down(sem_t *sem);
 
 typedef struct Mutex {
-
+    sem_t sem;
+    task_t *holder;
+    //the number of times that holder repeatedly acquire this mutex
+    uint16_t holder_repeat_nr;
 } mutex_t;
 
+void mutex_init(mutex_t *mutex);
 void mutex_lock(mutex_t *mutex);
 void mutex_unlock(mutex_t *mutex);
 
