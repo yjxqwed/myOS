@@ -71,7 +71,7 @@ static void parent(void *args) {
 
 void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
-    task_t *p = thread_start("parent", 10, parent, NULL);
-    thread_join(p);
+    // task_t *p = thread_start("parent", 10, parent, NULL);
+    // thread_join(p);
     while (1);
 }

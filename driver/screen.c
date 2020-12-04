@@ -62,6 +62,20 @@ void putc(char c, COLOR bg, COLOR fg) {
         case '\a': {
             break;
         } case '\b': {
+            if (cursor_col == 0) {
+                if (cursor_row != 0) {
+                    cursor_row--;
+                    cursor_col = MAXCOL - 1;
+                    p = (char *)(video_mem + CHAR_OFFSET(cursor_row, cursor_col));
+                    *p++ = BLANK_CHAR;
+                    *p++ = attr;
+                }
+            } else {
+                cursor_col--;
+                p = (char *)(video_mem + CHAR_OFFSET(cursor_row, cursor_col));
+                *p++ = BLANK_CHAR;
+                *p++ = attr;
+            }
             break;
         } case '\t': {
             break;

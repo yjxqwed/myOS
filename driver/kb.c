@@ -19,7 +19,7 @@
 #define esc       '\x1b'
 #define backspace '\b'
 #define tab       '\t'
-#define enter     '\r'
+#define enter     '\n'
 #define delete    '\x7f'
 
 /* control characters are invisable */
@@ -52,7 +52,7 @@
 static char keymap[][2] = {
 /* make-code {no-shift, with-shift} */
 /* ---------------------------------- */
-/* 0x00 */ {0, 0},
+/* 0x00 */ {'\0', '\0'},
 /* 0x01 */ {esc, esc},
 /* 0x02 */ {'1', '!'},
 /* 0x03 */ {'2', '@'},
@@ -117,6 +117,7 @@ static char keymap[][2] = {
 static void kb_handler(isrp_t *p) {
     static bool_t ctrl_down = False;
     static bool_t shift_down = False;
+    static bool_t alt_down = False;
     static bool_t caps_locked = False;
     static bool_t ext_code = False;
 
@@ -134,25 +135,50 @@ static void kb_handler(isrp_t *p) {
     }
 
     if (scan_code & KB_BREAK_MASK) {
-        // bit 7 set => released
-        switch (scan_code) {
-            case shift_l_break:
-            case shift_r_break:
-                shift_down = False;
-                break;
-            case ctrl_l_break:
-            case ctrl_r_break:
-                ctrl_down = False;
-                break;
-            default:
-                break;
+        // bit 7 set => break code
+        if (scan_code == shift_l_break || scan_code == shift_r_break) {
+            shift_down = False;
+        } else if (scan_code == ctrl_l_break || scan_code == ctrl_r_break) {
+            ctrl_down = False;
+        } else if (scan_code == alt_l_break || scan_code == alt_r_break) {
+            alt_down = False;
         }
-        // kprintf(KPL_NOTICE, "{%x released!}", scan_code);
+        // break of other keys are unimportant
+        return;
+    } else if (
+        (scan_code >= 0x0 && scan_code <= 0x3a) ||
+        scan_code == alt_r_make ||
+        scan_code == ctrl_r_make
+    ) {
+        // only handle characters in our keymap plus right alt and right ctrl
+
+        if (scan_code == shift_l_make || scan_code == shift_r_make) {
+            shift_down = True;
+        } else if (scan_code == ctrl_l_make || scan_code == ctrl_r_make) {
+            ctrl_down = True;
+        } else if (scan_code == alt_l_make || scan_code == alt_r_make) {
+            alt_down = True;
+        } else if (scan_code == caps_lock_make) {
+            caps_locked = !caps_locked;
+        } else {
+            int shift = 0;
+            if (
+                (scan_code >= 0x10 && scan_code <= 0x19) ||  // q - p
+                (scan_code >= 0x1e && scan_code <= 0x26) ||  // a - l
+                (scan_code >= 0x2c && scan_code <= 0x32)     // z - m
+            ) {
+                // caps_lock only influence letters
+                shift = (shift_down ^ caps_locked) ? 1 : 0;
+            } else {
+                shift = shift_down ? 1 : 0;
+            }
+            char c = keymap[scan_code & 0xff][shift];
+            if (c != '\0') {
+                kprintf(KPL_DUMP, "%c", c);
+            }
+        }
     } else {
-        // else pressed
-        // kprintf(uitosh((int32_t)scan_code, s));
-        // kprintf(" pressed! ");
-        kprintf(KPL_DEBUG, "{%x pressed!}", scan_code);
+        kprintf(KPL_DEBUG, "[Unknown key down: %x]", scan_code);
     }
 }
 
