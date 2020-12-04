@@ -8,10 +8,11 @@ switch_to:
     push ebx
     push ebp
 
-    ; xchg bx, bx
+    ; store esp to the current task's pcb
     mov eax, [esp + 20]
     mov [eax], esp
 
+    ; load the next task's esp
     mov eax, [esp + 24]
     mov esp, [eax]
 

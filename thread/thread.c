@@ -7,6 +7,19 @@
 #include <common/types.h>
 #include <kprintf.h>
 
+typedef struct ThreadStack {
+    uint32_t ebp;
+    uint32_t ebx;
+    uint32_t edi;
+    uint32_t esi;
+
+    uint32_t eip;
+
+    uint32_t ret_addr_dummy;
+    thread_func_t func;
+    void *args;
+} thread_stk_t;
+
 static __PAGE_ALLIGNED uint8_t reserved_pcb[PAGE_SIZE];
 uint32_t kmain_stack_top = (uintptr_t)reserved_pcb + PAGE_SIZE;
 static task_t *kmain = NULL;
