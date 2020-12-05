@@ -59,6 +59,3 @@ kernel_entry:
     call kernelMain
     jmp $
 
-[section .data]
-times 1024 dw 0
-boot_stk:

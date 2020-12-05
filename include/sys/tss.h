@@ -1,14 +1,20 @@
 #ifndef __TSS_H__
 #define __TSS_H__
 
-// #include "types.h"
 #include <common/types.h>
 
-struct TaskStateSegmentEntry {
-    uint32_t prev_tss;   // The previous TSS - if we used hardware task switching this would form a linked list.
-    uint32_t esp0;       // The stack pointer to load when we change to kernel mode.
-    uint32_t ss0;        // The stack segment to load when we change to kernel mode.
-    uint32_t esp1;       // everything below here is unusued now.. 
+// TSS is used for x86 hardware multitasking. Since 
+// we will use software multitasking, it is unimportant.
+struct TaskStateSegment {
+    /* pervious TSS (unused) */
+    uint32_t prev_tss;
+    /* stack pointer for kernel mode */
+    uint32_t esp0;
+    /* stack segment for kernel mode */
+    uint32_t ss0;
+
+    /* everything below here is unusued now.. */
+    uint32_t esp1;
     uint32_t ss1;
     uint32_t esp2;
     uint32_t ss2;
@@ -34,10 +40,10 @@ struct TaskStateSegmentEntry {
     uint16_t iomap_base;
 } __attribute__((packed));
 
-typedef struct TaskStateSegmentEntry tss_entry_t;
+typedef struct TaskStateSegment tss_t;
 
 // void setTssEntry0();
 
-void init_tss(tss_entry_t *tss_pointer);
+void init_tss(tss_t *tss_pointer);
 
 #endif

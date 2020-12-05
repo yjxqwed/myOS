@@ -34,23 +34,30 @@ void setSegmentDescriptor(
     target[6] = ((limit >> 16) & 0xf) | (flags << 4);
 }
 
-extern tss_entry_t tss;
+extern tss_t tss;
 
 void setGlobalDescriptorTable() {
-    // zero _gdt
+    // zero out _gdt
     memset(_gdt, 0, GDT_SIZE * sizeof(seg_des_t));
-    setSegmentDescriptor(&(_gdt[2]), 0, 0xfffff, 0xc ,0x9a);  // kernel code  0x10
-    setSegmentDescriptor(&(_gdt[3]), 0, 0xfffff, 0xc, 0x92);  // kernel data  0x18
-    // setTssEntry0();
+    // kernel code  0x10
+    setSegmentDescriptor(&(_gdt[2]), 0, 0xfffff, 0xc ,0x9a);
+    // kernel data  0x18
+    setSegmentDescriptor(&(_gdt[3]), 0, 0xfffff, 0xc, 0x92);
+    // tss          0x20
     init_tss(&tss);
     setSegmentDescriptor(
-        &(_gdt[4]), (uint32_t)(&tss), sizeof(tss_entry_t) - 1, 0x04, 0x89
-    );                                                        // tss          0x20
-    setSegmentDescriptor(&(_gdt[5]), 0, 0xfffff, 0xc, 0xfa);  // user code    0x2B
-    setSegmentDescriptor(&(_gdt[6]), 0, 0xfffff, 0xc, 0xf2);  // user data    0x33
+        &(_gdt[4]), (uint32_t)(&tss), sizeof(tss_t) - 1, 0x04, 0x89
+    );
+    // user code    0x2B
+    setSegmentDescriptor(&(_gdt[5]), 0, 0xfffff, 0xc, 0xfa);
+    // user data    0x33
+    setSegmentDescriptor(&(_gdt[6]), 0, 0xfffff, 0xc, 0xf2);
+
+
     _gp.base_ = (uint32_t)_gdt;
     _gp.size_ = GDT_SIZE * sizeof(seg_des_t) - 1;
     lgdt(&_gp);
     extern void flushGDT();
     flushGDT();
+    ltr(SELECTOR_TSS);
 }
