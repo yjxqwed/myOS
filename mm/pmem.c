@@ -12,11 +12,14 @@ static pte_t *kern_pg_dir = NULL;
 
 static uint32_t max_high_pfn = 0;
 static uint32_t min_high_pfn = 0;
+static uint32_t free_pfn = 0;
 static uint32_t nppages = 0;
 
 // the array of ppage_t, this array is used for page allocating
 static ppage_t *pmap = NULL;
-static ppage_t *free_pages_list = NULL;
+// static ppage_t *free_pages_list = NULL;
+// list of free pages
+static list_t free_list;
 
 #define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
 static void print_mem_info(multiboot_info_t *mbi) {
@@ -127,13 +130,13 @@ static void *boot_alloc(uint32_t n, bool_t page_alligned) {
     return va;
 }
 
-static void print_page_t(ppage_t *p) {
-    ASSERT(p != NULL);
-    kprintf(
-        KPL_DEBUG, "page_t(0x%X){link=0x%X, ref=%d}\n",
-        (uintptr_t)p, p->next_free_ppage, p->num_ref
-    );
-}
+// static void print_page_t(ppage_t *p) {
+//     ASSERT(p != NULL);
+//     kprintf(
+//         KPL_DEBUG, "page_t(0x%X){link=0x%X, ref=%d}\n",
+//         (uintptr_t)p, p->next_free, p->num_ref
+//     );
+// }
 
 // page to kernel virtual address
 void *page2kva(ppage_t *p) {
@@ -157,37 +160,47 @@ ppage_t *pa2page(void *pa) {
 void pmem_init() {
     // initialize pmap
     pmap = boot_alloc(sizeof(ppage_t) * nppages, False);
-
+    // initialize free_list
+    list_init(&free_list);
     // fpn is the next page after pages allocated by boot_alloc
     // pages after fpn may be used in further operations
     int fpn = __page_number(__pa(boot_alloc(0, True)));
+    free_pfn = fpn;
     ASSERT(fpn < max_high_pfn);
     kprintf(KPL_DEBUG, "pmap=0x%X\n", pmap);
     kprintf(KPL_DEBUG, "nppages=0x%x\nfree_page=0x%x\n", nppages, fpn);
     // These pages will never be freed or reused!
     for (int i = 0; i < fpn; i++) {
-        pmap[i].next_free_ppage = NULL;
+        // pmap[i].next_free = NULL;
         pmap[i].num_ref = 1;
     }
-    free_pages_list = &(pmap[fpn]);
-    for (int i = fpn; i < max_high_pfn; i++) {
-        pmap[i].next_free_ppage = &(pmap[i + 1]);
+    // free_pages_list = &(pmap[fpn]);
+    // for (int i = fpn; i < max_high_pfn; i++) {
+    //     pmap[i].next_free = &(pmap[i + 1]);
+    //     pmap[i].num_ref = 0;
+    // }
+    // {
+    //     pmap[max_high_pfn].next_free = NULL;
+    //     pmap[max_high_pfn].num_ref = 0;
+    // }
+    for (int i = fpn; i <= max_high_pfn; i++) {
         pmap[i].num_ref = 0;
-    }
-    {
-        pmap[max_high_pfn].next_free_ppage = NULL;
-        pmap[max_high_pfn].num_ref = 0;
+        list_push_back(&free_list, &(pmap[i].free_list_tag));
     }
 }
 
 // alloc a physical page
 ppage_t *page_alloc(uint32_t gfp_flags) {
-    if (free_pages_list == NULL) {
+    // if (free_pages_list == NULL) {
+    //     return NULL;
+    // }
+    list_node_t *p = list_pop_front(&free_list);
+    if (p == NULL) {
         return NULL;
     }
-    ppage_t *fp = free_pages_list;
-    free_pages_list = free_pages_list->next_free_ppage;
-    fp->next_free_ppage = NULL;
+    ppage_t *fp = __list_node_struct(ppage_t, free_list_tag, p);
+    // free_pages_list = free_pages_list->next_free;
+    // fp->next_free = NULL;
     if (gfp_flags & GFP_ZERO) {
         memset(page2kva(fp), 0, PAGE_SIZE);
     }
@@ -197,13 +210,50 @@ ppage_t *page_alloc(uint32_t gfp_flags) {
 void page_free(ppage_t *p) {
     ASSERT(p != NULL);
     ASSERT(p->num_ref == 0);
-    ASSERT(p->next_free_ppage == NULL);
-    p->next_free_ppage = free_pages_list;
-    free_pages_list = p;
+    // ASSERT(p->next_free == NULL);
+    ASSERT(!list_find(&free_list, &(p->free_list_tag)));
+    // p->next_free = free_pages_list;
+    list_push_front(&free_list, &(p->free_list_tag));
+    // free_pages_list = p;
 }
 
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
-    return NULL;
+    if (pg_cnt == 0) {
+        return NULL;
+    } else if (pg_cnt == 1) {
+        return page_alloc(gfp_flags);
+    }
+
+    uint32_t idx = free_pfn;
+    while (idx < max_high_pfn) {
+        while (pmap[idx].num_ref > 0) {
+            idx++;
+        }
+        uint32_t i = 0;
+        while (
+            i < pg_cnt && idx + i <= max_high_pfn &&
+            pmap[idx + i].num_ref == 0
+        ) {
+            i++;
+        }
+        if (i == pg_cnt) {
+            break; 
+        } else if (idx + i > max_high_pfn) {
+            return NULL;
+        } else {
+            idx += i;
+        }
+    }
+    // ASSERT(idx + pg_cnt <= max_high_pfn)
+    for (uint32_t i = 0; i < pg_cnt; i++) {
+        uint32_t t = idx + i;
+        ASSERT(t <= max_high_pfn);
+        ASSERT(pmap[t].num_ref == 0);
+        ASSERT(list_find(&free_list, &(pmap[t].free_list_tag)));
+        list_erase(&(pmap[t].free_list_tag));
+        ASSERT(!list_find(&free_list, &(pmap[t].free_list_tag)));
+    }
+    return &(pmap[idx]);
 }
 
 void pages_free(ppage_t *p, uint32_t pg_cnt) {
@@ -216,14 +266,16 @@ void pages_free(ppage_t *p, uint32_t pg_cnt) {
 
 void page_incref(ppage_t *p) {
     ASSERT(p != NULL);
-    ASSERT(p->next_free_ppage == NULL);
+    // ASSERT(p->next_free == NULL);
+    ASSERT(!list_find(&free_list, &(p->free_list_tag)));
     p->num_ref++;
 }
 
 void page_decref(ppage_t *p) {
     ASSERT(p != NULL);
     ASSERT(p->num_ref > 0);
-    ASSERT(p->next_free_ppage == NULL);
+    // ASSERT(p->next_free == NULL);
+    ASSERT(!list_find(&free_list, &(p->free_list_tag)));
     p->num_ref--;
     if (p->num_ref == 0) {
         page_free(p);

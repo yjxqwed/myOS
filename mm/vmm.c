@@ -246,10 +246,20 @@ void k_free_page(void *kva) {
 
 
 void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags) {
-    return NULL;
+    ppage_t *fp = pages_alloc(pgcnt, gfp_flags);
+    if (!fp) {
+        return NULL;
+    }
+    for (int i = 0; i < pgcnt; i++) {
+        page_incref(fp + i);
+    }
+    return page2kva(fp);
 }
 
 
 void k_free_pages(void *kva, uint32_t pgcnt) {
-    return;
+    ASSERT(!((uintptr_t)kva & PG_OFFSET_MASK));
+    for (int i = 0; i < pgcnt; i++) {
+        k_free_page((void *)((uintptr_t)kva + i * PAGE_SIZE));
+    }
 }

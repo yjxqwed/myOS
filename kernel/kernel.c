@@ -3,6 +3,7 @@
 #include <kprintf.h>
 #include <thread/thread.h>
 #include <thread/sync.h>
+#include <mm/vmm.h>
 
 static void test(void *args) {
     char *a = (char *)args;
@@ -79,5 +80,7 @@ void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
     // task_t *p = thread_start("parent", 10, parent, NULL);
     // thread_join(p);
+    uint32_t *p = k_get_free_pages(15, GFP_ZERO);
+    kprintf(KPL_DUMP, "p = 0x%X\n", p);
     while (1);
 }

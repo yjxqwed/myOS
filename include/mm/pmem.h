@@ -8,18 +8,23 @@
 #include <multiboot/multiboot.h>
 #include <common/types.h>
 #include <arch/x86.h>
+#include <list.h>
 
 // high mem starts at 1MiB
 #define HIGH_MEM_BASE 0x00100000
 
-typedef struct PhysicalPageInfo {
-    // pointer to the next free ppage
-    // if I'm free, next_free_ppage != NULL and vice versa
-    struct PhysicalPageInfo *next_free_ppage;
+typedef struct PhysicalPageInfo ppage_t;
+
+struct PhysicalPageInfo {
+    // ppage_t *next_free;
+    // ppage_t *prev_free;
+
+    // doubly linked list in the free pages list
+    list_node_t free_list_tag;
     // num of references to this ppage
     // if num_ref == 0, I'm free
     uint32_t num_ref;
-} ppage_t;
+};
 
 // detect physical memory information
 void detect_memory(multiboot_info_t *mbi);
