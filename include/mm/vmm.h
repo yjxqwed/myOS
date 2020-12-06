@@ -7,7 +7,7 @@
 // #include <sys/global.h>
 // #include <arch/x86.h>
 
-#include <mm/pmem.h>
+// #include <mm/pmem.h>
 #include <common/types.h>
 
 // // myOS requires at least 254 MiB free mem

@@ -2,9 +2,11 @@
 #include <common/debug.h>
 #include <arch/x86.h>
 // #include <mm/pager.h>
-// #include <mm/pmem.h>
+#include <mm/pmem.h>
 // // #include <bitmap.h>
 #include <kprintf.h>
+#include <list.h>
+#include <common/utils.h>
 // // #include <common/types.h>
 // #include <common/debug.h>
 // #include <string.h>
@@ -262,4 +264,85 @@ void k_free_pages(void *kva, uint32_t pgcnt) {
     for (int i = 0; i < pgcnt; i++) {
         k_free_page((void *)((uintptr_t)kva + i * PAGE_SIZE));
     }
+}
+
+typedef struct MemoryBlock {
+    list_node_t tag;
+} mem_blk_t;
+
+typedef struct MemoryBlockDescriptor {
+    // size of blocks in this arena (16B, 32B, etc)
+    uint32_t block_size;
+    // number of blocks in this arena
+    uint32_t nr_blocks_per_arena;
+    // list of free blocks
+    list_t free_list;
+} mem_blk_desc_t;
+
+// there are 7 kinds of blocks 16B each -> 1024B each
+#define MIN_BLK_SIZE    16
+#define MAX_BLK_SIZE    1024
+#define NR_MEM_BLK_DESC 7
+static mem_blk_desc_t k_mem_blk_descs[NR_MEM_BLK_DESC];
+
+
+typedef struct Arena {
+    // descriptor of blocks in this arena
+    // each arena only has one kind of block
+    mem_blk_desc_t *desc;
+    // if (large), this arena occupies more than one page
+    bool_t large;
+    // if (large) cnt is page count
+    // else cnt is block count
+    uint32_t cnt;
+} arena_t;
+
+void block_desc_init(mem_blk_desc_t descs[NR_MEM_BLK_DESC]) {
+    uint32_t size = 16;
+    for (int i = 0; i < NR_MEM_BLK_DESC; i++) {
+        descs[i].block_size = size;
+        // TO-OPT: trailing bytes may be wasted
+        descs[i].nr_blocks_per_arena = (PAGE_SIZE - sizeof(arena_t)) / size;
+        size *= 2;
+        list_init(&(descs[i].free_list));
+    }
+}
+
+// get bytes of memory. FOR KERNEL USE ONLY!
+void *kmalloc(uint32_t size) {
+    if (size > MAX_BLK_SIZE) {
+        uint32_t pg_cnt = ROUND_UP_DIV(size + sizeof(arena_t), PAGE_SIZE);
+        arena_t *a = (arena_t *)k_get_free_pages(pg_cnt, GFP_ZERO);
+        if (a == NULL) {
+            return NULL;
+        }
+        a->cnt = pg_cnt;
+        a->large = True;
+        a->desc = NULL;
+        return (void *)(a + 1);
+    } else {
+        int idx;
+        for (idx = 0; idx < NR_MEM_BLK_DESC; idx++) {
+            if (k_mem_blk_descs[idx].block_size >= size) {
+                break;
+            }
+        }
+        ASSERT(idx < NR_MEM_BLK_DESC);
+        if (list_empty(&(k_mem_blk_descs[idx].free_list))) {
+            arena_t *a = (arena_t *)k_get_free_page(GFP_ZERO);
+            if (a == NULL) {
+                return NULL;
+            }
+            a->desc = &(k_mem_blk_descs[idx]);
+            a->large = False;
+            a->cnt = a->desc->nr_blocks_per_arena;
+            
+        } else {
+
+        }
+    }
+}
+
+void vmm_init() {
+    block_desc_init(k_mem_blk_descs);
 }

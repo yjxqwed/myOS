@@ -253,7 +253,11 @@ ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
         list_erase(&(pmap[t].free_list_tag));
         ASSERT(!list_find(&free_list, &(pmap[t].free_list_tag)));
     }
-    return &(pmap[idx]);
+    ppage_t *fp = &(pmap[idx]);
+    if (gfp_flags & GFP_ZERO) {
+        memset(page2kva(fp), 0, PAGE_SIZE);
+    }
+    return fp;
 }
 
 void pages_free(ppage_t *p, uint32_t pg_cnt) {

@@ -4,6 +4,7 @@
 #include <thread/thread.h>
 #include <thread/sync.h>
 #include <mm/vmm.h>
+#include <common/debug.h>
 
 static void test(void *args) {
     char *a = (char *)args;
@@ -76,11 +77,33 @@ static void parent(void *args) {
     kprintf(KPL_DEBUG, "parent end\n");
 }
 
+static void test_k_get_free_page() {
+    uint32_t *p1 = k_get_free_pages(15, GFP_ZERO);
+    kprintf(KPL_DUMP, "p1 = 0x%X\n", p1);
+    *p1 = 0x12345678;
+    MAGICBP;
+    uint32_t *p2 = k_get_free_pages(1, GFP_ZERO);
+    kprintf(KPL_DUMP, "p2 = 0x%X\n", p2);
+    k_free_pages(p1, 15);
+    uint32_t *p3 = k_get_free_pages(1, GFP_ZERO);
+    kprintf(KPL_DUMP, "p3 = 0x%X\n", p3);
+    uint32_t *p4 = k_get_free_pages(15, GFP_ZERO);
+    kprintf(KPL_DUMP, "p4 = 0x%X\n", p4);
+    k_free_pages(p3, 1);
+    uint32_t *p5 = k_get_free_pages(15, GFP_ZERO);
+    kprintf(KPL_DUMP, "p5 = 0x%X\n", p5);
+    MAGICBP;
+    *p5 = 0x98765432;
+}
+
+static void test_thread() {
+    task_t *p = thread_start("parent", 10, parent, NULL);
+    thread_join(p);
+}
+
 void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
-    // task_t *p = thread_start("parent", 10, parent, NULL);
-    // thread_join(p);
-    uint32_t *p = k_get_free_pages(15, GFP_ZERO);
-    kprintf(KPL_DUMP, "p = 0x%X\n", p);
+    // test_thread();
+    // test_k_get_free_page();
     while (1);
 }
