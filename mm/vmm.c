@@ -279,12 +279,8 @@ typedef struct MemoryBlockDescriptor {
     list_t free_list;
 } mem_blk_desc_t;
 
-// there are 7 kinds of blocks 16B each -> 1024B each
-#define MIN_BLK_SIZE    16
-#define MAX_BLK_SIZE    1024
-#define NR_MEM_BLK_DESC 7
+// array of mem blk descriptors
 static mem_blk_desc_t k_mem_blk_descs[NR_MEM_BLK_DESC];
-
 
 typedef struct Arena {
     // descriptor of blocks in this arena
@@ -308,6 +304,22 @@ void block_desc_init(mem_blk_desc_t descs[NR_MEM_BLK_DESC]) {
     }
 }
 
+static mem_blk_t* arena_get_blk(arena_t *a, uint32_t idx) {
+    ASSERT(a != NULL && a->desc != NULL);
+    ASSERT(idx < a->desc->nr_blocks_per_arena);
+    uint32_t size = a->desc->block_size;
+    uintptr_t first =
+        (uintptr_t)a + ROUND_UP_DIV(sizeof(arena_t), size) * size;
+    // kprintf(KPL_DEBUG, "b=0x%X\n", first + idx * size);
+    // kprintf(KPL_DEBUG, "size=%d\n", size);
+    // MAGICBP;
+    return (mem_blk_t *)(first + idx * size);
+}
+
+static arena_t* arena_of_blk(mem_blk_t* blk) {
+    return (arena_t *)((uintptr_t)blk & 0xfffff000);
+}
+
 // get bytes of memory. FOR KERNEL USE ONLY!
 void *kmalloc(uint32_t size) {
     if (size > MAX_BLK_SIZE) {
@@ -328,18 +340,30 @@ void *kmalloc(uint32_t size) {
             }
         }
         ASSERT(idx < NR_MEM_BLK_DESC);
-        if (list_empty(&(k_mem_blk_descs[idx].free_list))) {
+        mem_blk_desc_t *desc = &(k_mem_blk_descs[idx]);
+        if (list_empty(&(desc->free_list))) {
             arena_t *a = (arena_t *)k_get_free_page(GFP_ZERO);
             if (a == NULL) {
                 return NULL;
             }
-            a->desc = &(k_mem_blk_descs[idx]);
+            a->desc = desc;
             a->large = False;
-            a->cnt = a->desc->nr_blocks_per_arena;
-            
-        } else {
-
+            a->cnt = desc->nr_blocks_per_arena;
+            for (uint32_t i = 0; i < desc->nr_blocks_per_arena; i++) {
+                mem_blk_t *b = arena_get_blk(a, i);
+                ASSERT(!list_find(&(desc->free_list), &(b->tag)));
+                list_push_back(&(desc->free_list), &(b->tag));
+            }
         }
+        kprintf(KPL_DEBUG, "desc->block_size = %d\n", desc->block_size);
+        ASSERT(!list_empty(&(desc->free_list)));
+        mem_blk_t *b = __list_node_struct(
+            mem_blk_t, tag, list_pop_front(&(desc->free_list))
+        );
+        arena_t *a = arena_of_blk(b);
+        (a->cnt)--;
+        kprintf(KPL_DEBUG, "desc->block_size = %d\n", a->desc->block_size);
+        return (void *)b;
     }
 }
 

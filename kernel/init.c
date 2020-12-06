@@ -45,6 +45,7 @@ void kinit() {
     setInterruptDescriptorTable();
     kernel_init_paging();
     pmem_init();
+    vmm_init();
     thread_init();
     thread_kmain();
     // print_all_tasks();

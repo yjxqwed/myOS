@@ -7,7 +7,7 @@
 // #include <sys/global.h>
 // #include <arch/x86.h>
 
-// #include <mm/pmem.h>
+#include <mm/pmem.h>
 #include <common/types.h>
 
 // // myOS requires at least 254 MiB free mem
@@ -99,6 +99,8 @@
 // // get a region from vma with size of pg_cnt pages
 // void *get_vaddr(vma_t *vma, uint32_t pg_cnt);
 
+void vmm_init();
+
 // get a page of memory and its kernel virtual address
 // for kernel use only
 //     @param gfp_flags get free page flags, refer to mm/pmem.h
@@ -119,5 +121,15 @@ void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags);
 //     @param kva kernel virtual address, page alligned
 //     @param pgcnt number of pages to be freed
 void k_free_pages(void *kva, uint32_t pgcnt);
+
+
+// there are 7 kinds of blocks 16B each -> 1024B each
+#define MIN_BLK_SIZE    16
+#define MAX_BLK_SIZE    1024
+#define NR_MEM_BLK_DESC 7
+
+// get bytes of memory. FOR KERNEL USE ONLY!
+// @param size number of bytes
+void *kmalloc(uint32_t size);
 
 #endif
