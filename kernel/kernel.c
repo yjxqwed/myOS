@@ -67,13 +67,14 @@ static void test2(void *args) {
 
 static void parent(void *args) {
     kprintf(KPL_DEBUG, "parent start\n");
-    mutex_init(&m);
-    task_t *task1 = thread_start("supplier", 5, test1, "supplier");
-    task_t *task2 = thread_start("consumer1", 5, test2, "consumer1");
-    task_t *task3 = thread_start("consumer2", 5, test2, "consumer2");
-    thread_join(task1);
-    thread_join(task2);
-    thread_join(task3);
+    // mutex_init(&m);
+    // task_t *task1 = thread_start("supplier", 5, test1, "supplier");
+    // task_t *task2 = thread_start("consumer1", 5, test2, "consumer1");
+    // task_t *task3 = thread_start("consumer2", 5, test2, "consumer2");
+    // thread_join(task1);
+    // thread_join(task2);
+    // thread_join(task3);
+    thread_msleep(5000);
     kprintf(KPL_DEBUG, "parent end\n");
 }
 
@@ -98,7 +99,7 @@ static void test_k_get_free_page() {
 
 static void test_thread() {
     task_t *p = thread_start("parent", 10, parent, NULL);
-    thread_join(p);
+    // thread_join(p);
 }
 
 static void test_kmalloc() {
@@ -128,9 +129,8 @@ static void test_kmalloc() {
 
 void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
-    // test_thread();
+    test_thread();
     // test_k_get_free_page();
     // test_kmalloc();
-    ASSERT(0);
     while (1);
 }

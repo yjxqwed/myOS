@@ -49,7 +49,7 @@ static uint32_t _hz_;
 
 static void timer_install(uint32_t hz) {
     _hz_ = hz;
-    uint32_t divisor = PIT_INPT_FREQ / hz;
+    uint16_t divisor = PIT_INPT_FREQ / hz;
     // outportb(TIMER_CTL_PORT, 0x36);
     outportb(TIMER_CTL_PORT, (uint8_t)(
         TIMER0 << 6 | LOW_HIGH_BYTE << 4 | RATE_GEN << 1 | CNT_MODE_BIN
@@ -76,8 +76,29 @@ static void clock() {
     ticks++;
 }
 
+static void every_msec() {
+    const uint32_t mhz = _hz_ / 10;
+    uint32_t ticks = 0;
+    if (ticks % mhz == 0) {
+        ticks = 0;
+        /* these functions will be called every 1 msec */
+        sleep_manage();
+    }
+    ticks++;
+}
+
+static void every_sec() {
+    uint32_t ticks = 0;
+    if (ticks % _hz_ == 0) {
+        ticks = 0;
+        /* these functions will be called every 1 sec */
+    }
+    ticks++;
+}
+
 static void do_timer(isrp_t *p) {
     // clock();
+    every_msec();
     time_scheduler();
 }
 

@@ -54,6 +54,8 @@ typedef struct Task {
     // list of threads join this thread
     list_t join_list;
 
+    uint32_t sleep_msec;
+
     // a magic number to guard this struct
     uint32_t stack_guard;
 
@@ -101,5 +103,11 @@ void thread_unblock(task_t *task);
 
 // get the running thread
 task_t *get_current_thread();
+
+// @brief sleep for milisec
+// @param msec time in milisec
+void thread_msleep(uint32_t msec);
+
+void sleep_manage();
 
 #endif

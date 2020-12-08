@@ -36,6 +36,9 @@ static list_t task_exit_list;
 // list of all tasks
 static list_t task_all_list;
 
+// list of sleeping tasks
+static list_t sleeping_list;
+
 
 static void thread_run_func(thread_func_t func, void *args) {
     enable_int();
@@ -65,6 +68,7 @@ static void task_init(
     task->stack_guard = 0x19971125;
     task->kernel_stack = (uintptr_t)task + PAGE_SIZE;
     task->status = TASK_READY;
+    task->sleep_msec = 0;
     list_init(&(task->join_list));
 }
 
@@ -126,11 +130,11 @@ void thread_kmain() {
 }
 
 
-
 void thread_init() {
     list_init(&task_ready_list);
     list_init(&task_all_list);
     list_init(&task_exit_list);
+    list_init(&sleeping_list);
 }
 
 static void clear_exit_q() {
@@ -259,4 +263,41 @@ void thread_unblock(task_t *task) {
 
 task_t *get_current_thread() {
     return current_task;
+}
+
+// should be called every 1 msec
+void sleep_manage() {
+    ASSERT(get_int_status() == INTERRUPT_OFF);
+    for (
+        list_node_t *p = sleeping_list.head.next;
+        p != (&sleeping_list.tail);
+    ) {
+        task_t *t = __list_node_struct(task_t, general_tag, p);
+        kprintf(KPL_DEBUG, "t->sleep_msec = %d\n", t->sleep_msec);
+        // MAGICBP;
+        ASSERT(t->sleep_msec > 0);
+        (t->sleep_msec)--;
+        if (t->sleep_msec == 0) {
+            list_node_t *victim = p;
+            thread_unblock(t);
+            p = p->next;
+            list_erase(victim);
+        } else {
+            p = p->next;
+        }
+    }
+}
+
+void thread_msleep(uint32_t msec) {
+    if (msec == 0) {
+        return;
+    }
+    INT_STATUS old_status = disable_int();
+    current_task->sleep_msec = msec;
+    // kprintf(KPL_DEBUG, "current_task->sleep_msec=%d\n", current_task->sleep_msec);
+    ASSERT(!list_find(&sleeping_list, &(current_task->general_tag)));
+    list_push_front(&sleeping_list, &(current_task->general_tag));
+    current_task->status = TASK_BLOCKED;
+    schedule();
+    set_int_status(old_status);
 }

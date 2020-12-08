@@ -49,7 +49,7 @@ void kinit() {
     thread_init();
     thread_kmain();
     // print_all_tasks();
-    timer_init(100);
+    timer_init(10000);
     kb_init();
     enable_int();
 }

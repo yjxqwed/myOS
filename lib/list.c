@@ -129,4 +129,5 @@ void list_erase(list_node_t *node) {
     ASSERT(node->prev != NULL && node->next != NULL);
     node->prev->next = node->next;
     node->next->prev = node->prev;
+    node->next = node->prev = NULL;
 }
