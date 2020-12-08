@@ -128,11 +128,12 @@ void k_free_pages(void *kva, uint32_t pgcnt);
 #define MAX_BLK_SIZE    1024
 #define NR_MEM_BLK_DESC 6
 
-// get bytes of memory. FOR KERNEL USE ONLY!
+// @brief get bytes of memory. FOR KERNEL USE ONLY!
 // @param size number of bytes
+// @return kva of the allocated block
 void *kmalloc(uint32_t size);
 
-// free the memory block allocated by kmalloc, 
+// @brief free the memory block allocated by kmalloc, 
 // panic otherwise. FOR KERNEL USE ONLY!
 // @param va the address allocated by kmalloc
 void kfree(void *va);

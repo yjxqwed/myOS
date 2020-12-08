@@ -19,7 +19,7 @@ lib_objs = lib/debug.elf32 lib/utils.elf32 \
            lib/string.elf32 lib/kprintf.elf32 lib/bitmap.elf32 \
            lib/list.elf32
 
-mm_objs = mm/vmm.elf32 mm/pmem.elf32
+mm_objs = mm/kvmm.elf32 mm/pmem.elf32
 
 usr_asm_objs = usr/asm/test.elf32
 

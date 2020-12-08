@@ -3,7 +3,7 @@
 #include <kprintf.h>
 #include <thread/thread.h>
 #include <thread/sync.h>
-#include <mm/vmm.h>
+#include <mm/kvmm.h>
 #include <common/debug.h>
 
 static void test(void *args) {
