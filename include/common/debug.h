@@ -7,7 +7,7 @@ void printISRParam(const isrp_t* p);
 
 void panic_spin(
     const char* filename, int line,
-    const char* funcname, const char* condition
+    const char* funcname, const char* cause
 );
 
 #define PANIC(...) panic_spin(__FILE__, __LINE__, __func__, __VA_ARGS__)

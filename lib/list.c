@@ -83,7 +83,7 @@ size_t list_length(list_t *l) {
 }
 
 bool_t list_find(list_t *l, list_node_t *node) {
-    if (node == NULL) {
+    if (node == NULL || node->next == NULL || node->prev == NULL) {
         return False;
     }
     list_node_t *p;

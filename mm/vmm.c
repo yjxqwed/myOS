@@ -321,9 +321,6 @@ static mem_blk_t* arena_get_blk(arena_t *a, uint32_t idx) {
     ASSERT(idx < a->desc->nr_blocks_per_arena);
     uint32_t size = a->desc->block_size;
     uintptr_t first = (uintptr_t)(a + 1);
-    // kprintf(KPL_DEBUG, "b=0x%X\n", first + idx * size);
-    // kprintf(KPL_DEBUG, "size=%d\n", size);
-    // MAGICBP;
     return (mem_blk_t *)(first + idx * (size + sizeof(mem_blk_t)));
 }
 
@@ -331,8 +328,7 @@ static arena_t* arena_of_blk(mem_blk_t* blk) {
     return (arena_t *)((uintptr_t)blk & 0xfffff000);
 }
 
-// get bytes of memory. FOR KERNEL USE ONLY!
-void *kmalloc(uint32_t size) {
+static void *__kmalloc(uint32_t size) {
     if (size > MAX_BLK_SIZE) {
         uint32_t pg_cnt = ROUND_UP_DIV(
             size + sizeof(arena_t) + sizeof(mem_blk_t), PAGE_SIZE
@@ -345,9 +341,6 @@ void *kmalloc(uint32_t size) {
         a->large = True;
         a->desc = NULL;
         mem_blk_t *mb = (mem_blk_t *)(a + 1);
-        // mb->magic = 0x19971015;
-        // mb->tag.next = mb->tag.prev = NULL;
-        // mb->data_addr = (uintptr_t)(mb + 1);
         mem_blk_init(mb);
         return (void *)(mb->data_addr);
     } else {
@@ -370,7 +363,6 @@ void *kmalloc(uint32_t size) {
             for (uint32_t i = 0; i < desc->nr_blocks_per_arena; i++) {
                 mem_blk_t *b = arena_get_blk(a, i);
                 mem_blk_init(b);
-                kprintf(KPL_DEBUG, "b = 0x%X, b->magic = 0x%X\n", b, b->magic);
                 ASSERT(!list_find(&(desc->free_list), &(b->tag)));
                 list_push_back(&(desc->free_list), &(b->tag));
             }
@@ -380,13 +372,46 @@ void *kmalloc(uint32_t size) {
         mem_blk_t *b = __list_node_struct(
             mem_blk_t, tag, list_pop_front(&(desc->free_list))
         );
-        // mem_blk_init(b);
-        kprintf(KPL_DEBUG, "b = 0x%X, b->magic = 0x%X\n", b, b->magic);
         arena_t *a = arena_of_blk(b);
         (a->cnt)--;
-        kprintf(KPL_DEBUG, "desc->block_size = %d\n", a->desc->block_size);
         return (void *)(b->data_addr);
     }
+}
+
+
+void *kmalloc(uint32_t size) {
+    return __kmalloc(size);
+}
+
+static void __kfree(mem_blk_t *mb) {
+
+    arena_t *a = arena_of_blk(mb);
+    if (a->large) {
+        ASSERT(a->desc == NULL);
+        k_free_pages(a, a->cnt);
+    } else {
+        ASSERT(a->desc != NULL);
+        ASSERT(!list_find(&(a->desc->free_list), &(mb->tag)));
+        list_push_front(&(a->desc->free_list), &(mb->tag));
+        (a->cnt)++;
+        if (a->cnt == a->desc->nr_blocks_per_arena) {
+            // all blocks in a are freed, a can be freed
+            for (uint32_t i = 0; i < a->desc->nr_blocks_per_arena; i++) {
+                mem_blk_t *b = arena_get_blk(a, i);
+                ASSERT(list_find(&(a->desc->free_list), &(b->tag)));
+                list_erase( &(b->tag));
+            }
+            k_free_page(a);
+        }
+    }
+}
+
+void kfree(void *va) {
+    mem_blk_t *mb = (mem_blk_t *)((uintptr_t)va - sizeof(mem_blk_t));
+    if (mb->magic != 0x19971015 || mb->data_addr != (uintptr_t)va) {
+        PANIC("bad pointer for kfree");
+    }
+    __kfree(mb);
 }
 
 void vmm_init() {

@@ -107,11 +107,15 @@ void kernelMain() {
     // test_k_get_free_page();
     char *b0 = kmalloc(20);
     kprintf(KPL_DEBUG, "b0 = 0x%X\n", b0);
-    // char *b1 = kmalloc(17);
+    kfree(b0);
+
+    // char *b1 = kmalloc(33);
     // kprintf(KPL_DEBUG, "b1 = 0x%X\n", b1);
-    // char *b2 = kmalloc(10);
-    // kprintf(KPL_DEBUG, "b2 = 0x%X\n", b2);
-    // char *b3 = kmalloc(17);
+    char *b2 = kmalloc(10);
+    kprintf(KPL_DEBUG, "b2 = 0x%X\n", b2);
+    // char *b3 = kmalloc(1025);
     // kprintf(KPL_DEBUG, "b3 = 0x%X\n", b3);
+    // char *b4 = kmalloc(9999);
+    // kprintf(KPL_DEBUG, "b4 = 0x%X\n", b4);
     while (1);
 }

@@ -132,4 +132,9 @@ void k_free_pages(void *kva, uint32_t pgcnt);
 // @param size number of bytes
 void *kmalloc(uint32_t size);
 
+// free the memory block allocated by kmalloc, 
+// panic otherwise. FOR KERNEL USE ONLY!
+// @param va the address allocated by kmalloc
+void kfree(void *va);
+
 #endif

@@ -10,7 +10,7 @@ void printISRParam(const isrp_t* p) {
 
 void panic_spin(
     const char* filename, int line,
-    const char* funcname, const char* condition
+    const char* funcname, const char* cause
 ) {
     disable_int();
     kprintf(KPL_DUMP, "\n");
@@ -18,6 +18,6 @@ void panic_spin(
     kprintf(KPL_PANIC, "file: %s\n", filename);
     kprintf(KPL_PANIC, "line: %d\n", line);
     kprintf(KPL_PANIC, "function: %s\n", funcname);
-    kprintf(KPL_PANIC, "condition: %s\n", condition);
+    kprintf(KPL_PANIC, "cause: %s\n", cause);
     while (1);
 }
