@@ -74,7 +74,13 @@ static void parent(void *args) {
     // thread_join(task1);
     // thread_join(task2);
     // thread_join(task3);
-    thread_msleep(5000);
+    // thread_msleep(5000);
+    int x = 0;
+    while (x < 100) {
+        kprintf(KPL_DUMP, "parent: x=%d\n", x);
+        thread_msleep(5000);
+        x++;
+    }
     kprintf(KPL_DEBUG, "parent end\n");
 }
 

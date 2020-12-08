@@ -61,24 +61,19 @@ static void timer_install(uint32_t hz) {
 #define CLOCKSZ 25
 
 static void clock() {
-    static int ticks = 0;
-    static int sec = -1;
-    if (ticks % _hz_ == 0) {
-        sec++;
-        ticks = 0;
-        int row, col;
-        get_cursor(&row, &col);
-        // set_cursor(MAXROW - 1, 0);
-        set_cursor(0, MAXCOL - CLOCKSZ);
-        kprintf(KPL_DEBUG, "clock: %d sec passed", sec);
-        set_cursor(row, col);
-    }
-    ticks++;
+    static uint32_t sec = 0;
+    sec++;
+    int row, col;
+    get_cursor(&row, &col);
+    // set_cursor(MAXROW - 1, 0);
+    set_cursor(0, MAXCOL - CLOCKSZ);
+    kprintf(KPL_DEBUG, "clock: %d sec passed", sec);
+    set_cursor(row, col);
 }
 
 static void every_msec() {
-    const uint32_t mhz = _hz_ / 10;
-    uint32_t ticks = 0;
+    const uint32_t mhz = _hz_ / 1000;
+    static uint32_t ticks = 0;
     if (ticks % mhz == 0) {
         ticks = 0;
         /* these functions will be called every 1 msec */
@@ -88,10 +83,11 @@ static void every_msec() {
 }
 
 static void every_sec() {
-    uint32_t ticks = 0;
+    static uint32_t ticks = 0;
     if (ticks % _hz_ == 0) {
         ticks = 0;
         /* these functions will be called every 1 sec */
+        // clock();
     }
     ticks++;
 }
@@ -99,6 +95,7 @@ static void every_sec() {
 static void do_timer(isrp_t *p) {
     // clock();
     every_msec();
+    every_sec();
     time_scheduler();
 }
 

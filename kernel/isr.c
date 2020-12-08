@@ -209,7 +209,7 @@ void interrupt_request_handler(isrp_t *p) {
     if (handlers[p->int_no] != NULL) {
         handlers[p->int_no](p);
     } else {
-        kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
+        // kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
     }
 }
 

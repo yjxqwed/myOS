@@ -186,6 +186,7 @@ void time_scheduler() {
 }
 
 void print_all_tasks() {
+    kprintf(KPL_DEBUG, "length: %d\n", list_length(&task_all_list));
     kprintf(KPL_DEBUG, "all: head->");
     for (
         list_node_t *p = task_all_list.head.next;
@@ -216,6 +217,19 @@ void print_exit_tasks() {
     for (
         list_node_t *p = task_exit_list.head.next;
         p != &(task_exit_list.tail);
+        p = p->next
+    ) {
+        task_t *t = __list_node_struct(task_t, general_tag, p);
+        kprintf(KPL_DEBUG, "%s->", t->task_name);
+    }
+    kprintf(KPL_DEBUG, "tail");
+}
+
+void print_sleeping_tasks() {
+    kprintf(KPL_DEBUG, "sleeping: head->");
+    for (
+        list_node_t *p = sleeping_list.head.next;
+        p != &(sleeping_list.tail);
         p = p->next
     ) {
         task_t *t = __list_node_struct(task_t, general_tag, p);
@@ -273,15 +287,14 @@ void sleep_manage() {
         p != (&sleeping_list.tail);
     ) {
         task_t *t = __list_node_struct(task_t, general_tag, p);
-        kprintf(KPL_DEBUG, "t->sleep_msec = %d\n", t->sleep_msec);
-        // MAGICBP;
         ASSERT(t->sleep_msec > 0);
+        // kprintf(KPL_DEBUG, "%d\n", t->sleep_msec);
         (t->sleep_msec)--;
         if (t->sleep_msec == 0) {
             list_node_t *victim = p;
-            thread_unblock(t);
             p = p->next;
             list_erase(victim);
+            thread_unblock(t);
         } else {
             p = p->next;
         }
@@ -294,7 +307,6 @@ void thread_msleep(uint32_t msec) {
     }
     INT_STATUS old_status = disable_int();
     current_task->sleep_msec = msec;
-    // kprintf(KPL_DEBUG, "current_task->sleep_msec=%d\n", current_task->sleep_msec);
     ASSERT(!list_find(&sleeping_list, &(current_task->general_tag)));
     list_push_front(&sleeping_list, &(current_task->general_tag));
     current_task->status = TASK_BLOCKED;
