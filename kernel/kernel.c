@@ -105,13 +105,13 @@ void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
     // test_thread();
     // test_k_get_free_page();
-    char *b0 = kmalloc(10);
+    char *b0 = kmalloc(20);
     kprintf(KPL_DEBUG, "b0 = 0x%X\n", b0);
-    char *b1 = kmalloc(17);
-    kprintf(KPL_DEBUG, "b1 = 0x%X\n", b1);
-    char *b2 = kmalloc(10);
-    kprintf(KPL_DEBUG, "b2 = 0x%X\n", b2);
-    char *b3 = kmalloc(17);
-    kprintf(KPL_DEBUG, "b3 = 0x%X\n", b3);
+    // char *b1 = kmalloc(17);
+    // kprintf(KPL_DEBUG, "b1 = 0x%X\n", b1);
+    // char *b2 = kmalloc(10);
+    // kprintf(KPL_DEBUG, "b2 = 0x%X\n", b2);
+    // char *b3 = kmalloc(17);
+    // kprintf(KPL_DEBUG, "b3 = 0x%X\n", b3);
     while (1);
 }

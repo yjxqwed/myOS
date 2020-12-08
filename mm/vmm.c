@@ -268,7 +268,16 @@ void k_free_pages(void *kva, uint32_t pgcnt) {
 
 typedef struct MemoryBlock {
     list_node_t tag;
+    // for free to check
+    uint32_t magic;
+    uintptr_t data_addr;
 } mem_blk_t;
+
+static void mem_blk_init(mem_blk_t *mb) {
+    mb->tag.prev = mb->tag.prev = NULL;
+    mb->magic = 0x19971015;
+    mb->data_addr = (uintptr_t)(mb + 1);
+}
 
 typedef struct MemoryBlockDescriptor {
     // size of blocks in this arena (16B, 32B, etc)
@@ -291,29 +300,31 @@ typedef struct Arena {
     // if (large) cnt is page count
     // else cnt is block count
     uint32_t cnt;
+
+    uint8_t pending[4];
 } arena_t;
 
 void block_desc_init(mem_blk_desc_t descs[NR_MEM_BLK_DESC]) {
-    uint32_t size = 16;
+    uint32_t size = MIN_BLK_SIZE;
     for (int i = 0; i < NR_MEM_BLK_DESC; i++) {
         descs[i].block_size = size;
         // TO-OPT: trailing bytes may be wasted
-        descs[i].nr_blocks_per_arena = (PAGE_SIZE - sizeof(arena_t)) / size;
+        descs[i].nr_blocks_per_arena =
+            (PAGE_SIZE - sizeof(arena_t)) / (size + sizeof(mem_blk_t));
         size *= 2;
         list_init(&(descs[i].free_list));
     }
 }
 
 static mem_blk_t* arena_get_blk(arena_t *a, uint32_t idx) {
-    ASSERT(a != NULL && a->desc != NULL);
+    ASSERT(a != NULL && a->desc != NULL && !((uintptr_t)a & PG_OFFSET_MASK));
     ASSERT(idx < a->desc->nr_blocks_per_arena);
     uint32_t size = a->desc->block_size;
-    uintptr_t first =
-        (uintptr_t)a + ROUND_UP_DIV(sizeof(arena_t), size) * size;
+    uintptr_t first = (uintptr_t)(a + 1);
     // kprintf(KPL_DEBUG, "b=0x%X\n", first + idx * size);
     // kprintf(KPL_DEBUG, "size=%d\n", size);
     // MAGICBP;
-    return (mem_blk_t *)(first + idx * size);
+    return (mem_blk_t *)(first + idx * (size + sizeof(mem_blk_t)));
 }
 
 static arena_t* arena_of_blk(mem_blk_t* blk) {
@@ -323,7 +334,9 @@ static arena_t* arena_of_blk(mem_blk_t* blk) {
 // get bytes of memory. FOR KERNEL USE ONLY!
 void *kmalloc(uint32_t size) {
     if (size > MAX_BLK_SIZE) {
-        uint32_t pg_cnt = ROUND_UP_DIV(size + sizeof(arena_t), PAGE_SIZE);
+        uint32_t pg_cnt = ROUND_UP_DIV(
+            size + sizeof(arena_t) + sizeof(mem_blk_t), PAGE_SIZE
+        );
         arena_t *a = (arena_t *)k_get_free_pages(pg_cnt, GFP_ZERO);
         if (a == NULL) {
             return NULL;
@@ -331,7 +344,12 @@ void *kmalloc(uint32_t size) {
         a->cnt = pg_cnt;
         a->large = True;
         a->desc = NULL;
-        return (void *)(a + 1);
+        mem_blk_t *mb = (mem_blk_t *)(a + 1);
+        // mb->magic = 0x19971015;
+        // mb->tag.next = mb->tag.prev = NULL;
+        // mb->data_addr = (uintptr_t)(mb + 1);
+        mem_blk_init(mb);
+        return (void *)(mb->data_addr);
     } else {
         int idx;
         for (idx = 0; idx < NR_MEM_BLK_DESC; idx++) {
@@ -351,6 +369,8 @@ void *kmalloc(uint32_t size) {
             a->cnt = desc->nr_blocks_per_arena;
             for (uint32_t i = 0; i < desc->nr_blocks_per_arena; i++) {
                 mem_blk_t *b = arena_get_blk(a, i);
+                mem_blk_init(b);
+                kprintf(KPL_DEBUG, "b = 0x%X, b->magic = 0x%X\n", b, b->magic);
                 ASSERT(!list_find(&(desc->free_list), &(b->tag)));
                 list_push_back(&(desc->free_list), &(b->tag));
             }
@@ -360,10 +380,12 @@ void *kmalloc(uint32_t size) {
         mem_blk_t *b = __list_node_struct(
             mem_blk_t, tag, list_pop_front(&(desc->free_list))
         );
+        // mem_blk_init(b);
+        kprintf(KPL_DEBUG, "b = 0x%X, b->magic = 0x%X\n", b, b->magic);
         arena_t *a = arena_of_blk(b);
         (a->cnt)--;
         kprintf(KPL_DEBUG, "desc->block_size = %d\n", a->desc->block_size);
-        return (void *)b;
+        return (void *)(b->data_addr);
     }
 }
 

@@ -15,6 +15,8 @@
 // page size = 4kb
 #define PAGE_SIZE 0x1000
 
+#define __ALLIGNED(align) __attribute__((aligned(align)))
+
 // page alligned
 #define __PAGE_ALLIGNED __attribute__((aligned(PAGE_SIZE)))
 
