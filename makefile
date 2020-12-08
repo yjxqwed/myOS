@@ -4,7 +4,11 @@ G_PARAMS = -Wall -m32 -I include -I include/lib -nostdlib -fno-builtin \
 NASM_PARAMS = -I include -f elf32
 LD_PARAMS = -m elf_i386
 
-
+ifeq ($(ver), release)
+G_PARAMS += -O3
+else
+G_PARAMS += -D KDEBUG
+endif
 
 # objects
 driver_objs = driver/kb.elf32 driver/screen.elf32 driver/pit.elf32 \
@@ -47,8 +51,8 @@ all: mykernel.bin
 mykernel.bin: linker.ld $(objects)
 	ld $(LD_PARAMS) -T $< -o $@ $(objects)
 
-install: mykernel.bin
-	sudo cp $< /boot/mykernel.bin
+# install: mykernel.bin
+# 	sudo cp $< /boot/mykernel.bin
 
 clean:
 	rm -rf *.o *.elf32 *.bin *.out iso *.iso $(objects)

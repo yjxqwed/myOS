@@ -2,7 +2,7 @@
 #include <string.h>
 #include <arch/x86.h>
 #include <sys/isr.h>
-#include <mm/vmm.h>
+#include <mm/kvmm.h>
 #include <common/debug.h>
 #include <common/types.h>
 #include <kprintf.h>

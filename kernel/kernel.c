@@ -101,21 +101,36 @@ static void test_thread() {
     thread_join(p);
 }
 
-void kernelMain() {
-    kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
-    // test_thread();
-    // test_k_get_free_page();
+static void test_kmalloc() {
     char *b0 = kmalloc(20);
     kprintf(KPL_DEBUG, "b0 = 0x%X\n", b0);
     kfree(b0);
 
-    // char *b1 = kmalloc(33);
-    // kprintf(KPL_DEBUG, "b1 = 0x%X\n", b1);
+    char *b1 = kmalloc(33);
+    kprintf(KPL_DEBUG, "b1 = 0x%X\n", b1);
     char *b2 = kmalloc(10);
     kprintf(KPL_DEBUG, "b2 = 0x%X\n", b2);
-    // char *b3 = kmalloc(1025);
-    // kprintf(KPL_DEBUG, "b3 = 0x%X\n", b3);
-    // char *b4 = kmalloc(9999);
-    // kprintf(KPL_DEBUG, "b4 = 0x%X\n", b4);
+    char *b3 = kmalloc(1025);
+    kprintf(KPL_DEBUG, "b3 = 0x%X\n", b3);
+    char *b4 = kmalloc(9999);
+    kprintf(KPL_DEBUG, "b4 = 0x%X\n", b4);
+    kfree(b4);
+    char *b5 = kmalloc(31);
+    kprintf(KPL_DEBUG, "b5 = 0x%X\n", b5);
+    // kfree(b5);
+    char *b6 = kmalloc(63);
+    kprintf(KPL_DEBUG, "b6 = 0x%X\n", b6);
+    // kfree(b6);
+    char *b7 = kmalloc(127);
+    kprintf(KPL_DEBUG, "b7 = 0x%X\n", b7);
+    // kfree(b7);
+}
+
+void kernelMain() {
+    kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
+    // test_thread();
+    // test_k_get_free_page();
+    // test_kmalloc();
+    ASSERT(0);
     while (1);
 }

@@ -9,7 +9,7 @@
 #include <driver/kb.h>
 #include <multiboot/multiboot.h>
 #include <mm/pmem.h>
-#include <mm/vmm.h>
+#include <mm/kvmm.h>
 #include <arch/x86.h>
 #include <thread/thread.h>
 

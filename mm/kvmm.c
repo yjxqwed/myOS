@@ -367,7 +367,7 @@ static void *__kmalloc(uint32_t size) {
                 list_push_back(&(desc->free_list), &(b->tag));
             }
         }
-        kprintf(KPL_DEBUG, "desc->block_size = %d\n", desc->block_size);
+        // kprintf(KPL_DEBUG, "desc->block_size = %d\n", desc->block_size);
         ASSERT(!list_empty(&(desc->free_list)));
         mem_blk_t *b = __list_node_struct(
             mem_blk_t, tag, list_pop_front(&(desc->free_list))
@@ -384,7 +384,6 @@ void *kmalloc(uint32_t size) {
 }
 
 static void __kfree(mem_blk_t *mb) {
-
     arena_t *a = arena_of_blk(mb);
     if (a->large) {
         ASSERT(a->desc == NULL);
