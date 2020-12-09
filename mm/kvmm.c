@@ -35,6 +35,9 @@ static void __k_free_page(void *kva) {
 
 void k_free_page(void *kva) {
     // kva has to be page alligned
+    if (kva == NULL) {
+        return;
+    }
     INT_STATUS old_status = disable_int();
     __k_free_page(kva);
     set_int_status(old_status);
@@ -70,6 +73,9 @@ static void __k_free_pages(void *kva, uint32_t pgcnt) {
 
 
 void k_free_pages(void *kva, uint32_t pgcnt) {
+    if (kva == NULL) {
+        return;
+    }
     INT_STATUS old_status = disable_int();
     __k_free_pages(kva, pgcnt);
     set_int_status(old_status);
@@ -219,6 +225,9 @@ static void __kfree(mem_blk_t *mb) {
 }
 
 void kfree(void *va) {
+    if (va == NULL) {
+        return;
+    }
     mem_blk_t *mb = (mem_blk_t *)((uintptr_t)va - sizeof(mem_blk_t));
     if (mb->magic != 0x19971015 || mb->data_addr != (uintptr_t)va) {
         PANIC("bad pointer for kfree");
@@ -230,4 +239,10 @@ void kfree(void *va) {
 
 void vmm_init() {
     block_desc_init(k_mem_blk_descs);
+}
+
+void vmm_print() {
+    for (int i = 0; i < NR_MEM_BLK_DESC; i++) {
+        kprintf(KPL_DEBUG, "blk_size=%d, list_len=%d\n", k_mem_blk_descs[i].block_size, list_length(&(k_mem_blk_descs[i].free_list)));
+    }
 }

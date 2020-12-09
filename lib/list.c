@@ -10,7 +10,9 @@ void list_init(list_t *l) {
 }
 
 void list_push_back(list_t *l, list_node_t *node) {
+    ASSERT(l != NULL);
     ASSERT(node != NULL);
+    ASSERT(node->prev == NULL && node->next == NULL);
     list_node_t *last = l->tail.prev;
     last->next = node;
     node->prev = last;
@@ -19,7 +21,9 @@ void list_push_back(list_t *l, list_node_t *node) {
 }
 
 void list_push_front(list_t *l, list_node_t *node) {
+    ASSERT(l != NULL);
     ASSERT(node != NULL);
+    ASSERT(node->prev == NULL && node->next == NULL);
     list_node_t *first = l->head.next;
     l->head.next = node;
     node->prev = &(l->head);
@@ -28,6 +32,7 @@ void list_push_front(list_t *l, list_node_t *node) {
 }
 
 list_node_t *list_pop_back(list_t *l) {
+    ASSERT(l != NULL);
     list_node_t *back = l->tail.prev;
     if (back == &(l->head)) {
         return NULL;
@@ -39,6 +44,7 @@ list_node_t *list_pop_back(list_t *l) {
 }
 
 list_node_t *list_pop_front(list_t *l) {
+    ASSERT(l != NULL);
     list_node_t *front = l->head.next;
     if (front == &(l->tail)) {
         return NULL;
@@ -50,6 +56,7 @@ list_node_t *list_pop_front(list_t *l) {
 }
 
 list_node_t *list_back(list_t *l) {
+    ASSERT(l != NULL);
     if (l->tail.prev == &(l->head)) {
         return NULL;
     } else {
@@ -58,6 +65,7 @@ list_node_t *list_back(list_t *l) {
 }
 
 list_node_t *list_front(list_t *l) {
+    ASSERT(l != NULL);
     if (l->head.next == &(l->tail)) {
         return NULL;
     } else {
@@ -66,6 +74,7 @@ list_node_t *list_front(list_t *l) {
 }
 
 bool_t list_empty(list_t *l) {
+    ASSERT(l != NULL);
     if (l->head.next == &(l->tail)) {
         return True;
     } else {
@@ -74,6 +83,7 @@ bool_t list_empty(list_t *l) {
 }
 
 size_t list_length(list_t *l) {
+    ASSERT(l != NULL);
     size_t len = 0;
     list_node_t *p;
     for (p = l->head.next; p != &(l->tail); p = p->next) {
@@ -83,6 +93,7 @@ size_t list_length(list_t *l) {
 }
 
 bool_t list_find(list_t *l, list_node_t *node) {
+    ASSERT(l != NULL);
     if (node == NULL || node->next == NULL || node->prev == NULL) {
         return False;
     }
@@ -116,6 +127,7 @@ void list_insert_after(list_node_t *a, list_node_t *node) {
 }
 
 list_node_t *list_pred(list_t *l, list_node_pred pred, void *args) {
+    ASSERT(l != NULL);
     list_node_t *p;
     for (p = l->head.next; p != &(l->tail); p = p->next) {
         if (pred(p, args)) {

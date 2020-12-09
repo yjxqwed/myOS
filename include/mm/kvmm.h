@@ -138,4 +138,6 @@ void *kmalloc(uint32_t size);
 // @param va the address allocated by kmalloc
 void kfree(void *va);
 
+void vmm_print();
+
 #endif

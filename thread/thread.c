@@ -138,6 +138,7 @@ void thread_init() {
 }
 
 static void clear_exit_q() {
+    ASSERT(get_int_status() == INTERRUPT_OFF);
     list_node_t *p = list_pop_front(&task_exit_list);
     while (p) {
         task_t *t = __list_node_struct(task_t, general_tag, p);

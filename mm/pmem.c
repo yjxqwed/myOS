@@ -170,6 +170,7 @@ void pmem_init() {
         pmap[i].num_ref = 0;
         list_push_back(&free_list, &(pmap[i].free_list_tag));
     }
+    // MAGICBP;
 }
 
 // alloc a physical page
@@ -271,8 +272,8 @@ void page_decref(ppage_t *p) {
  */
 
 // For bootstrap paging use
-static __PAGE_ALLIGNED pde_t boot_pg_dir[NRPDE];
-static __PAGE_ALLIGNED pte_t boot_pg_tab[NRPTE];
+__PAGE_ALLIGNED pde_t boot_pg_dir[NRPDE];
+__PAGE_ALLIGNED pte_t boot_pg_tab[NRPTE];
 
 void install_boot_pg(void) {
     pte_t *ppg = (pte_t *)__pa(boot_pg_tab);
