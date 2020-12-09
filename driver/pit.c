@@ -93,7 +93,6 @@ static void every_sec() {
 }
 
 static void do_timer(isrp_t *p) {
-    // clock();
     every_msec();
     every_sec();
     time_scheduler();

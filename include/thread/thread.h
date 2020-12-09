@@ -54,6 +54,7 @@ typedef struct Task {
     // list of threads join this thread
     list_t join_list;
 
+    // msec left to sleep
     uint32_t sleep_msec;
 
     // a magic number to guard this struct
@@ -88,6 +89,7 @@ void time_scheduler();
 void print_all_tasks();
 void print_ready_tasks();
 void print_exit_tasks();
+void print_sleeping_tasks();
 
 
 // thread block self and set self status 
@@ -104,7 +106,7 @@ void thread_unblock(task_t *task);
 // get the running thread
 task_t *get_current_thread();
 
-// @brief sleep for milisec
+// @brief sleep for milisec, if msec is 0, does nothing
 // @param msec time in milisec
 void thread_msleep(uint32_t msec);
 

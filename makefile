@@ -40,7 +40,7 @@ objects = $(driver_objs) $(kernel_asm_objs) $(kernel_c_objs) \
 # build rules
 .PHONY = clean
 
-all: mykernel.bin
+all: mykernel.iso
 
 %.elf32: %.c
 	gcc $(G_PARAMS) -o $@ -c $<

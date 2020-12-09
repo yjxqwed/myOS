@@ -171,8 +171,10 @@ static void schedule() {
     ASSERT(next->status == TASK_READY);
     next->status = TASK_RUNNING;
     current_task = next;
-    extern void switch_to(task_t *prev, task_t *next);
-    switch_to(old, next);
+    if (old != next) {
+        extern void switch_to(task_t *prev, task_t *next);
+        switch_to(old, next);
+    }
 }
 
 void time_scheduler() {
@@ -185,12 +187,24 @@ void time_scheduler() {
     }
 }
 
-void print_all_tasks() {
-    kprintf(KPL_DEBUG, "length: %d\n", list_length(&task_all_list));
-    kprintf(KPL_DEBUG, "all: head->");
+static void print_tasks(list_t *l) {
+    char *name;
+    if (l == &task_all_list) {
+        name = "all";
+    } else if (l == &task_ready_list) {
+        name = "ready";
+    } else if (l == &task_exit_list) {
+        name = "exit";
+    } else if (l == &sleeping_list) {
+        name = "sleeping";
+    } else {
+        kprintf(KPL_PANIC, "Unknown List 0x%X\n", l);
+        return;
+    }
+    kprintf(KPL_DEBUG, "%s: head->", name);
     for (
-        list_node_t *p = task_all_list.head.next;
-        p != &(task_all_list.tail);
+        list_node_t *p = l->head.next;
+        p != &(l->tail);
         p = p->next
     ) {
         task_t *t = __list_node_struct(task_t, list_all_tag, p);
@@ -199,43 +213,20 @@ void print_all_tasks() {
     kprintf(KPL_DEBUG, "tail");
 }
 
+void print_all_tasks() {
+    print_tasks(&task_all_list);
+}
+
 void print_ready_tasks() {
-    kprintf(KPL_DEBUG, "ready: head->");
-    for (
-        list_node_t *p = task_ready_list.head.next;
-        p != &(task_ready_list.tail);
-        p = p->next
-    ) {
-        task_t *t = __list_node_struct(task_t, general_tag, p);
-        kprintf(KPL_DEBUG, "%s->", t->task_name);
-    }
-    kprintf(KPL_DEBUG, "tail");
+    print_tasks(&task_ready_list);
 }
 
 void print_exit_tasks() {
-    kprintf(KPL_DEBUG, "exit: head->");
-    for (
-        list_node_t *p = task_exit_list.head.next;
-        p != &(task_exit_list.tail);
-        p = p->next
-    ) {
-        task_t *t = __list_node_struct(task_t, general_tag, p);
-        kprintf(KPL_DEBUG, "%s->", t->task_name);
-    }
-    kprintf(KPL_DEBUG, "tail");
+    print_tasks(&task_exit_list);
 }
 
 void print_sleeping_tasks() {
-    kprintf(KPL_DEBUG, "sleeping: head->");
-    for (
-        list_node_t *p = sleeping_list.head.next;
-        p != &(sleeping_list.tail);
-        p = p->next
-    ) {
-        task_t *t = __list_node_struct(task_t, general_tag, p);
-        kprintf(KPL_DEBUG, "%s->", t->task_name);
-    }
-    kprintf(KPL_DEBUG, "tail");
+    print_tasks(&sleeping_list);
 }
 
 void thread_join(task_t *task) {
@@ -288,7 +279,6 @@ void sleep_manage() {
     ) {
         task_t *t = __list_node_struct(task_t, general_tag, p);
         ASSERT(t->sleep_msec > 0);
-        // kprintf(KPL_DEBUG, "%d\n", t->sleep_msec);
         (t->sleep_msec)--;
         if (t->sleep_msec == 0) {
             list_node_t *victim = p;

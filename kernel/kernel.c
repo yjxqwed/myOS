@@ -65,8 +65,12 @@ static void test2(void *args) {
     }
 }
 
-static void parent(void *args) {
-    kprintf(KPL_DEBUG, "parent start\n");
+static void parent1(void *args) {
+    uint32_t interval = *(uint32_t *)args;
+    kprintf(KPL_DEBUG, "args=0x%x\n", args);
+    int x = 0;
+    kprintf(KPL_DEBUG, "parent(%d) start\n", interval);
+    MAGICBP;
     // mutex_init(&m);
     // task_t *task1 = thread_start("supplier", 5, test1, "supplier");
     // task_t *task2 = thread_start("consumer1", 5, test2, "consumer1");
@@ -75,13 +79,12 @@ static void parent(void *args) {
     // thread_join(task2);
     // thread_join(task3);
     // thread_msleep(5000);
-    int x = 0;
     while (x < 100) {
-        kprintf(KPL_DUMP, "parent: x=%d\n", x);
-        thread_msleep(5000);
+        kprintf(KPL_DUMP, "parent(%d): x=%d\n", interval, x);
+        thread_msleep(interval);
         x++;
     }
-    kprintf(KPL_DEBUG, "parent end\n");
+    kprintf(KPL_DEBUG, "parent(%d) end\n", interval);
 }
 
 static void test_k_get_free_page() {
@@ -103,9 +106,24 @@ static void test_k_get_free_page() {
     *p5 = 0x98765432;
 }
 
+static void parent(void *args) {
+    uint32_t itvl1 = 2000, itvl2 = 3000;
+    kprintf(KPL_DEBUG, "&itvl1=0x%x, itvl1=%d\n", &itvl1, itvl1);
+    task_t *p1 = thread_start("parent1", 30, parent1, &itvl1);
+    thread_msleep(5000);
+    kprintf(KPL_DEBUG, "&itvl1=0x%x, itvl1=%d\n", &itvl1, itvl1);
+    thread_join(p1);
+}
+
 static void test_thread() {
-    task_t *p = thread_start("parent", 10, parent, NULL);
-    // thread_join(p);
+    task_t *p2 = thread_start("parent", 30, parent, NULL);
+    // // thread_join(p1);
+    // // thread_join(p2);
+    // kprintf(KPL_DEBUG, "&itvl1=0x%x, itvl1=%d\n", &itvl1, itvl1);
+    // task_t *p1 = thread_start("parent1", 30, parent1, &itvl1);
+    // // thread_msleep(5000);
+    // kprintf(KPL_DEBUG, "&itvl1=0x%x, itvl1=%d\n", &itvl1, itvl1);
+    // // thread_join(p1);
 }
 
 static void test_kmalloc() {
