@@ -209,9 +209,9 @@ static void print_tasks(list_t *l) {
         p = p->next
     ) {
         task_t *t = __list_node_struct(task_t, list_all_tag, p);
-        kprintf(KPL_DEBUG, "%s->", t->task_name);
+        kprintf(KPL_DEBUG, "{0x%X, %s}->", t, t->task_name);
     }
-    kprintf(KPL_DEBUG, "tail");
+    kprintf(KPL_DEBUG, "tail\n");
 }
 
 void print_all_tasks() {

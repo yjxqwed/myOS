@@ -173,23 +173,42 @@ static void test_kmalloc1() {
 
 static void test(void *args) {
     int id = *(int *)args;
-    kprintf(KPL_DEBUG, "test%d start\n", id);
-    for (int i = 0; i < 1000; i++) {
-        test_kmalloc();
-        test_kmalloc1();
-    }
-    kprintf(KPL_DEBUG, "test%d end\n", id);
+    mutex_lock(&m);
+    kprintf(KPL_DEBUG, " test%d start ", id);
+    mutex_unlock(&m);
+    // for (int i = 0; i < 1000; i++) {
+    //     test_kmalloc();
+    //     test_kmalloc1();
+    // }
+    uint32_t slp = (id * 10000) % 10007;
+    mutex_lock(&m);
+    kprintf(KPL_DEBUG, " test%d will sleep for %d ms ", id, slp);
+    mutex_unlock(&m);
+    thread_msleep(slp);
+    mutex_lock(&m);
+    kprintf(KPL_DEBUG, " test%d end ", id);
+    mutex_unlock(&m);
     // while (1);
 }
 
 static void test_parent(void *args) {
-    vmm_print();
+    mutex_init(&m);
+    mutex_lock(&m);
+    // // vmm_print();
+    
+    print_all_tasks();
+    print_ready_tasks();
+    print_sleeping_tasks();
+    print_exit_tasks();
+    mutex_unlock(&m);
+    while (1);
+    // MAGICBP;
     task_t *tasks[100];
     int ids[100];
-    int num_threads = 10;
+    int num_threads = 100;
     for (int i = 0; i < num_threads; i++) {
         ids[i] = i;
-        tasks[i] = thread_start("test", 15, test, &(ids[i]));
+        tasks[i] = thread_start("test", 30, test, &(ids[i]));
     }
     for (int i = 0; i < num_threads; i++) {
         thread_join(tasks[i]);
@@ -199,9 +218,15 @@ static void test_parent(void *args) {
     // task_t *t2 = thread_start("test2", 30, test, &id2);
     // thread_join(t1);
     // thread_join(t2);
-    vmm_print();
+    mutex_lock(&m);
+    // vmm_print();
     kprintf(KPL_DEBUG, "test_parent end.\n");
-    // while (1);
+    mutex_unlock(&m);
+    print_all_tasks();
+    print_ready_tasks();
+    print_sleeping_tasks();
+    print_exit_tasks();
+    while (1);
 }
 
 
@@ -210,6 +235,19 @@ void kernelMain() {
     // test_thread();
     // test_k_get_free_page();
     // test_kmalloc();
-    thread_start("test_parent", 30, test_parent, NULL);
+    print_all_tasks();
+    print_ready_tasks();
+    // print_sleeping_tasks();
+    // print_exit_tasks();
+    MAGICBP;
+    // for (int i = 0; i < 10000000; i++);
+    // for (int i = 0; i < 10000000; i++);
+    // for (int i = 0; i < 10000000; i++);
+    // for (int i = 0; i < 10000000; i++);
+    // print_all_tasks();
+    // print_ready_tasks();
+    // MAGICBP;
+    thread_start("tp0", 30, test_parent, NULL);
+    thread_start("tp1", 30, test_parent, NULL);
     while (1);
 }
