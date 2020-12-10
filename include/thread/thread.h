@@ -91,6 +91,7 @@ void print_ready_tasks();
 void print_exit_tasks();
 void print_sleeping_tasks();
 
+void thread_yield();
 
 // thread block self and set self status 
 // only called when int is disabled

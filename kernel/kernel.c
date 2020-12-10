@@ -180,11 +180,16 @@ static void test(void *args) {
     //     test_kmalloc();
     //     test_kmalloc1();
     // }
-    uint32_t slp = (id * 10000) % 10007;
-    mutex_lock(&m);
-    kprintf(KPL_DEBUG, " test%d will sleep for %d ms ", id, slp);
-    mutex_unlock(&m);
-    thread_msleep(slp);
+    // uint32_t slp = (id * 10000) % 10007;
+    // mutex_lock(&m);
+    // kprintf(KPL_DEBUG, " test%d will sleep for %d ms ", id, slp);
+    // mutex_unlock(&m);
+    // thread_msleep(slp);
+    for (int i = 0; i < 1000000; i++);
+    if (id % 17 == 0) {
+        thread_yield();
+    }
+    for (int i = 0; i < 1000000; i++);
     mutex_lock(&m);
     kprintf(KPL_DEBUG, " test%d end ", id);
     mutex_unlock(&m);
@@ -192,6 +197,10 @@ static void test(void *args) {
 }
 
 // sem_t sem;
+
+static void test_yield(void *args) {
+
+}
 
 static void test_parent(void *args) {
     mutex_lock(&m);
@@ -204,11 +213,13 @@ static void test_parent(void *args) {
     print_exit_tasks();
     kprintf(KPL_DEBUG, "=========\n", me);
     mutex_unlock(&m);
-    while (1);
+    // return;
+    // while (1);
     // MAGICBP;
-    task_t *tasks[100];
-    int ids[100];
-    int num_threads = 100;
+    int num_threads = 1000;
+    task_t **tasks = (task_t **)kmalloc(sizeof(task_t *) * num_threads);
+    int *ids = kmalloc(sizeof(int) * num_threads);
+    
     for (int i = 0; i < num_threads; i++) {
         ids[i] = i;
         tasks[i] = thread_start("test", 30, test, &(ids[i]));
@@ -216,6 +227,8 @@ static void test_parent(void *args) {
     for (int i = 0; i < num_threads; i++) {
         thread_join(tasks[i]);
     }
+    kfree(tasks);
+    kfree(ids);
     // int id1 = 1, id2 = 2;
     // task_t *t1 = thread_start("test1", 30, test, &id1);
     // task_t *t2 = thread_start("test2", 30, test, &id2);
@@ -229,7 +242,7 @@ static void test_parent(void *args) {
     print_ready_tasks();
     print_sleeping_tasks();
     print_exit_tasks();
-    while (1);
+    // while (1);
 }
 
 
@@ -251,21 +264,34 @@ void kernelMain() {
     // print_ready_tasks();
     // MAGICBP;
     mutex_init(&m);
-    thread_start("tp0", 30, test_parent, NULL);
+    task_t *tp0 = thread_start("tp0", 30, test_parent, NULL);
+    task_t *tp1 = thread_start("tp1", 30, test_parent, NULL);
+    thread_join(tp0);
+    thread_join(tp1);
+    kprintf(KPL_DEBUG, "back to main\n");
+    print_all_tasks();
+    print_ready_tasks();
+    for (int i = 0; i < 1000000; i++);
+    for (int i = 0; i < 1000000; i++);
+    for (int i = 0; i < 1000000; i++);
+    for (int i = 0; i < 1000000; i++);
+    kprintf(KPL_DEBUG, "later\n");
+    print_all_tasks();
+    print_ready_tasks();
     thread_start("tp1", 30, test_parent, NULL);
-    thread_start("tp2", 30, test_parent, NULL);
-    thread_start("tp3", 30, test_parent, NULL);
-    thread_start("tp4", 30, test_parent, NULL);
-    thread_start("tp5", 30, test_parent, NULL);
-    thread_start("tp6", 30, test_parent, NULL);
-    thread_start("tp7", 30, test_parent, NULL);
-    thread_start("tp8", 30, test_parent, NULL);
-    thread_start("tp9", 30, test_parent, NULL);
-    thread_start("tp10", 30, test_parent, NULL);
-    thread_start("tp11", 30, test_parent, NULL);
-    thread_start("tp12", 30, test_parent, NULL);
-    thread_start("tp13", 30, test_parent, NULL);
-    thread_start("tp14", 30, test_parent, NULL);
-    thread_start("tp15", 30, test_parent, NULL);
+    // thread_start("tp2", 30, test_parent, NULL);
+    // thread_start("tp3", 30, test_parent, NULL);
+    // thread_start("tp4", 30, test_parent, NULL);
+    // thread_start("tp5", 30, test_parent, NULL);
+    // thread_start("tp6", 30, test_parent, NULL);
+    // thread_start("tp7", 30, test_parent, NULL);
+    // thread_start("tp8", 30, test_parent, NULL);
+    // thread_start("tp9", 30, test_parent, NULL);
+    // thread_start("tp10", 30, test_parent, NULL);
+    // thread_start("tp11", 30, test_parent, NULL);
+    // thread_start("tp12", 30, test_parent, NULL);
+    // thread_start("tp13", 30, test_parent, NULL);
+    // thread_start("tp14", 30, test_parent, NULL);
+    // thread_start("tp15", 30, test_parent, NULL);
     while (1);
 }

@@ -28,14 +28,13 @@ static void schedule();
 
 static task_t *current_task = NULL;
 static uint16_t num_tasks = 0;
+
 // list of ready tasks
 static list_t task_ready_list;
 // list of tasks to exit
 static list_t task_exit_list;
-
 // list of all tasks
 static list_t task_all_list;
-
 // list of sleeping tasks
 static list_t sleeping_list;
 
@@ -76,9 +75,9 @@ static task_t *task_create(
     const char *name, uint16_t prio, thread_func_t func,
     void *args
 ) {
-    if (num_tasks >= MAX_TASKS) {
-        return NULL;
-    }
+    // if (num_tasks >= MAX_TASKS) {
+    //     return NULL;
+    // }
     task_t *task = (task_t *)k_get_free_page(GFP_ZERO);
     if (task == NULL) {
         return NULL;
@@ -269,6 +268,7 @@ void thread_block_self(task_status_e status) {
         status == TASK_WAITING
     );
     current_task->status = status;
+    ASSERT(!list_find(&task_ready_list, &(current_task->general_tag)));
     schedule();
 }
 
@@ -299,24 +299,36 @@ void sleep_manage() {
         p != (&sleeping_list.tail);
     ) {
         task_t *t = __list_node_struct(task_t, general_tag, p);
-        ASSERT(t->sleep_msec > 0);
-        (t->sleep_msec)--;
+        // ASSERT(t->sleep_msec > 0);
+        
         if (t->sleep_msec == 0) {
             list_node_t *victim = p;
             p = p->next;
             list_erase(victim);
             thread_unblock(t);
         } else {
+            (t->sleep_msec)--;
             p = p->next;
         }
     }
 }
 
-void thread_msleep(uint32_t msec) {
-    if (msec == 0) {
-        return;
-    }
+static void __thread_yield() {
+    ASSERT(current_task->status == TASK_RUNNING);
+    schedule();
+}
+
+void thread_yield() {
     INT_STATUS old_status = disable_int();
+    __thread_yield();
+    set_int_status(old_status);
+}
+
+void thread_msleep(uint32_t msec) {
+    INT_STATUS old_status = disable_int();
+    if (msec == 0) {
+        __thread_yield();
+    }
     current_task->sleep_msec = msec;
     ASSERT(!list_find(&sleeping_list, &(current_task->general_tag)));
     list_push_front(&sleeping_list, &(current_task->general_tag));
