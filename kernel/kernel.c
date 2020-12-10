@@ -191,15 +191,18 @@ static void test(void *args) {
     // while (1);
 }
 
+// sem_t sem;
+
 static void test_parent(void *args) {
-    mutex_init(&m);
     mutex_lock(&m);
     // // vmm_print();
-    
+    const char *me = get_current_thread()->task_name;
+    kprintf(KPL_DEBUG, "me = %s\n", me);
     print_all_tasks();
     print_ready_tasks();
     print_sleeping_tasks();
     print_exit_tasks();
+    kprintf(KPL_DEBUG, "=========\n", me);
     mutex_unlock(&m);
     while (1);
     // MAGICBP;
@@ -239,7 +242,7 @@ void kernelMain() {
     print_ready_tasks();
     // print_sleeping_tasks();
     // print_exit_tasks();
-    MAGICBP;
+    // MAGICBP;
     // for (int i = 0; i < 10000000; i++);
     // for (int i = 0; i < 10000000; i++);
     // for (int i = 0; i < 10000000; i++);
@@ -247,7 +250,22 @@ void kernelMain() {
     // print_all_tasks();
     // print_ready_tasks();
     // MAGICBP;
+    mutex_init(&m);
     thread_start("tp0", 30, test_parent, NULL);
     thread_start("tp1", 30, test_parent, NULL);
+    thread_start("tp2", 30, test_parent, NULL);
+    thread_start("tp3", 30, test_parent, NULL);
+    thread_start("tp4", 30, test_parent, NULL);
+    thread_start("tp5", 30, test_parent, NULL);
+    thread_start("tp6", 30, test_parent, NULL);
+    thread_start("tp7", 30, test_parent, NULL);
+    thread_start("tp8", 30, test_parent, NULL);
+    thread_start("tp9", 30, test_parent, NULL);
+    thread_start("tp10", 30, test_parent, NULL);
+    thread_start("tp11", 30, test_parent, NULL);
+    thread_start("tp12", 30, test_parent, NULL);
+    thread_start("tp13", 30, test_parent, NULL);
+    thread_start("tp14", 30, test_parent, NULL);
+    thread_start("tp15", 30, test_parent, NULL);
     while (1);
 }

@@ -10,7 +10,7 @@ void sem_init(sem_t *sem, uint16_t val) {
 
 void sem_up(sem_t *sem) {
     INT_STATUS old_status = disable_int();
-    sem->val++;
+    (sem->val)++;
     list_node_t *p = list_pop_front(&(sem->wait_list));
     if (p != NULL) {
         task_t *t = __list_node_struct(task_t, general_tag, p);

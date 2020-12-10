@@ -188,7 +188,7 @@ void time_scheduler() {
     }
 }
 
-static void print_tasks(list_t *l) {
+static void print_tasks(const list_t *l) {
     char *name;
     if (l == &task_all_list) {
         name = "all";
@@ -208,26 +208,43 @@ static void print_tasks(list_t *l) {
         p != &(l->tail);
         p = p->next
     ) {
-        task_t *t = __list_node_struct(task_t, list_all_tag, p);
+        task_t *t = __list_node_struct(task_t, general_tag, p);
         kprintf(KPL_DEBUG, "{0x%X, %s}->", t, t->task_name);
     }
     kprintf(KPL_DEBUG, "tail\n");
 }
 
 void print_all_tasks() {
-    print_tasks(&task_all_list);
+    INT_STATUS old_status = disable_int();
+    kprintf(KPL_DEBUG, "all: head->");
+    for (
+        list_node_t *p = task_all_list.head.next;
+        p != &(task_all_list.tail);
+        p = p->next
+    ) {
+        task_t *t = __list_node_struct(task_t, list_all_tag, p);
+        kprintf(KPL_DEBUG, "{0x%X, %s}->", t, t->task_name);
+    }
+    kprintf(KPL_DEBUG, "tail\n");
+    set_int_status(old_status);
 }
 
 void print_ready_tasks() {
+    INT_STATUS old_status = disable_int();
     print_tasks(&task_ready_list);
+    set_int_status(old_status);
 }
 
 void print_exit_tasks() {
+    INT_STATUS old_status = disable_int();
     print_tasks(&task_exit_list);
+    set_int_status(old_status);
 }
 
 void print_sleeping_tasks() {
+    INT_STATUS old_status = disable_int();
     print_tasks(&sleeping_list);
+    set_int_status(old_status);
 }
 
 void thread_join(task_t *task) {
@@ -268,7 +285,10 @@ void thread_unblock(task_t *task) {
 }
 
 task_t *get_current_thread() {
-    return current_task;
+    INT_STATUS old_status = disable_int();
+    task_t *curr = current_task;
+    set_int_status(old_status);
+    return curr;
 }
 
 // should be called every 1 msec
