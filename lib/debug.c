@@ -1,5 +1,4 @@
 #include <common/debug.h>
-#include <driver/screen.h>
 #include <string.h>
 #include <kprintf.h>
 #include <arch/x86.h>

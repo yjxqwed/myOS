@@ -183,16 +183,22 @@ static void test(void *args) {
 }
 
 static void test_parent(void *args) {
-    // task_t *tasks[100];
-    // for (int i = 0; i < 10; i++) {
-    //     tasks[i] = thread_start("test", 15, test, );
-    // }
     vmm_print();
-    int id1 = 1, id2 = 2;
-    task_t *t1 = thread_start("test1", 30, test, &id1);
-    task_t *t2 = thread_start("test2", 30, test, &id2);
-    thread_join(t1);
-    thread_join(t2);
+    task_t *tasks[100];
+    int ids[100];
+    int num_threads = 10;
+    for (int i = 0; i < num_threads; i++) {
+        ids[i] = i;
+        tasks[i] = thread_start("test", 15, test, &(ids[i]));
+    }
+    for (int i = 0; i < num_threads; i++) {
+        thread_join(tasks[i]);
+    }
+    // int id1 = 1, id2 = 2;
+    // task_t *t1 = thread_start("test1", 30, test, &id1);
+    // task_t *t2 = thread_start("test2", 30, test, &id2);
+    // thread_join(t1);
+    // thread_join(t2);
     vmm_print();
     kprintf(KPL_DEBUG, "test_parent end.\n");
     // while (1);

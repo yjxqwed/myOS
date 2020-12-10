@@ -1,4 +1,4 @@
-#include <driver/kb.h>
+#include <device/kb.h>
 #include <arch/x86.h>
 #include <common/utils.h>
 #include <string.h>

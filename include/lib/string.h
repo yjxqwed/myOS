@@ -22,7 +22,7 @@ void* memsetw(void* mem, uint16_t val, uint32_t size);
 // length of a null terminated string
 uint32_t strlen(const char* str);
 
-// Unsafe. Make sure src is null terminated.
+// Unsafe. Make sure src is null terminated
 char* strcpy(const char* src, char* dest);
 // dest is not guaranteed to be null terminated
 char* strncpy(const char* src, char* dest, uint32_t n);

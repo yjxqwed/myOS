@@ -1,4 +1,4 @@
-#include <driver/pit.h>
+#include <device/pit.h>
 #include <arch/x86.h>
 #include <kprintf.h>
 #include <thread/thread.h>

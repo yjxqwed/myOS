@@ -243,20 +243,25 @@ ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
 }
 
 void pages_free(ppage_t *p, uint32_t pg_cnt) {
+    INT_STATUS old_status = disable_int();
     ASSERT(p - pmap + pg_cnt <= nppages);
     for (uint32_t i = 0; i < pg_cnt; i++) {
         page_free(&(p[i]));
     }
+    set_int_status(old_status);
 }
 
 
 void page_incref(ppage_t *p) {
+    INT_STATUS old_status = disable_int();
     ASSERT(p != NULL);
     ASSERT(!list_find(&free_list, &(p->free_list_tag)));
     p->num_ref++;
+    set_int_status(old_status);
 }
 
 void page_decref(ppage_t *p) {
+    INT_STATUS old_status = disable_int();
     ASSERT(p != NULL);
     ASSERT(p->num_ref > 0);
     ASSERT(!list_find(&free_list, &(p->free_list_tag)));
@@ -264,6 +269,7 @@ void page_decref(ppage_t *p) {
     if (p->num_ref == 0) {
         page_free(p);
     }
+    set_int_status(old_status);
 }
 
 

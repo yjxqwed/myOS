@@ -1,17 +1,18 @@
 #include <common/types.h>
 #include <sys/gdt.h>
-#include <driver/screen.h>
-#include <driver/hd.h>
+#include <device/screen.h>
+#include <device/hd.h>
 #include <common/debug.h>
 #include <sys/idt.h>
 #include <kprintf.h>
-#include <driver/pit.h>
-#include <driver/kb.h>
+#include <device/pit.h>
+#include <device/kb.h>
 #include <multiboot/multiboot.h>
 #include <mm/pmem.h>
 #include <mm/kvmm.h>
 #include <arch/x86.h>
 #include <thread/thread.h>
+#include <device/console.h>
 
 static void test_magic_number(uint32_t magic_number) {
     // check magic number
@@ -51,5 +52,6 @@ void kinit() {
     // print_all_tasks();
     timer_init(10000);
     kb_init();
+    console_init();
     enable_int();
 }

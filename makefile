@@ -11,8 +11,8 @@ G_PARAMS += -D KDEBUG
 endif
 
 # objects
-driver_objs = driver/kb.elf32 driver/screen.elf32 driver/pit.elf32 \
-              driver/hd.elf32
+device_objs = device/kb.elf32 device/screen.elf32 device/pit.elf32 \
+              device/hd.elf32 device/console.elf32
 kernel_asm_objs = kernel/asm/entry.elf32 \
                   kernel/asm/istub.elf32
 kernel_c_objs = kernel/gdt.elf32 kernel/idt.elf32 \
@@ -31,14 +31,14 @@ arch_x86_objs = arch/x86/interrupt.elf32
 
 thread_objs = thread/thread.elf32 thread/switch.elf32 thread/sync.elf32
 
-objects = $(driver_objs) $(kernel_asm_objs) $(kernel_c_objs) \
+objects = $(device_objs) $(kernel_asm_objs) $(kernel_c_objs) \
           $(lib_objs) $(usr_asm_objs) $(mm_objs) $(arch_x86_objs) \
           $(thread_objs)
 
 
 
 # build rules
-.PHONY = clean
+.PHONY = clean dump
 
 all: mykernel.iso
 
@@ -56,6 +56,9 @@ mykernel.bin: linker.ld $(objects)
 
 clean:
 	rm -rf *.o *.elf32 *.bin *.out iso *.iso $(objects)
+
+dump:
+	objdump -D -M intel mykernel.bin | less
 
 mykernel.iso: mykernel.bin
 	mkdir iso

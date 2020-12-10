@@ -1,5 +1,5 @@
 #include <common/types.h>
-#include <driver/screen.h>
+#include <device/screen.h>
 #include <string.h>
 #include <arch/x86.h>
 

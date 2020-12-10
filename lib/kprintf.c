@@ -1,5 +1,5 @@
 #include <kprintf.h>
-#include <driver/screen.h>  // for color and video mem operation
+#include <device/screen.h>  // for color and video mem operation
 #include <common/types.h>
 #include <string.h>
 
@@ -22,10 +22,7 @@
 static char buf[1024];
 static int idx = 0;
 
-static char hex_char[16] = {
-    '0', '1', '2', '3', '4', '5', '6', '7',
-    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
-};
+static char hex_char[16] = "0123456789ABCDEF";
 
 static void parse_dec(int32_t number) {
     if (number == 0) {

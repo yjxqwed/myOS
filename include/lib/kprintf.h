@@ -1,7 +1,7 @@
 #ifndef __KPRINTF_H__
 #define __KPRINTF_H__
 
-#include <driver/screen.h>
+#include <device/screen.h>
 
 typedef enum KP_LEVEL {
     KPL_DUMP,   // black bg, white fg

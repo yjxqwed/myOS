@@ -1,4 +1,4 @@
-#include <driver/hd.h>
+#include <device/hd.h>
 #include <kprintf.h>
 #include <common/types.h>
 #include <arch/x86.h>
