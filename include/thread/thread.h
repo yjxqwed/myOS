@@ -19,6 +19,7 @@ typedef enum TaskStatus {
     TASK_BLOCKED,
     TASK_WAITING,
     TASK_SUSPENDING,
+    TASK_STOPPED,
     TASK_DEAD,
 } task_status_e;
 

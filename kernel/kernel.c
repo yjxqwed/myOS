@@ -216,7 +216,7 @@ static void test_parent(void *args) {
     // return;
     // while (1);
     // MAGICBP;
-    int num_threads = 1000;
+    int num_threads = 500;
     task_t **tasks = (task_t **)kmalloc(sizeof(task_t *) * num_threads);
     int *ids = kmalloc(sizeof(int) * num_threads);
     
@@ -278,7 +278,7 @@ void kernelMain() {
     kprintf(KPL_DEBUG, "later\n");
     print_all_tasks();
     print_ready_tasks();
-    thread_start("tp1", 30, test_parent, NULL);
+    // thread_start("tp1", 30, test_parent, NULL);
     // thread_start("tp2", 30, test_parent, NULL);
     // thread_start("tp3", 30, test_parent, NULL);
     // thread_start("tp4", 30, test_parent, NULL);

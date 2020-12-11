@@ -24,6 +24,7 @@ static __PAGE_ALLIGNED uint8_t reserved_pcb[PAGE_SIZE];
 uint32_t kmain_stack_top = (uintptr_t)reserved_pcb + PAGE_SIZE;
 static task_t *kmain = NULL;
 
+// @brief schedule the tasks
 static void schedule();
 
 static task_t *current_task = NULL;
@@ -38,19 +39,55 @@ static list_t task_all_list;
 // list of sleeping tasks
 static list_t sleeping_list;
 
+static inline void task_push_back(list_t *l, task_t *t) {
+    ASSERT(get_int_status() == INTERRUPT_OFF);
+    ASSERT(l != &task_all_list);
+    ASSERT(!list_find(l, &(t->general_tag)));
+    list_push_back(l, &(t->general_tag));
+}
+
+static inline void task_push_front(list_t *l, task_t *t) {
+    ASSERT(get_int_status() == INTERRUPT_OFF);
+    ASSERT(l != &task_all_list);
+    ASSERT(!list_find(l, &(t->general_tag)));
+    list_push_front(l, &(t->general_tag));
+}
+
+static inline task_t *task_pop_front(list_t *l) {
+    ASSERT(get_int_status() == INTERRUPT_OFF);
+    ASSERT(l != &task_all_list);
+    list_node_t *p = list_pop_front(l);
+    if (p) {
+        return __list_node_struct(task_t, general_tag, p);
+    } else {
+        return NULL;
+    }
+}
+
+static inline task_t *task_pop_back(list_t *l) {
+    ASSERT(get_int_status() == INTERRUPT_OFF);
+    ASSERT(l != &task_all_list);
+    list_node_t *p = list_pop_back(l);
+    if (p) {
+        return __list_node_struct(task_t, general_tag, p);
+    } else {
+        return NULL;
+    }
+}
 
 static void thread_run_func(thread_func_t func, void *args) {
     enable_int();
     func(args);
     // when the function is done executed
     disable_int();
-    current_task->status = TASK_DEAD;
+    current_task->status = TASK_STOPPED;
 
     list_node_t *p = list_pop_front(&(current_task->join_list));
     while (p) {
-        ASSERT(!list_find(&task_ready_list, p));
-        list_push_back(&task_ready_list, p);
+        // ASSERT(!list_find(&task_ready_list, p));
+        // list_push_back(&task_ready_list, p);
         task_t *t = __list_node_struct(task_t, general_tag, p);
+        task_push_back(&task_ready_list, t);
         t->status = TASK_READY;
         p = list_pop_front(&(current_task->join_list));
     }
@@ -112,18 +149,22 @@ task_t *thread_start(
     if (task == NULL) {
         return NULL;
     }
+    INT_STATUS old_status = disable_int();
     ASSERT(!list_find(&task_ready_list, &(task->general_tag)));
     list_push_back(&task_ready_list, &(task->general_tag));
     ASSERT(!list_find(&task_all_list, &(task->list_all_tag)));
     list_push_back(&task_all_list, &(task->list_all_tag));
+    set_int_status(old_status);
     return task;
 }
 
 void thread_kmain() {
     kmain = (task_t *)reserved_pcb;
     task_init(kmain, "kmain", 31);
+    INT_STATUS old_status = disable_int();
     ASSERT(!list_find(&task_all_list, &(kmain->list_all_tag)));
     list_push_back(&task_all_list, &(kmain->list_all_tag));
+    set_int_status(old_status);
     kmain->status = TASK_RUNNING;
     current_task = kmain;
 }
@@ -156,7 +197,7 @@ static void schedule() {
         list_push_back(&task_ready_list, &(old->general_tag));
         old->status = TASK_READY;
         old->ticks = old->priority;
-    } else if (old->status == TASK_DEAD) {
+    } else if (old->status == TASK_STOPPED) {
         ASSERT(!list_find(&task_exit_list, &(old->general_tag)));
         list_push_back(&task_exit_list, &(old->general_tag));
     } else if (old->status == TASK_WAITING) {
@@ -248,8 +289,11 @@ void print_sleeping_tasks() {
 
 void thread_join(task_t *task) {
     INT_STATUS old_status = disable_int();
-    if (task == NULL || task->status == TASK_DEAD) {
-        enable_int();
+    if (
+        task == NULL || !list_find(&task_all_list, &(task->list_all_tag)) ||
+        task->status == TASK_STOPPED || task->status == TASK_DEAD
+    ) {
+        set_int_status(old_status);
         return;
     }
     ASSERT(task != current_task);
@@ -285,10 +329,24 @@ void thread_unblock(task_t *task) {
 }
 
 task_t *get_current_thread() {
+    // INT_STATUS old_status = disable_int();
+    // task_t *curr = current_task;
+    // set_int_status(old_status);
+    // return curr;
+#ifdef KDEBUG
     INT_STATUS old_status = disable_int();
-    task_t *curr = current_task;
+    uint32_t esp;
+    __asm_volatile (
+        "mov %0, esp"
+        : "=g"(esp)
+        :
+        :
+    );
+    kprintf(KPL_DEBUG, "esp=0x%X, current_task=0x%X\n", esp, current_task);
+    ASSERT((esp & PG_START_ADDRESS_MASK) == (uintptr_t)current_task);
     set_int_status(old_status);
-    return curr;
+#endif
+    return current_task;
 }
 
 // should be called every 1 msec
@@ -299,8 +357,6 @@ void sleep_manage() {
         p != (&sleeping_list.tail);
     ) {
         task_t *t = __list_node_struct(task_t, general_tag, p);
-        // ASSERT(t->sleep_msec > 0);
-        
         if (t->sleep_msec == 0) {
             list_node_t *victim = p;
             p = p->next;
