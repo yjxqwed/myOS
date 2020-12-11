@@ -15,6 +15,9 @@ static uint32_t min_high_pfn = 0;
 static uint32_t free_pfn = 0;
 static uint32_t nppages = 0;
 
+// total memory installed (in megabytes)
+static uint32_t total_mem_mb = 0;
+
 // the array of ppage_t, this array is used for page allocating
 static ppage_t *pmap = NULL;
 // static ppage_t *free_pages_list = NULL;
@@ -54,15 +57,21 @@ static void print_mem_info(multiboot_info_t *mbi) {
                 KPL_NOTICE, 
                 " size = 0x%x, base_addr = 0x%X,"
                 " length = 0x%X, type = 0x%x\n",
-                (uint32_t)mmap->size,
+                (uint32_t)(mmap->size),
                 // (uint32_t) (mmap->addr >> 32),
                 (uint32_t)(mmap->addr & 0xffffffff),
                 // (uint32_t) (mmap->len >> 32),
                 (uint32_t)(mmap->len & 0xffffffff),
-                (uint32_t)mmap->type
+                (uint32_t)(mmap->type)
             );
+            if (mmap->type == 0x3) {
+                uint32_t base = mmap->addr;
+                uint32_t len = mmap->len;
+                total_mem_mb = base / 0x100000 + len / 0x10000;
+            }
         }
     }
+    kprintf(KPL_NOTICE, "total mem installed = 0x%x MiB\n", total_mem_mb);
     kprintf(KPL_NOTICE, "=============================================\n");
 }
 
