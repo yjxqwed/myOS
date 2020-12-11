@@ -2,7 +2,6 @@
 #define __STRING_H__
 
 
-// #include "types.h"
 #include <common/types.h>
 
 #define INT32LEN 12
@@ -26,5 +25,8 @@ uint32_t strlen(const char* str);
 char* strcpy(const char* src, char* dest);
 // dest is not guaranteed to be null terminated
 char* strncpy(const char* src, char* dest, uint32_t n);
+
+// format string to out
+char *strfmt(char *out, const char *fmt, ...);
 
 #endif

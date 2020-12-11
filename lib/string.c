@@ -4,6 +4,9 @@
 static char hex_char[16] = "0123456789ABCDEF";
 
 char* itos(int32_t number, char out[INT32LEN]) {
+    if (out == NULL) {
+        return NULL;
+    }
     if (number == 0) {
         out[0] = '0';
         out[1] = '\0';
@@ -39,6 +42,9 @@ char* itos(int32_t number, char out[INT32LEN]) {
 }
 
 char* uitosh(uint32_t number, char out[UINT32LEN]) {
+    if (out == NULL) {
+        return NULL;
+    }
     if (number == 0) {
         return strcpy("0x0", out);
     }
@@ -84,6 +90,9 @@ void* memsetw(void* mem, uint16_t val, uint32_t size) {
 
 
 uint32_t strlen(const char* str) {
+    if (str == NULL) {
+        return 0;
+    }
     uint32_t len = 0;
     while (str[len] != '\0') {
         len++;
@@ -94,6 +103,9 @@ uint32_t strlen(const char* str) {
 
 
 char* strcpy(const char* src, char* dest) {
+    if (src == NULL || dest == NULL) {
+        return NULL;
+    }
     if (src == dest) {
         return dest;
     }
@@ -113,6 +125,9 @@ char* strcpy(const char* src, char* dest) {
 
 
 char* strncpy(const char* src, char* dest, uint32_t n) {
+    if (src == NULL || dest == NULL) {
+        return NULL;
+    }
     if (src == dest) {
         return dest;
     }
@@ -127,3 +142,10 @@ char* strncpy(const char* src, char* dest, uint32_t n) {
     }
     return dest;
 }
+
+// char *strfmt(char *out, const char *fmt, ...) {
+//     if (out == NULL || fmt == NULL) {
+//         return NULL;
+//     }
+
+// }

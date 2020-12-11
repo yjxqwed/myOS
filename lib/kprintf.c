@@ -9,7 +9,7 @@
     ((sizeof(type) - 1) / sizeof(int32_t) + 1) * sizeof(int32_t) \
 )
 
-#define args_start(ap, fmt) do {\
+#define args_start(ap, fmt) do { \
     ap = (char *)((unsigned int)(&fmt) + _arg_stack_size(&fmt)); \
 } while (0);
 
@@ -103,6 +103,7 @@ static struct KPC_STRUCT {
     {CYAN, WHITE},
     {RED, YELLOW},
 };
+
 void kprintf(KP_LEVEL kpl, const char *fmt, ...) {
     args_list args;
     args_start(args, fmt);
@@ -154,8 +155,9 @@ void kprintf(KP_LEVEL kpl, const char *fmt, ...) {
     }
     buf[idx] = '\0';
 
-    for (int i = 0; i < idx; i++) {
-        putc(buf[i], KPL[kpl].bg, KPL[kpl].fg);
-    }
+    // for (int i = 0; i < idx; i++) {
+    //     putc(buf[i], KPL[kpl].bg, KPL[kpl].fg);
+    // }
+    scrn_puts(buf, KPL[kpl].bg, KPL[kpl].fg);
     args_end(args);
 }

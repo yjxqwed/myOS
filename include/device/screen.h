@@ -39,7 +39,10 @@ typedef enum COLOR {
 
 // put a char with foreground color = fg and 
 // background color = bg
-void putc(char c, COLOR bg, COLOR fg);
+void scrn_putc(char c, COLOR bg, COLOR fg);
+void scrn_puts(const char *str, COLOR bg, COLOR fg);
+void scrn_putc_safe(char c, COLOR bg, COLOR fg);
+void scrn_puts_safe(const char *str, COLOR bg, COLOR fg);
 // attribute byte
 // 7|654|3210
 // U|bg | fg

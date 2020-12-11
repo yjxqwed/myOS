@@ -272,6 +272,12 @@ void page_decref(ppage_t *p) {
     set_int_status(old_status);
 }
 
+void pmem_print() {
+    INT_STATUS old_status = disable_int();
+    kprintf(KPL_NOTICE, "free_list len=%d\n", list_length(&free_list));
+    set_int_status(old_status);
+}
+
 
 /**
  *  Paging Management

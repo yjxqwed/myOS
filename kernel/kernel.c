@@ -185,11 +185,13 @@ static void test(void *args) {
     // kprintf(KPL_DEBUG, " test%d will sleep for %d ms ", id, slp);
     // mutex_unlock(&m);
     // thread_msleep(slp);
-    for (int i = 0; i < 1000000; i++);
+    // for (int i = 0; i < 1000000; i++);
+    test_kmalloc();
     if (id % 17 == 0) {
         thread_yield();
     }
-    for (int i = 0; i < 1000000; i++);
+    test_kmalloc1();
+    // for (int i = 0; i < 1000000; i++);
     mutex_lock(&m);
     kprintf(KPL_DEBUG, " test%d end ", id);
     mutex_unlock(&m);
@@ -216,7 +218,7 @@ static void test_parent(void *args) {
     // return;
     // while (1);
     // MAGICBP;
-    int num_threads = 500;
+    int num_threads = 700;
     task_t **tasks = (task_t **)kmalloc(sizeof(task_t *) * num_threads);
     int *ids = kmalloc(sizeof(int) * num_threads);
     
@@ -245,12 +247,7 @@ static void test_parent(void *args) {
     // while (1);
 }
 
-
-void kernelMain() {
-    kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
-    // test_thread();
-    // test_k_get_free_page();
-    // test_kmalloc();
+static void test_thread_kmalloc() {
     print_all_tasks();
     print_ready_tasks();
     // print_sleeping_tasks();
@@ -263,6 +260,8 @@ void kernelMain() {
     // print_all_tasks();
     // print_ready_tasks();
     // MAGICBP;
+    pmem_print();
+    MAGICBP;
     mutex_init(&m);
     task_t *tp0 = thread_start("tp0", 30, test_parent, NULL);
     task_t *tp1 = thread_start("tp1", 30, test_parent, NULL);
@@ -278,20 +277,16 @@ void kernelMain() {
     kprintf(KPL_DEBUG, "later\n");
     print_all_tasks();
     print_ready_tasks();
-    // thread_start("tp1", 30, test_parent, NULL);
-    // thread_start("tp2", 30, test_parent, NULL);
-    // thread_start("tp3", 30, test_parent, NULL);
-    // thread_start("tp4", 30, test_parent, NULL);
-    // thread_start("tp5", 30, test_parent, NULL);
-    // thread_start("tp6", 30, test_parent, NULL);
-    // thread_start("tp7", 30, test_parent, NULL);
-    // thread_start("tp8", 30, test_parent, NULL);
-    // thread_start("tp9", 30, test_parent, NULL);
-    // thread_start("tp10", 30, test_parent, NULL);
-    // thread_start("tp11", 30, test_parent, NULL);
-    // thread_start("tp12", 30, test_parent, NULL);
-    // thread_start("tp13", 30, test_parent, NULL);
-    // thread_start("tp14", 30, test_parent, NULL);
-    // thread_start("tp15", 30, test_parent, NULL);
+    vmm_print();
+    pmem_print();
+}
+
+
+void kernelMain() {
+    kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
+    // test_thread();
+    // test_k_get_free_page();
+    // test_kmalloc();
+    // test_thread_kmalloc();
     while (1);
 }

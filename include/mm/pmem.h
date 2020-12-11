@@ -63,6 +63,8 @@ ppage_t *kva2page(void *kva);
 // physical address to page
 ppage_t *pa2page(void *pa);
 
+void pmem_print();
+
 /**
  *    Paging Management
  */

@@ -342,7 +342,7 @@ task_t *get_current_thread() {
         :
         :
     );
-    kprintf(KPL_DEBUG, "esp=0x%X, current_task=0x%X\n", esp, current_task);
+    // kprintf(KPL_DEBUG, "esp=0x%X, current_task=0x%X\n", esp, current_task);
     ASSERT((esp & PG_START_ADDRESS_MASK) == (uintptr_t)current_task);
     set_int_status(old_status);
 #endif
