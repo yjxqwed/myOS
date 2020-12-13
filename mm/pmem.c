@@ -6,6 +6,7 @@
 #include <string.h>
 #include <myos.h>
 #include <arch/x86.h>
+#include <thread/sync.h>
 
 // the page directory used by kernel
 static pte_t *kern_pg_dir = NULL;
@@ -80,11 +81,11 @@ void detect_memory(multiboot_info_t *mbi) {
     if (CHECK_FLAG(mbi->flags, 0)) {
         // mbi->mem_upper is given in KiB
         uint32_t high_free_mem = mbi->mem_upper * 1024;
-        if (high_free_mem < MIN_MEMORY_LIMIT) {
+        if (total_mem_mb < MIN_MEMORY_LIMIT_MB) {
             kprintf(
                 KPL_PANIC, 
                 "Not Enough Memory; "
-                "try with >= 256 MiB mem. System Halted.\n"
+                "try with >= 128 MiB mem. System Halted.\n"
             );
             while (1);
         }
@@ -157,8 +158,24 @@ ppage_t *pa2page(void *pa) {
     return pmap + (uintptr_t)pa / PAGE_SIZE;
 }
 
+static mutex_t pmem_lock;
+
+static void print_page(ppage_t *p) {
+    if (p == NULL) {
+        kprintf(KPL_DEBUG, "NULL");
+    }
+    mutex_lock(&(p->page_lock));
+    kprintf(
+        KPL_DEBUG,
+        "{kva=0x%X, num_ref=%d, tag={prev=0x%X, next=0x%X}}",
+        page2kva(p), p->num_ref, p->free_list_tag.prev, p->free_list_tag.next
+    );
+    mutex_unlock(&(p->page_lock));
+}
+
 // init the pmem management structures
 void pmem_init() {
+    mutex_init(&pmem_lock);
     // initialize pmap
     pmap = boot_alloc(sizeof(ppage_t) * nppages, False);
     // initialize free_list
@@ -173,10 +190,14 @@ void pmem_init() {
     // These pages will never be freed or reused!
     for (int i = 0; i < fpn; i++) {
         pmap[i].num_ref = 1;
+        pmap[i].free = False;
+        mutex_init(&(pmap[i].page_lock));
     }
 
     for (int i = fpn; i <= max_high_pfn; i++) {
         pmap[i].num_ref = 0;
+        pmap[i].free = True;
+        mutex_init(&(pmap[i].page_lock));
         list_push_back(&free_list, &(pmap[i].free_list_tag));
     }
     // MAGICBP;
@@ -184,27 +205,23 @@ void pmem_init() {
 
 // alloc a physical page
 ppage_t *page_alloc(uint32_t gfp_flags) {
-    INT_STATUS old_status = disable_int();
+    // INT_STATUS old_status = disable_int();
+    mutex_lock(&pmem_lock);
     list_node_t *p = list_pop_front(&free_list);
-    set_int_status(old_status);
+    mutex_unlock(&pmem_lock);
+    // set_int_status(old_status);
     if (p == NULL) {
         return NULL;
     }
     ppage_t *fp = __list_node_struct(ppage_t, free_list_tag, p);
+    ASSERT(fp->free && fp->num_ref == 0);
+    fp->free = False;
     if (gfp_flags & GFP_ZERO) {
         memset(page2kva(fp), 0, PAGE_SIZE);
     }
     return fp;
 }
 
-void page_free(ppage_t *p) {
-    ASSERT(p != NULL);
-    ASSERT(p->num_ref == 0);
-    INT_STATUS old_status = disable_int();
-    ASSERT(!list_find(&free_list, &(p->free_list_tag)));
-    list_push_front(&free_list, &(p->free_list_tag));
-    set_int_status(old_status);
-}
 
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
     if (pg_cnt == 0) {
@@ -212,8 +229,9 @@ ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
     } else if (pg_cnt == 1) {
         return page_alloc(gfp_flags);
     }
-    INT_STATUS old_status = disable_int();
+    // INT_STATUS old_status = disable_int();
     uint32_t idx = free_pfn;
+    mutex_lock(&pmem_lock);
     while (idx < max_high_pfn) {
         while (pmap[idx].num_ref > 0) {
             idx++;
@@ -221,64 +239,67 @@ ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
         uint32_t i = 0;
         while (
             i < pg_cnt && idx + i <= max_high_pfn &&
-            pmap[idx + i].num_ref == 0
+            pmap[idx + i].free
         ) {
             i++;
         }
         if (i == pg_cnt) {
             break; 
         } else if (idx + i > max_high_pfn) {
-            set_int_status(old_status);
+            // set_int_status(old_status);
+            mutex_unlock(&pmem_lock);
             return NULL;
         } else {
             idx += i;
         }
     }
 
-    for (uint32_t i = 0; i < pg_cnt; i++) {
-        uint32_t t = idx + i;
+    for (uint32_t i = 0, t = idx; i < pg_cnt; i++, t++) {
+        // uint32_t t = idx + i;
         ASSERT(t <= max_high_pfn);
-        ASSERT(pmap[t].num_ref == 0);
+        ASSERT(pmap[t].free && pmap[t].num_ref == 0);
         ASSERT(list_find(&free_list, &(pmap[t].free_list_tag)));
+        // if (!list_find(&free_list, &(pmap[t].free_list_tag))) {
+        //     // kprintf(KPL_DEBUG, "t=%d\n", t);
+        //     print_page(&(pmap[t]));
+        //     ASSERT(False);
+        // }
         list_erase(&(pmap[t].free_list_tag));
         ASSERT(!list_find(&free_list, &(pmap[t].free_list_tag)));
+        pmap[t].free = False;
     }
+    // set_int_status(old_status);
+    mutex_unlock(&pmem_lock);
     ppage_t *fp = &(pmap[idx]);
-    set_int_status(old_status);
     if (gfp_flags & GFP_ZERO) {
         memset(page2kva(fp), 0, PAGE_SIZE);
     }
     return fp;
 }
 
-void pages_free(ppage_t *p, uint32_t pg_cnt) {
-    INT_STATUS old_status = disable_int();
-    ASSERT(p - pmap + pg_cnt <= nppages);
-    for (uint32_t i = 0; i < pg_cnt; i++) {
-        page_free(&(p[i]));
-    }
-    set_int_status(old_status);
-}
-
 
 void page_incref(ppage_t *p) {
-    INT_STATUS old_status = disable_int();
     ASSERT(p != NULL);
-    ASSERT(!list_find(&free_list, &(p->free_list_tag)));
+    mutex_lock(&(p->page_lock));
+    ASSERT(!list_find(&free_list, &(p->free_list_tag)) && !(p->free));
     p->num_ref++;
-    set_int_status(old_status);
+    mutex_unlock(&(p->page_lock));
 }
 
 void page_decref(ppage_t *p) {
-    INT_STATUS old_status = disable_int();
     ASSERT(p != NULL);
+    mutex_lock(&(p->page_lock));
     ASSERT(p->num_ref > 0);
-    ASSERT(!list_find(&free_list, &(p->free_list_tag)));
-    p->num_ref--;
+    ASSERT(!list_find(&free_list, &(p->free_list_tag)) && !(p->free));
+    (p->num_ref)--;
     if (p->num_ref == 0) {
-        page_free(p);
+        mutex_lock(&pmem_lock);
+        ASSERT(!list_find(&free_list, &(p->free_list_tag)));
+        list_push_front(&free_list, &(p->free_list_tag));
+        mutex_unlock(&pmem_lock);
+        p->free = True;
     }
-    set_int_status(old_status);
+    mutex_unlock(&(p->page_lock));
 }
 
 void pmem_print() {

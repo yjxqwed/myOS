@@ -41,6 +41,8 @@
 
 #define __page_number(x) (uint32_t)(((uintptr_t)(x)) / PAGE_SIZE)
 
+#define __page_aligned(x) (((uintptr_t)(x) & PG_OFFSET_MASK) == 0 ? True : False)
+
 // ========== Page Directory ==========
 
 typedef uint32_t PageDirectoryEntry;

@@ -115,7 +115,7 @@ static task_t *task_create(
     // if (num_tasks >= MAX_TASKS) {
     //     return NULL;
     // }
-    task_t *task = (task_t *)k_get_free_page(GFP_ZERO);
+    task_t *task = (task_t *)k_get_free_pages(1, GFP_ZERO);
     if (task == NULL) {
         return NULL;
     }
@@ -183,7 +183,7 @@ static void clear_exit_q() {
     while (p) {
         task_t *t = __list_node_struct(task_t, general_tag, p);
         list_erase(&(t->list_all_tag));
-        k_free_page(t);
+        k_free_pages(t, 1);
         p = list_pop_front(&task_exit_list);
     }
 }

@@ -9,6 +9,7 @@
 #include <common/types.h>
 #include <arch/x86.h>
 #include <list.h>
+#include <thread/sync.h>
 
 // high mem starts at 1MiB
 #define HIGH_MEM_BASE 0x00100000
@@ -24,6 +25,10 @@ struct PhysicalPageInfo {
     // num of references to this ppage
     // if num_ref == 0, I'm free
     uint32_t num_ref;
+    bool_t free;
+    // every operation of this page struct should
+    // acquire this lock
+    mutex_t page_lock;
 };
 
 // detect physical memory information
@@ -34,25 +39,23 @@ void pmem_init();
 // Get Free Page flags
 #define GFP_ZERO 0x1
 
-// alloc a physical page
-ppage_t *page_alloc(uint32_t gfp_flags);
 
-// free a page
-// panic if p can not be freed
-void page_free(ppage_t *p);
+/**
+ *  After getting page(s) from pages_alloc, incref it(them).
+ *  When you don't need it(them), decref it(them). There is
+ *  no free.
+ */
+
 
 // get pg_cnt number of continuous free pages
 // return the first page of the pg_cnt pages
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags);
 
-// free pg_cnt pages starting from p
-void pages_free(ppage_t *p, uint32_t pg_cnt);
-
 // increase the reference to p
 void page_incref(ppage_t *p);
-
 // decrease the reference to p, free it if no referrence
 void page_decref(ppage_t *p);
+
 
 // page to its kernel virtual address
 void *page2kva(ppage_t *p);

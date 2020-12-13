@@ -1,5 +1,6 @@
 #include <lib/list.h>
 #include <common/debug.h>
+#include <kprintf.h>
 
 void list_init(list_t *l) {
     ASSERT(l != NULL);
@@ -45,6 +46,9 @@ list_node_t *list_pop_back(list_t *l) {
 
 list_node_t *list_pop_front(list_t *l) {
     ASSERT(l != NULL);
+#ifdef KDEBUG
+    // kprintf(KPL_DEBUG, "l = 0x%X\n", l);
+#endif
     list_node_t *front = l->head.next;
     if (front == &(l->tail)) {
         return NULL;

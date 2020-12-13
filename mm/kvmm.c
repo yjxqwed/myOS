@@ -6,45 +6,7 @@
 #include <list.h>
 #include <common/utils.h>
 
-static void *__k_get_free_page(uint32_t gfp_flags) {
-    ASSERT(get_int_status() == INTERRUPT_OFF);
-    ppage_t *fp = page_alloc(gfp_flags);
-    void *va = NULL;
-    if (fp) {
-        va = page2kva(fp);
-        page_incref(fp);
-    }
-    return va;
-}
-
-void *k_get_free_page(uint32_t gfp_flags) {
-    INT_STATUS old_status = disable_int();
-    void *kva = __k_get_free_page(gfp_flags);
-    set_int_status(old_status);
-    return kva;
-}
-
-static void __k_free_page(void *kva) {
-    // kva has to be page alligned
-    ASSERT(get_int_status() == INTERRUPT_OFF);
-    ASSERT(!((uintptr_t)kva & PG_OFFSET_MASK));
-    ppage_t *p = kva2page(kva);
-    ASSERT(p->num_ref == 1);
-    page_decref(p);
-}
-
-void k_free_page(void *kva) {
-    // kva has to be page alligned
-    if (kva == NULL) {
-        return;
-    }
-    INT_STATUS old_status = disable_int();
-    __k_free_page(kva);
-    set_int_status(old_status);
-}
-
-static void *__k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags) {
-    ASSERT(get_int_status() == INTERRUPT_OFF);
+void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags) {
     ppage_t *fp = pages_alloc(pgcnt, gfp_flags);
     void *kva = NULL;
     if (fp) {
@@ -56,30 +18,27 @@ static void *__k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags) {
     return kva;
 }
 
-void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags) {
-    INT_STATUS old_status = disable_int();
-    void *kva = __k_get_free_pages(pgcnt, gfp_flags);
-    set_int_status(old_status);
-    return kva;
-}
-
-static void __k_free_pages(void *kva, uint32_t pgcnt) {
-    ASSERT(get_int_status() == INTERRUPT_OFF);
-    ASSERT(!((uintptr_t)kva & PG_OFFSET_MASK));
-    for (int i = 0; i < pgcnt; i++) {
-        k_free_page((void *)((uintptr_t)kva + i * PAGE_SIZE));
-    }
-}
-
 
 void k_free_pages(void *kva, uint32_t pgcnt) {
     if (kva == NULL) {
         return;
+    } else if (!(__valid_kva(kva) && __page_aligned(kva))) {
+        PANIC("bad pointer for k_free_pages");
     }
-    INT_STATUS old_status = disable_int();
-    __k_free_pages(kva, pgcnt);
-    set_int_status(old_status);
+    for (int i = 0; i < pgcnt; i++) {
+        ppage_t *p = kva2page(
+            (void *)((uintptr_t)kva + i * PAGE_SIZE)
+        );
+        ASSERT(p->num_ref == 1);
+        page_decref(p);
+    }
 }
+
+
+/**
+ *  Below are kmalloc/kfree
+ */
+
 
 typedef struct MemoryBlock {
     list_node_t tag;
@@ -149,7 +108,7 @@ static void *__kmalloc(uint32_t size) {
         uint32_t pg_cnt = ROUND_UP_DIV(
             size + sizeof(arena_t) + sizeof(mem_blk_t), PAGE_SIZE
         );
-        arena_t *a = (arena_t *)__k_get_free_pages(pg_cnt, GFP_ZERO);
+        arena_t *a = (arena_t *)k_get_free_pages(pg_cnt, GFP_ZERO);
         if (a == NULL) {
             return NULL;
         }
@@ -169,7 +128,7 @@ static void *__kmalloc(uint32_t size) {
         ASSERT(idx < NR_MEM_BLK_DESC);
         mem_blk_desc_t *desc = &(k_mem_blk_descs[idx]);
         if (list_empty(&(desc->free_list))) {
-            arena_t *a = (arena_t *)__k_get_free_page(GFP_ZERO);
+            arena_t *a = (arena_t *)k_get_free_pages(1, GFP_ZERO);
             if (a == NULL) {
                 return NULL;
             }
@@ -206,7 +165,7 @@ static void __kfree(mem_blk_t *mb) {
     arena_t *a = arena_of_blk(mb);
     if (a->large) {
         ASSERT(a->desc == NULL);
-        __k_free_pages(a, a->cnt);
+        k_free_pages(a, a->cnt);
     } else {
         ASSERT(a->desc != NULL);
         ASSERT(!list_find(&(a->desc->free_list), &(mb->tag)));
@@ -219,7 +178,7 @@ static void __kfree(mem_blk_t *mb) {
                 ASSERT(list_find(&(a->desc->free_list), &(b->tag)));
                 list_erase( &(b->tag));
             }
-            __k_free_page(a);
+            k_free_pages(a, 1);
         }
     }
 }
