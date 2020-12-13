@@ -200,22 +200,21 @@ void pmem_init() {
         mutex_init(&(pmap[i].page_lock));
         list_push_back(&free_list, &(pmap[i].free_list_tag));
     }
-    // MAGICBP;
 }
 
 // alloc a physical page
 ppage_t *page_alloc(uint32_t gfp_flags) {
-    // INT_STATUS old_status = disable_int();
     mutex_lock(&pmem_lock);
     list_node_t *p = list_pop_front(&free_list);
     mutex_unlock(&pmem_lock);
-    // set_int_status(old_status);
     if (p == NULL) {
         return NULL;
     }
     ppage_t *fp = __list_node_struct(ppage_t, free_list_tag, p);
+    mutex_lock(&(fp->page_lock));
     ASSERT(fp->free && fp->num_ref == 0);
     fp->free = False;
+    mutex_unlock(&(fp->page_lock));
     if (gfp_flags & GFP_ZERO) {
         memset(page2kva(fp), 0, PAGE_SIZE);
     }
@@ -229,24 +228,48 @@ ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
     } else if (pg_cnt == 1) {
         return page_alloc(gfp_flags);
     }
-    // INT_STATUS old_status = disable_int();
+
     uint32_t idx = free_pfn;
     mutex_lock(&pmem_lock);
+
+    // find pg_cnt free pages
     while (idx < max_high_pfn) {
-        while (pmap[idx].num_ref > 0) {
-            idx++;
+        // mutex_t *pl = &(pmap[idx].page_lock);
+        // mutex_lock(pl);
+        // while (!(pmap[idx].free)) {
+        //     mutex_unlock(pl);
+        //     idx++;
+        //     pl = &(pmap[idx].page_lock);
+        // }
+        // mutex_unlock(pl);
+
+        while (1) {
+            mutex_t *pl = &(pmap[idx].page_lock);
+            mutex_lock(pl);
+            if (pmap[idx].free) {
+                mutex_unlock(pl);
+                break;
+            } else {
+                mutex_unlock(pl);
+                idx++;
+            }
         }
+
         uint32_t i = 0;
-        while (
-            i < pg_cnt && idx + i <= max_high_pfn &&
-            pmap[idx + i].free
-        ) {
-            i++;
+        for (; i < pg_cnt && idx + i <= max_high_pfn; i++) {
+            mutex_t *pl = &(pmap[idx + i].page_lock);
+            mutex_lock(pl);
+            if (pmap[idx + i].free) {
+                mutex_unlock(pl);
+            } else {
+                mutex_unlock(pl);
+                break;
+            }
         }
+
         if (i == pg_cnt) {
             break; 
         } else if (idx + i > max_high_pfn) {
-            // set_int_status(old_status);
             mutex_unlock(&pmem_lock);
             return NULL;
         } else {
@@ -255,24 +278,18 @@ ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
     }
 
     for (uint32_t i = 0, t = idx; i < pg_cnt; i++, t++) {
-        // uint32_t t = idx + i;
         ASSERT(t <= max_high_pfn);
-        ASSERT(pmap[t].free && pmap[t].num_ref == 0);
+        ASSERT(pmap[t].free);
+        ASSERT(pmap[t].num_ref == 0);
         ASSERT(list_find(&free_list, &(pmap[t].free_list_tag)));
-        // if (!list_find(&free_list, &(pmap[t].free_list_tag))) {
-        //     // kprintf(KPL_DEBUG, "t=%d\n", t);
-        //     print_page(&(pmap[t]));
-        //     ASSERT(False);
-        // }
         list_erase(&(pmap[t].free_list_tag));
         ASSERT(!list_find(&free_list, &(pmap[t].free_list_tag)));
         pmap[t].free = False;
     }
-    // set_int_status(old_status);
     mutex_unlock(&pmem_lock);
     ppage_t *fp = &(pmap[idx]);
     if (gfp_flags & GFP_ZERO) {
-        memset(page2kva(fp), 0, PAGE_SIZE);
+        memset(page2kva(fp), 0, PAGE_SIZE * pg_cnt);
     }
     return fp;
 }
@@ -281,25 +298,31 @@ ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
 void page_incref(ppage_t *p) {
     ASSERT(p != NULL);
     mutex_lock(&(p->page_lock));
-    ASSERT(!list_find(&free_list, &(p->free_list_tag)) && !(p->free));
-    p->num_ref++;
+    // ASSERT(!list_find(&free_list, &(p->free_list_tag)) && !(p->free));
+    if (p->free) {
+        PANIC("incref a free page");
+    }
+    (p->num_ref)++;
     mutex_unlock(&(p->page_lock));
 }
 
 void page_decref(ppage_t *p) {
     ASSERT(p != NULL);
+    mutex_lock(&pmem_lock);
     mutex_lock(&(p->page_lock));
     ASSERT(p->num_ref > 0);
-    ASSERT(!list_find(&free_list, &(p->free_list_tag)) && !(p->free));
+    // ASSERT(!list_find(&free_list, &(p->free_list_tag)) && !(p->free));
+    if (p->free) {
+        PANIC("decref a free page");
+    }
     (p->num_ref)--;
     if (p->num_ref == 0) {
-        mutex_lock(&pmem_lock);
         ASSERT(!list_find(&free_list, &(p->free_list_tag)));
         list_push_front(&free_list, &(p->free_list_tag));
-        mutex_unlock(&pmem_lock);
         p->free = True;
     }
     mutex_unlock(&(p->page_lock));
+    mutex_unlock(&pmem_lock);
 }
 
 void pmem_print() {
@@ -310,7 +333,9 @@ void pmem_print() {
 
 
 /**
- *  Paging Management
+ *  ===========================================================
+ *  ==================== Paging Management ====================
+ *  ===========================================================
  */
 
 // For bootstrap paging use

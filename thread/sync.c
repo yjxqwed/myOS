@@ -2,6 +2,7 @@
 #include <thread/thread.h>
 #include <arch/x86.h>
 #include <common/debug.h>
+#include <kprintf.h>
 
 void sem_init(sem_t *sem, uint16_t val) {
     sem->val = val;
@@ -49,6 +50,13 @@ void mutex_lock(mutex_t *mutex) {
 }
 
 void mutex_unlock(mutex_t *mutex) {
+    // kprintf(KPL_DEBUG, "mutex=0x%X\n", mutex);
+    // INT_STATUS old_status = disable_int();
+    // if (mutex->holder != get_current_thread()) {
+    //     kprintf(KPL_DEBUG, "holder=0x%X, curr=0x%X\n", mutex->holder, get_current_thread());
+    // }
+    // set_int_status(old_status);
+    ASSERT(mutex->holder != NULL);
     ASSERT(mutex->holder == get_current_thread());
     if (mutex->holder_repeat_nr > 1) {
         (mutex->holder_repeat_nr)--;

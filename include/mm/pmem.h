@@ -51,9 +51,11 @@ void pmem_init();
 // return the first page of the pg_cnt pages
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags);
 
-// increase the reference to p
+// @brief increase the reference to p;
+// panic if p is free
 void page_incref(ppage_t *p);
-// decrease the reference to p, free it if no referrence
+// @brief decrease the reference to p, free it if no referrence;
+// panic if p is free
 void page_decref(ppage_t *p);
 
 
