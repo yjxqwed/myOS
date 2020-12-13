@@ -11,9 +11,9 @@
 // keyboard control port
 #define KB_CTRL_PORT 0x64
 
-#define KB_BREAK_MASK 0x80
+// #define KB_BREAK_MASK 0x80
 
-#define EXT_CODE 0xe0
+#define EXT_CODE 0xE0
 
 /* escapes characters */
 #define esc       '\x1b'
@@ -33,7 +33,7 @@
 #define caps_lock_char char_invisible
 
 /* make and break codes */
-#define shift_l_make    0x2a
+#define shift_l_make    0x2A
 #define shift_l_break   (shift_l_make | KB_BREAK_MASK)
 #define shift_r_make    0x36
 #define shift_r_break   (shift_r_make | KB_BREAK_MASK)
@@ -49,18 +49,18 @@
 #define caps_lock_break (caps_lock_make | KB_BREAK_MASK)
 
 /* index is the make-code */
-static char keymap[][3] = {
+static char keymap[][2] = {
 /* make-code {no-shift, with-shift, ext} */
 /* ---------------------------------- */
-/* 0x00 */ {0, 0, 0},
-/* 0x01 */ {esc, esc, 0},
-/* 0x02 */ {'1', '!', 0},
-/* 0x03 */ {'2', '@', 0},
-/* 0x04 */ {'3', '#', 0},
-/* 0x05 */ {'4', '$', 0},
-/* 0x06 */ {'5', '%', 0},
-/* 0x07 */ {'6', '^', 0},
-/* 0x08 */ {'7', '&', 0},
+/* 0x00 */ {0, 0},
+/* 0x01 */ {esc, esc},
+/* 0x02 */ {'1', '!'},
+/* 0x03 */ {'2', '@'},
+/* 0x04 */ {'3', '#'},
+/* 0x05 */ {'4', '$'},
+/* 0x06 */ {'5', '%'},
+/* 0x07 */ {'6', '^'},
+/* 0x08 */ {'7', '&'},
 /* 0x09 */ {'8', '*'},
 /* 0x0A */ {'9', '('},
 /* 0x0B */ {'0', ')'},
@@ -248,6 +248,18 @@ uint16_t keymap1[][3] = {
 /* 0x7F - ???        */    {0,            0,          0}
 };
 
+static uint8_t pause_make_code = {
+    0xE1, 0x1D, 0x45, 0xE1, 0x9D, 0xC5
+};
+
+static uint8_t print_screen_make_code = {
+    0xE0, 0x2A, 0xE0, 0x37
+};
+
+static uint8_t print_screen_breake_code = {
+    0xE0, 0xB7, 0xE0, 0xAA
+};
+
 static void kb_handler(isrp_t *p) {
     static bool_t ctrl_down = False;
     static bool_t shift_down = False;
@@ -256,25 +268,42 @@ static void kb_handler(isrp_t *p) {
     static bool_t ext_code = False;
 
 
-    uint16_t scan_code = inportb(KB_DATA_PORT);
+    uint8_t scan_code = inportb(KB_DATA_PORT);
+
+    if (scan_code == 0xE1) {
+        // omit pause key for now
+        kprintf(KPL_PANIC, "\n*** PAUSE! ***\n");
+        while (1);
+    }
 
     if (scan_code == EXT_CODE) {
         ext_code = True;
         return;
     }
 
+    int col = 0;
+
     if (ext_code) {
-        scan_code |= 0xe000;
+        col = 2;
         ext_code = False;
     }
 
+    uint16_t key = keymap1[scan_code & 0x7f][col];
+
     if (scan_code & KB_BREAK_MASK) {
         // bit 7 set => break code
-        if (scan_code == shift_l_break || scan_code == shift_r_break) {
+        // if (scan_code == shift_l_break || scan_code == shift_r_break) {
+        //     shift_down = False;
+        // } else if (scan_code == ctrl_l_break || scan_code == ctrl_r_break) {
+        //     ctrl_down = False;
+        // } else if (scan_code == alt_l_break || scan_code == alt_r_break) {
+        //     alt_down = False;
+        // }
+        if (key == SHIFT_L || key == SHIFT_R) {
             shift_down = False;
-        } else if (scan_code == ctrl_l_break || scan_code == ctrl_r_break) {
+        } else if (key == CTRL_L || key == CTRL_R) {
             ctrl_down = False;
-        } else if (scan_code == alt_l_break || scan_code == alt_r_break) {
+        } else if (key == ALT_L || key == ALT_R) {
             alt_down = False;
         }
         // break of other keys are unimportant
@@ -313,6 +342,83 @@ static void kb_handler(isrp_t *p) {
         }
     } else {
         kprintf(KPL_DEBUG, "[Unknown key down: %x]", scan_code);
+    }
+}
+
+static void kb_handler1(isrp_t *p) {
+    static bool_t ctrl_down = False;
+    static bool_t shift_down = False;
+    static bool_t alt_down = False;
+
+    static bool_t caps_locked = False;
+    static bool_t num_locked = False;
+    static bool_t scroll_locked = False;
+
+    static bool_t ext_code = False;
+
+
+    uint8_t scan_code = inportb(KB_DATA_PORT);
+
+    if (scan_code == 0xE1) {
+        // omit pause key for now
+        kprintf(KPL_PANIC, "\n*** PAUSE! ***\n");
+        while (1);
+    }
+
+    if (scan_code == EXT_CODE) {
+        ext_code = True;
+        return;
+    }
+
+    uint16_t key = 0;
+
+    if (ext_code) {
+        key = keymap1[scan_code & 0x7f][2];
+        ext_code = False;
+    } else {
+        key = keymap1[scan_code & 0x7f][0];
+    }
+
+
+    if (scan_code & KB_BREAK_MASK) {
+        // bit 7 set => break code
+        if (key == SHIFT_L || key == SHIFT_R) {
+            shift_down = False;
+        } else if (key == CTRL_L || key == CTRL_R) {
+            ctrl_down = False;
+        } else if (key == ALT_L || key == ALT_R) {
+            alt_down = False;
+        }
+        // break of other keys are unimportant
+        return;
+    } else {
+        // make code
+
+        /**
+         *  shift ctrl alt caps_lock num_lock scroll_lock are
+         *  pure control keys
+         */
+        if (key == SHIFT_L || key == SHIFT_R) {
+            shift_down = True;
+        } else if (key == CTRL_L || key == CTRL_R) {
+            ctrl_down = True;
+        } else if (key == ALT_L || key == ALT_R) {
+            alt_down = True;
+        } else if (key == CAPS_LOCK) {
+            caps_locked = !caps_locked;
+        } else if (key == NUM_LOCK) {
+            num_locked = !num_locked;
+        } else if (key == SCROLL_LOCK) {
+            scroll_locked = !scroll_locked;
+        } else {
+            int col = 0;
+            if (key >= 'a' && key <= 'z') {
+                // caps_lock only influence letters
+                col = (shift_down ^ caps_locked) ? 1 : 0;
+            } else {
+                col = shift_down ? 1 : 0;
+            }
+        }
     }
 }
 
