@@ -2,6 +2,7 @@
 #include <string.h>
 #include <kprintf.h>
 #include <arch/x86.h>
+#include <thread/thread.h>
 
 void printISRParam(const isrp_t* p) {
     kprintf(KPL_PANIC, " {eip=%x; errco=%x}", p->eip, p->err_code);
@@ -18,5 +19,7 @@ void panic_spin(
     kprintf(KPL_PANIC, "line: %d\n", line);
     kprintf(KPL_PANIC, "function: %s\n", funcname);
     kprintf(KPL_PANIC, "cause: %s\n", cause);
-    while (1);
+    print_all_tasks();
+    hlt();
+    // while (1);
 }

@@ -58,6 +58,8 @@ void page_incref(ppage_t *p);
 // panic if p is free
 void page_decref(ppage_t *p);
 
+void print_page(ppage_t *p);
+
 
 // page to its kernel virtual address
 void *page2kva(ppage_t *p);

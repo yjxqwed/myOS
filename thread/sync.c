@@ -47,6 +47,9 @@ void mutex_lock(mutex_t *mutex) {
     } else {
         (mutex->holder_repeat_nr)++;
     }
+    // INT_STATUS old_status = disable_int();
+    // kprintf(KPL_DEBUG, "(mutex lock 0x%X)", mutex);
+    // set_int_status(old_status);
 }
 
 void mutex_unlock(mutex_t *mutex) {
@@ -58,6 +61,9 @@ void mutex_unlock(mutex_t *mutex) {
     // set_int_status(old_status);
     ASSERT(mutex->holder != NULL);
     ASSERT(mutex->holder == get_current_thread());
+    // INT_STATUS old_status = disable_int();
+    // kprintf(KPL_DEBUG, "(mutex lock 0x%X)", mutex);
+    // set_int_status(old_status);
     if (mutex->holder_repeat_nr > 1) {
         (mutex->holder_repeat_nr)--;
     } else {

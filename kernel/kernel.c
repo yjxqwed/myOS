@@ -74,7 +74,8 @@ static void parent1(void *args) {
 
 static void test_k_get_free_pages() {
     // pmem_print();
-    uint32_t *p1 = k_get_free_pages(15, GFP_ZERO);
+    // uint32_t *p1 = k_get_free_pages(15, GFP_ZERO);
+    uint32_t *p1 = k_get_free_pages(1, GFP_ZERO);
     // mutex_lock(&m);
     // kprintf(KPL_DUMP, "p1 = 0x%X\n", p1);
     // mutex_unlock(&m);
@@ -83,24 +84,29 @@ static void test_k_get_free_pages() {
     // mutex_lock(&m);
     // kprintf(KPL_DUMP, "p2 = 0x%X\n", p2);
     // mutex_unlock(&m);
-    k_free_pages(p1, 15);
+    // k_free_pages(p1, 15);
+    k_free_pages(p1, 1);
     uint32_t *p3 = k_get_free_pages(1, GFP_ZERO);
     // mutex_lock(&m);
     // kprintf(KPL_DUMP, "p3 = 0x%X\n", p3);
     // mutex_unlock(&m);
-    uint32_t *p4 = k_get_free_pages(15, GFP_ZERO);
+    // uint32_t *p4 = k_get_free_pages(15, GFP_ZERO);
+    uint32_t *p4 = k_get_free_pages(1, GFP_ZERO);
     // mutex_lock(&m);
     // kprintf(KPL_DUMP, "p4 = 0x%X\n", p4);
     // mutex_unlock(&m);
     k_free_pages(p3, 1);
-    uint32_t *p5 = k_get_free_pages(15, GFP_ZERO);
+    // uint32_t *p5 = k_get_free_pages(15, GFP_ZERO);
+    uint32_t *p5 = k_get_free_pages(1, GFP_ZERO);
     // mutex_lock(&m);
     // kprintf(KPL_DUMP, "p5 = 0x%X\n", p5);
     // mutex_unlock(&m);
     *p5 = 0x98765432;
     k_free_pages(p2, 1);
-    k_free_pages(p4, 15);
-    k_free_pages(p5, 15);
+    // k_free_pages(p4, 15);
+    // k_free_pages(p5, 15);
+    k_free_pages(p4, 1);
+    k_free_pages(p5, 1);
     // pmem_print();
 }
 
@@ -197,8 +203,34 @@ static void test_kmalloc1() {
     kfree(b7);
 }
 
+static void test_page_alloc() {
+    ppage_t *p0 = pages_alloc(1, GFP_ZERO);
+    ppage_t *p1 = pages_alloc(1, GFP_ZERO);
+    ppage_t *p2 = pages_alloc(1, GFP_ZERO);
+    page_incref(p0);
+    page_incref(p1);
+    ppage_t *p3 = pages_alloc(1, GFP_ZERO);
+    page_incref(p2);
+    page_decref(p0);
+    page_incref(p3);
+    page_decref(p1);
+    page_decref(p2);
+    page_decref(p3);
+}
+
+ppage_t *pp;
+
+static void test_page_ref() {
+    for (int i = 0; i < 10; i++) {
+        page_incref(pp);
+    }
+    for (int i = 0; i < 10; i++) {
+        page_decref(pp);
+    }
+}
+
 static void test(void *args) {
-    // int id = *(int *)args;
+    int id = (int)args;
     // mutex_lock(&m);
     // kprintf(KPL_DEBUG, " test%d start ", id);
     // mutex_unlock(&m);
@@ -217,7 +249,9 @@ static void test(void *args) {
     //     thread_yield();
     // }
     // test_kmalloc1();
-    test_k_get_free_pages();
+    // test_k_get_free_pages();
+    // test_page_alloc();
+    test_page_ref();
     // for (int i = 0; i < 1000000; i++);
     // mutex_lock(&m);
     // kprintf(KPL_DEBUG, " test%d end ", id);
@@ -245,21 +279,22 @@ static void test_parent(void *args) {
     // return;
     // while (1);
     // MAGICBP;
-    int num_threads = 100;
+    int num_threads = 200;
     // task_t **tasks = (task_t **)kmalloc(sizeof(task_t *) * num_threads);
     // int *ids = kmalloc(sizeof(int) * num_threads);
 
-    task_t **tasks = (task_t **)k_get_free_pages(2, GFP_ZERO);
-    int *ids = (int *)k_get_free_pages(2, GFP_ZERO);
+    // task_t **tasks = (task_t **)k_get_free_pages(2, GFP_ZERO);
+    task_t *tasks[200];
+    // int *ids = (int *)k_get_free_pages(2, GFP_ZERO);
     for (int i = 0; i < num_threads; i++) {
-        ids[i] = i;
-        tasks[i] = thread_start("test", 30, test, &(ids[i]));
+        // ids[i] = i;
+        tasks[i] = thread_start("test", 1, test, i);
     }
     for (int i = 0; i < num_threads; i++) {
         thread_join(tasks[i]);
     }
-    k_free_pages(tasks, 2);
-    k_free_pages(ids, 2);
+    // k_free_pages(tasks, 2);
+    // k_free_pages(ids, 2);
     // kfree(tasks);
     // kfree(ids);
     // int id1 = 1, id2 = 2;
@@ -279,8 +314,8 @@ static void test_parent(void *args) {
 }
 
 static void test_thread_kmalloc() {
-    print_all_tasks();
-    print_ready_tasks();
+    // print_all_tasks();
+    // print_ready_tasks();
     // print_sleeping_tasks();
     // print_exit_tasks();
     // MAGICBP;
@@ -291,16 +326,24 @@ static void test_thread_kmalloc() {
     // print_all_tasks();
     // print_ready_tasks();
     // MAGICBP;
-    pmem_print();
+    pp = pages_alloc(1, GFP_ZERO);
+    page_incref(pp);
+    print_page(pp);
+    // pmem_print();
     MAGICBP;
     mutex_init(&m);
     task_t *tp0 = thread_start("tp0", 30, test_parent, NULL);
     task_t *tp1 = thread_start("tp1", 30, test_parent, NULL);
-    // thread_join(tp0);
-    // thread_join(tp1);
+    task_t *tp2 = thread_start("tp2", 30, test_parent, NULL);
+    thread_join(tp0);
+    thread_join(tp1);
+    thread_join(tp2);
+    print_page(pp);
+    page_decref(pp);
+    print_page(pp);
     // kprintf(KPL_DEBUG, "back to main\n");
-    // print_all_tasks();
-    // print_ready_tasks();
+    print_all_tasks();
+    print_ready_tasks();
     // for (int i = 0; i < 1000000; i++);
     // for (int i = 0; i < 1000000; i++);
     // for (int i = 0; i < 1000000; i++);
@@ -309,19 +352,86 @@ static void test_thread_kmalloc() {
     // print_all_tasks();
     // print_ready_tasks();
     // vmm_print();
-    while (1) {
-        for (int i = 0; i < 1000000; i++);
-        for (int i = 0; i < 1000000; i++);
-        for (int i = 0; i < 1000000; i++);
-        for (int i = 0; i < 1000000; i++);
-        print_all_tasks();
-        print_ready_tasks();
-    }
-    pmem_print();
+    // while (1) {
+    //     for (int i = 0; i < 1000000; i++);
+    //     for (int i = 0; i < 1000000; i++);
+    //     for (int i = 0; i < 1000000; i++);
+    //     for (int i = 0; i < 1000000; i++);
+    //     print_all_tasks();
+    //     print_ready_tasks();
+    // }
+    // pmem_print();
 }
 
 static void test_parent_k_get_free_pages(void *args) {
     
+}
+
+static int g = 0;
+mutex_t mutex1;
+static void loop482(void *a) {
+    char *id = (char *)a;
+    int i;
+    mutex_lock(&mutex1);
+    kprintf(KPL_DEBUG, "loop called with id %s\n", id);
+    for (i = 0; i < 5; i++, g++) {
+        kprintf(KPL_DEBUG, "%s: i=%d, g=%d\n", id, i, g);
+        mutex_unlock(&mutex1);
+        thread_yield();
+        mutex_lock(&mutex1);
+    }
+    kprintf(KPL_DEBUG, "%s: i=%d, g=%d\n", id, i, g);
+    mutex_unlock(&mutex1);
+}
+
+static void parent482t1(void *a) {
+    intptr_t arg = (intptr_t) a;
+    mutex_lock(&mutex1);
+    kprintf(KPL_DEBUG, "parent called with arg %d\n", arg);
+    mutex_unlock(&mutex1);
+    thread_start("child", 30, loop482, "child thread");
+    loop482("parent thread");
+}
+
+static void child482t10(void *a) {
+    intptr_t id = (intptr_t)a;
+    mutex_lock(&m);
+    kprintf(KPL_DEBUG, "child %d yield\n", id);
+    mutex_unlock(&m);
+    thread_yield();
+    mutex_lock(&m);
+    kprintf(KPL_DEBUG, "child %d continue\n", id);
+    mutex_unlock(&m);
+}
+
+static void parent482t10(void *a) {
+    task_t * tasks[100];
+    mutex_lock(&m);
+    for (int i = 0; i < 100; i++) {
+        tasks[i] = thread_start("child", 30, child482t10, i);
+    }
+    mutex_unlock(&m);
+    for (int i = 0; i < 100; i++) {
+        thread_join(tasks[i]);
+    }
+    kprintf(KPL_DEBUG, "parent end\n");
+}
+
+mutex_t m1, m2;
+
+static dead1(void *args) {
+    mutex_lock(&m1);
+    thread_yield();
+    mutex_lock(&m2);
+    mutex_unlock(&m2);
+    mutex_unlock(&m1);
+}
+static dead2(void *args) {
+    mutex_lock(&m1);
+    thread_yield();
+    mutex_lock(&m2);
+    mutex_unlock(&m1);
+    mutex_unlock(&m2);
 }
 
 
@@ -332,5 +442,17 @@ void kernelMain() {
     // pmem_print();
     // test_kmalloc();
     test_thread_kmalloc();
+    // pmem_print();
+    // test_page_alloc();
+    // pmem_print();
+    // mutex_init(&mutex1);
+    // thread_start("parent", 30, parent482t1, (void *)100);
+    // mutex_init(&m1);
+    // mutex_init(&m2);
+    // task_t *d1 = thread_start("dead1", 30, dead1, (void *)1);
+    // task_t *d2 = thread_start("dead2", 30, dead2, (void *)2);
+    // thread_join(d1);
+    // thread_join(d2);
+    // thread_start("parent", 30, parent482t10, (void *)100);
     while (1);
 }

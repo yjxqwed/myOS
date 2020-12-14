@@ -140,6 +140,8 @@ static inline void invlpg(void *va) __attr_always_inline;
 // load task register (tss)
 static inline void ltr(uint16_t selector_tss) __attr_always_inline;
 
+static inline void hlt() __attr_always_inline;
+
 #define __asm_volatile __asm__ volatile
 
 static inline uint8_t inportb(uint16_t port) {
@@ -239,6 +241,12 @@ static inline void ltr(uint16_t selector_tss) {
         :
         : "r"(selector_tss)
         :
+    );
+}
+
+static inline void hlt() {
+    __asm_volatile (
+        "hlt"
     );
 }
 
