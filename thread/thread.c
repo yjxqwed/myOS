@@ -75,20 +75,24 @@ static inline task_t *task_pop_back(list_t *l) {
     }
 }
 
+static void clear_exit_q();
+
 static void thread_run_func(thread_func_t func, void *args) {
     enable_int();
     func(args);
     // when the function is done executed
     disable_int();
-    current_task->status = TASK_STOPPED;
-
+    // ASSERT(!list_find(&task_exit_list, &(current_task->general_tag)));
+    // list_push_back(&task_exit_list, &(current_task->general_tag));
+    clear_exit_q();
+    current_task->status = TASK_FINISHED;
+    task_push_back(&task_exit_list, current_task);
     list_node_t *p = list_pop_front(&(current_task->join_list));
     while (p) {
-        // ASSERT(!list_find(&task_ready_list, p));
-        // list_push_back(&task_ready_list, p);
         task_t *t = __list_node_struct(task_t, general_tag, p);
-        task_push_back(&task_ready_list, t);
+        ASSERT(t->status == TASK_BLOCKED);
         t->status = TASK_READY;
+        task_push_back(&task_ready_list, t);
         p = list_pop_front(&(current_task->join_list));
     }
 
@@ -150,6 +154,7 @@ task_t *thread_start(
         return NULL;
     }
     INT_STATUS old_status = disable_int();
+    ASSERT(task->status == TASK_READY);
     ASSERT(!list_find(&task_ready_list, &(task->general_tag)));
     list_push_back(&task_ready_list, &(task->general_tag));
     ASSERT(!list_find(&task_all_list, &(task->list_all_tag)));
@@ -182,6 +187,7 @@ static void clear_exit_q() {
     list_node_t *p = list_pop_front(&task_exit_list);
     while (p) {
         task_t *t = __list_node_struct(task_t, general_tag, p);
+        ASSERT(t->status == TASK_FINISHED);
         list_erase(&(t->list_all_tag));
         k_free_pages(t, 1);
         p = list_pop_front(&task_exit_list);
@@ -190,19 +196,16 @@ static void clear_exit_q() {
 
 static void schedule() {
     ASSERT(get_int_status() == INTERRUPT_OFF);
-    clear_exit_q();
     task_t *old = current_task;
-    if (old->status == TASK_RUNNING) {
-        ASSERT(!list_find(&task_ready_list, &(old->general_tag)));
-        list_push_back(&task_ready_list, &(old->general_tag));
-        old->status = TASK_READY;
-        old->ticks = old->priority;
-    } else if (old->status == TASK_STOPPED) {
-        ASSERT(!list_find(&task_exit_list, &(old->general_tag)));
-        list_push_back(&task_exit_list, &(old->general_tag));
-    } else if (old->status == TASK_WAITING) {
-
-    }
+    // if (old->status == TASK_RUNNING) {
+    //     ASSERT(!list_find(&task_ready_list, &(old->general_tag)));
+    //     list_push_back(&task_ready_list, &(old->general_tag));
+    //     old->status = TASK_READY;
+    //     old->ticks = old->priority;
+    // } else if (old->status == TASK_FINISHED) {
+    //     ASSERT(!list_find(&task_exit_list, &(old->general_tag)));
+    //     list_push_back(&task_exit_list, &(old->general_tag));
+    // }
     ASSERT(!list_empty(&task_ready_list));
     task_t *next = NULL;
     next = __list_node_struct(
@@ -222,6 +225,10 @@ void time_scheduler() {
     ASSERT(current_task != NULL && current_task->stack_guard == 0x19971125);
     (current_task->elapsed_ticks)++;
     if (current_task->ticks == 0) {
+        ASSERT(!list_find(&task_ready_list, &(current_task->general_tag)));
+        list_push_back(&task_ready_list, &(current_task->general_tag));
+        current_task->status = TASK_READY;
+        current_task->ticks = current_task->priority;
         schedule();
     } else {
         (current_task->ticks)--;
@@ -291,7 +298,7 @@ void thread_join(task_t *task) {
     INT_STATUS old_status = disable_int();
     if (
         task == NULL || !list_find(&task_all_list, &(task->list_all_tag)) ||
-        task->status == TASK_STOPPED || task->status == TASK_DEAD
+        task->status == TASK_FINISHED
     ) {
         set_int_status(old_status);
         return;
@@ -299,7 +306,7 @@ void thread_join(task_t *task) {
     ASSERT(task != current_task);
     ASSERT(!list_find(&(task->join_list), &(current_task->general_tag)));
     list_push_back(&(task->join_list), &(current_task->general_tag));
-    current_task->status = TASK_WAITING;
+    current_task->status = TASK_BLOCKED;
     schedule();
     set_int_status(old_status);
 }

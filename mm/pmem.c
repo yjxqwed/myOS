@@ -204,23 +204,24 @@ void pmem_init() {
 
 // alloc a physical page
 static ppage_t *__page_alloc(uint32_t gfp_flags) {
-    INT_STATUS old_status = disable_int();
-    // mutex_lock(&pmem_lock);
+    // INT_STATUS old_status = disable_int();
+    mutex_lock(&pmem_lock);
     list_node_t *p = list_pop_front(&free_list);
-    // mutex_unlock(&pmem_lock);
     if (p == NULL) {
-        set_int_status(old_status);
+        // set_int_status(old_status);
+        mutex_unlock(&pmem_lock);
         return NULL;
     }
     ppage_t *fp = __list_node_struct(ppage_t, free_list_tag, p);
-    // mutex_lock(&(fp->page_lock));
+    mutex_lock(&(fp->page_lock));
     ASSERT(fp->free && fp->num_ref == 0);
     fp->free = False;
-    // mutex_unlock(&(fp->page_lock));
+    mutex_unlock(&(fp->page_lock));
+    mutex_unlock(&pmem_lock);
     if (gfp_flags & GFP_ZERO) {
         memset(page2kva(fp), 0, PAGE_SIZE);
     }
-    set_int_status(old_status);
+    // set_int_status(old_status);
     return fp;
 }
 
@@ -231,6 +232,8 @@ ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
     } else if (pg_cnt == 1) {
         return __page_alloc(gfp_flags);
     }
+
+    ASSERT(False);
 
     uint32_t idx = free_pfn;
     // mutex_lock(&pmem_lock);
@@ -304,14 +307,17 @@ ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
 void page_incref(ppage_t *p) {
     ASSERT(p != NULL);
     mutex_lock(&(p->page_lock));
+    // INT_STATUS old_status = disable_int();
     if (p->free) {
         PANIC("incref a free page");
     }
     (p->num_ref)++;
+    // set_int_status(old_status);
     mutex_unlock(&(p->page_lock));
 }
 
 void page_decref(ppage_t *p) {
+    // INT_STATUS old_status = disable_int();
     ASSERT(p != NULL);
     mutex_lock(&(p->page_lock));
     ASSERT(p->num_ref > 0);
@@ -323,10 +329,11 @@ void page_decref(ppage_t *p) {
         mutex_lock(&pmem_lock);
         ASSERT(!list_find(&free_list, &(p->free_list_tag)));
         list_push_front(&free_list, &(p->free_list_tag));
-        mutex_unlock(&pmem_lock);
         p->free = True;
+        mutex_unlock(&pmem_lock);
     }
     mutex_unlock(&(p->page_lock));
+    // set_int_status(old_status);
 }
 
 void pmem_print() {

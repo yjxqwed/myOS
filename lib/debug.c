@@ -19,7 +19,7 @@ void panic_spin(
     kprintf(KPL_PANIC, "line: %d\n", line);
     kprintf(KPL_PANIC, "function: %s\n", funcname);
     kprintf(KPL_PANIC, "cause: %s\n", cause);
-    print_all_tasks();
+    // print_all_tasks();
     hlt();
     // while (1);
 }

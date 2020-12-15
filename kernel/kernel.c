@@ -75,7 +75,7 @@ static void parent1(void *args) {
 static void test_k_get_free_pages() {
     // pmem_print();
     // uint32_t *p1 = k_get_free_pages(15, GFP_ZERO);
-    uint32_t *p1 = k_get_free_pages(1, GFP_ZERO);
+    uint32_t *p1 = k_get_free_pages(15, GFP_ZERO);
     // mutex_lock(&m);
     // kprintf(KPL_DUMP, "p1 = 0x%X\n", p1);
     // mutex_unlock(&m);
@@ -85,19 +85,19 @@ static void test_k_get_free_pages() {
     // kprintf(KPL_DUMP, "p2 = 0x%X\n", p2);
     // mutex_unlock(&m);
     // k_free_pages(p1, 15);
-    k_free_pages(p1, 1);
+    k_free_pages(p1, 15);
     uint32_t *p3 = k_get_free_pages(1, GFP_ZERO);
     // mutex_lock(&m);
     // kprintf(KPL_DUMP, "p3 = 0x%X\n", p3);
     // mutex_unlock(&m);
     // uint32_t *p4 = k_get_free_pages(15, GFP_ZERO);
-    uint32_t *p4 = k_get_free_pages(1, GFP_ZERO);
+    uint32_t *p4 = k_get_free_pages(15, GFP_ZERO);
     // mutex_lock(&m);
     // kprintf(KPL_DUMP, "p4 = 0x%X\n", p4);
     // mutex_unlock(&m);
     k_free_pages(p3, 1);
     // uint32_t *p5 = k_get_free_pages(15, GFP_ZERO);
-    uint32_t *p5 = k_get_free_pages(1, GFP_ZERO);
+    uint32_t *p5 = k_get_free_pages(15, GFP_ZERO);
     // mutex_lock(&m);
     // kprintf(KPL_DUMP, "p5 = 0x%X\n", p5);
     // mutex_unlock(&m);
@@ -105,8 +105,8 @@ static void test_k_get_free_pages() {
     k_free_pages(p2, 1);
     // k_free_pages(p4, 15);
     // k_free_pages(p5, 15);
-    k_free_pages(p4, 1);
-    k_free_pages(p5, 1);
+    k_free_pages(p4, 15);
+    k_free_pages(p5, 15);
     // pmem_print();
 }
 
@@ -229,8 +229,16 @@ static void test_page_ref() {
     }
 }
 
+static int num_thread_started = 0;
+// mutex_t num_thread_started_lock;
+
 static void test(void *args) {
-    int id = (int)args;
+    // mutex_lock(&num_thread_started_lock);
+    INT_STATUS old_status = disable_int();
+    num_thread_started++;
+    set_int_status(old_status);
+    // mutex_unlock(&num_thread_started_lock);
+    // int id = (int)args;
     // mutex_lock(&m);
     // kprintf(KPL_DEBUG, " test%d start ", id);
     // mutex_unlock(&m);
@@ -250,8 +258,8 @@ static void test(void *args) {
     // }
     // test_kmalloc1();
     // test_k_get_free_pages();
-    // test_page_alloc();
-    test_page_ref();
+    test_page_alloc();
+    // test_page_ref();
     // for (int i = 0; i < 1000000; i++);
     // mutex_lock(&m);
     // kprintf(KPL_DEBUG, " test%d end ", id);
@@ -335,13 +343,20 @@ static void test_thread_kmalloc() {
     task_t *tp0 = thread_start("tp0", 30, test_parent, NULL);
     task_t *tp1 = thread_start("tp1", 30, test_parent, NULL);
     task_t *tp2 = thread_start("tp2", 30, test_parent, NULL);
+    task_t *tp3 = thread_start("tp0", 30, test_parent, NULL);
+    task_t *tp4 = thread_start("tp1", 30, test_parent, NULL);
+    task_t *tp5 = thread_start("tp2", 30, test_parent, NULL);
     thread_join(tp0);
     thread_join(tp1);
     thread_join(tp2);
+    thread_join(tp3);
+    thread_join(tp4);
+    thread_join(tp5);
     print_page(pp);
     page_decref(pp);
     print_page(pp);
     // kprintf(KPL_DEBUG, "back to main\n");
+    kprintf(KPL_DEBUG, "num_thread_started=%d\n", num_thread_started);
     print_all_tasks();
     print_ready_tasks();
     // for (int i = 0; i < 1000000; i++);
@@ -397,9 +412,9 @@ static void child482t10(void *a) {
     intptr_t id = (intptr_t)a;
     mutex_lock(&m);
     kprintf(KPL_DEBUG, "child %d yield\n", id);
-    mutex_unlock(&m);
+    // mutex_unlock(&m);
     thread_yield();
-    mutex_lock(&m);
+    // mutex_lock(&m);
     kprintf(KPL_DEBUG, "child %d continue\n", id);
     mutex_unlock(&m);
 }
@@ -439,20 +454,24 @@ void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
     // test_thread();
     // pmem_print();
-    // pmem_print();
+    pmem_print();
     // test_kmalloc();
     test_thread_kmalloc();
-    // pmem_print();
+    pmem_print();
     // test_page_alloc();
     // pmem_print();
     // mutex_init(&mutex1);
-    // thread_start("parent", 30, parent482t1, (void *)100);
+    // mutex_lock(&mutex1);
+    // mutex_unlock(&mutex1);
+    // task_t *p = thread_start("parent", 30, parent482t1, (void *)100);
+    // thread_join(p);
     // mutex_init(&m1);
     // mutex_init(&m2);
     // task_t *d1 = thread_start("dead1", 30, dead1, (void *)1);
     // task_t *d2 = thread_start("dead2", 30, dead2, (void *)2);
     // thread_join(d1);
     // thread_join(d2);
+    // mutex_init(&m);
     // thread_start("parent", 30, parent482t10, (void *)100);
     while (1);
 }
