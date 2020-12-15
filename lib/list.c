@@ -1,6 +1,7 @@
 #include <lib/list.h>
 #include <common/debug.h>
 #include <kprintf.h>
+#include <thread/thread.h>
 
 void list_init(list_t *l) {
     ASSERT(l != NULL);
@@ -13,6 +14,9 @@ void list_init(list_t *l) {
 void list_push_back(list_t *l, list_node_t *node) {
     ASSERT(l != NULL);
     ASSERT(node != NULL);
+    if (node->prev != NULL) {
+        kprintf(KPL_PANIC, "task = (0x%X){name=%s}\n", __list_node_struct(task_t, general_tag, node));
+    }
     ASSERT(node->prev == NULL && node->next == NULL);
     list_node_t *last = l->tail.prev;
     last->next = node;

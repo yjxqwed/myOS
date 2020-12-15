@@ -7,6 +7,7 @@
 #include <myos.h>
 #include <arch/x86.h>
 #include <thread/sync.h>
+#include <bitmap.h>
 
 // the page directory used by kernel
 static pte_t *kern_pg_dir = NULL;
@@ -23,7 +24,8 @@ static uint32_t total_mem_mb = 0;
 static ppage_t *pmap = NULL;
 // static ppage_t *free_pages_list = NULL;
 // list of free pages
-static list_t free_list;
+// static list_t free_list;
+static btmp_t pmem_btmp;
 
 #define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
 static void print_mem_info(multiboot_info_t *mbi) {
@@ -167,8 +169,8 @@ void print_page(ppage_t *p) {
     mutex_lock(&(p->page_lock));
     kprintf(
         KPL_DEBUG,
-        "{kva=0x%X, num_ref=%d, tag={prev=0x%X, next=0x%X}}",
-        page2kva(p), p->num_ref, p->free_list_tag.prev, p->free_list_tag.next
+        "{kva=0x%X, num_ref=%d}",
+        page2kva(p), p->num_ref
     );
     mutex_unlock(&(p->page_lock));
 }
@@ -178,128 +180,152 @@ void pmem_init() {
     mutex_init(&pmem_lock);
     // initialize pmap
     pmap = boot_alloc(sizeof(ppage_t) * nppages, False);
-    // initialize free_list
-    list_init(&free_list);
+    int byte_len = nppages / 8;
+    pmem_btmp.bits_ = boot_alloc(byte_len, False);
+    bitmap_init(&pmem_btmp, byte_len);
     // fpn is the next page after pages allocated by boot_alloc
     // pages after fpn may be used in further operations
     int fpn = __page_number(__pa(boot_alloc(0, True)));
     free_pfn = fpn;
     ASSERT(fpn < max_high_pfn);
-    kprintf(KPL_DEBUG, "pmap=0x%X\n", pmap);
     kprintf(KPL_DEBUG, "nppages=0x%x\nfree_page=0x%x\n", nppages, fpn);
     // These pages will never be freed or reused!
     for (int i = 0; i < fpn; i++) {
         pmap[i].num_ref = 1;
-        pmap[i].free = False;
         mutex_init(&(pmap[i].page_lock));
+        bitmap_set(&pmem_btmp, i, 1);
     }
     // Free pages. Free for future use.
     for (int i = fpn; i <= max_high_pfn; i++) {
         pmap[i].num_ref = 0;
-        pmap[i].free = True;
         mutex_init(&(pmap[i].page_lock));
-        list_push_back(&free_list, &(pmap[i].free_list_tag));
+        // list_push_back(&free_list, &(pmap[i].free_list_tag));
     }
+    kprintf(KPL_DEBUG, "pmap=0x%X\n", pmap);
+    kprintf(KPL_DEBUG, "pmem_btmp=");
+    print_btmp(&pmem_btmp);
+    kprintf(KPL_DEBUG, "\n");
 }
 
-// alloc a physical page
-static ppage_t *__page_alloc(uint32_t gfp_flags) {
-    // INT_STATUS old_status = disable_int();
-    mutex_lock(&pmem_lock);
-    list_node_t *p = list_pop_front(&free_list);
-    if (p == NULL) {
-        // set_int_status(old_status);
-        mutex_unlock(&pmem_lock);
-        return NULL;
-    }
-    ppage_t *fp = __list_node_struct(ppage_t, free_list_tag, p);
-    mutex_lock(&(fp->page_lock));
-    ASSERT(fp->free && fp->num_ref == 0);
-    fp->free = False;
-    mutex_unlock(&(fp->page_lock));
-    mutex_unlock(&pmem_lock);
-    if (gfp_flags & GFP_ZERO) {
-        memset(page2kva(fp), 0, PAGE_SIZE);
-    }
-    // set_int_status(old_status);
-    return fp;
-}
+// // alloc a physical page
+// static ppage_t *__page_alloc(uint32_t gfp_flags) {
+//     // INT_STATUS old_status = disable_int();
+//     mutex_lock(&pmem_lock);
+//     list_node_t *p = list_pop_front(&free_list);
+//     if (p == NULL) {
+//         // set_int_status(old_status);
+//         mutex_unlock(&pmem_lock);
+//         return NULL;
+//     }
+//     ppage_t *fp = __list_node_struct(ppage_t, free_list_tag, p);
+//     mutex_lock(&(fp->page_lock));
+//     ASSERT(fp->free && fp->num_ref == 0);
+//     fp->free = False;
+//     mutex_unlock(&(fp->page_lock));
+//     mutex_unlock(&pmem_lock);
+//     if (gfp_flags & GFP_ZERO) {
+//         memset(page2kva(fp), 0, PAGE_SIZE);
+//     }
+//     // set_int_status(old_status);
+//     return fp;
+// }
 
+
+// ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
+//     if (pg_cnt == 0) {
+//         return NULL;
+//     } else if (pg_cnt == 1) {
+//         return __page_alloc(gfp_flags);
+//     }
+
+//     ASSERT(False);
+
+//     uint32_t idx = free_pfn;
+//     // mutex_lock(&pmem_lock);
+
+//     INT_STATUS old_status = disable_int();
+//     // find pg_cnt free pages
+//     while (idx < max_high_pfn) {
+//         // mutex_t *pl = &(pmap[idx].page_lock);
+//         // mutex_lock(pl);
+//         // while (!(pmap[idx].free)) {
+//         //     mutex_unlock(pl);
+//         //     idx++;
+//         //     pl = &(pmap[idx].page_lock);
+//         // }
+//         // mutex_unlock(pl);
+
+//         while (1) {
+//             mutex_t *pl = &(pmap[idx].page_lock);
+//             // mutex_lock(pl);
+//             if (pmap[idx].free) {
+//                 // mutex_unlock(pl);
+//                 break;
+//             } else {
+//                 // mutex_unlock(pl);
+//                 idx++;
+//             }
+//         }
+
+//         uint32_t i = 0;
+//         for (; i < pg_cnt && idx + i <= max_high_pfn; i++) {
+//             mutex_t *pl = &(pmap[idx + i].page_lock);
+//             // mutex_lock(pl);
+//             if (pmap[idx + i].free) {
+//                 // mutex_unlock(pl);
+//             } else {
+//                 // mutex_unlock(pl);
+//                 break;
+//             }
+//         }
+
+//         if (i == pg_cnt) {
+//             break; 
+//         } else if (idx + i > max_high_pfn) {
+//             // mutex_unlock(&pmem_lock);
+//             set_int_status(old_status);
+//             return NULL;
+//         } else {
+//             idx += i;
+//         }
+//     }
+
+//     for (uint32_t i = 0, t = idx; i < pg_cnt; i++, t++) {
+//         ASSERT(t <= max_high_pfn);
+//         ASSERT(pmap[t].free);
+//         ASSERT(pmap[t].num_ref == 0);
+//         ASSERT(list_find(&free_list, &(pmap[t].free_list_tag)));
+//         list_erase(&(pmap[t].free_list_tag));
+//         ASSERT(!list_find(&free_list, &(pmap[t].free_list_tag)));
+//         pmap[t].free = False;
+//     }
+//     // mutex_unlock(&pmem_lock);
+//     ppage_t *fp = &(pmap[idx]);
+//     if (gfp_flags & GFP_ZERO) {
+//         memset(page2kva(fp), 0, PAGE_SIZE * pg_cnt);
+//     }
+//     set_int_status(old_status);
+//     return fp;
+// }
 
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
     if (pg_cnt == 0) {
         return NULL;
-    } else if (pg_cnt == 1) {
-        return __page_alloc(gfp_flags);
     }
-
-    ASSERT(False);
-
-    uint32_t idx = free_pfn;
-    // mutex_lock(&pmem_lock);
-
-    INT_STATUS old_status = disable_int();
-    // find pg_cnt free pages
-    while (idx < max_high_pfn) {
-        // mutex_t *pl = &(pmap[idx].page_lock);
-        // mutex_lock(pl);
-        // while (!(pmap[idx].free)) {
-        //     mutex_unlock(pl);
-        //     idx++;
-        //     pl = &(pmap[idx].page_lock);
-        // }
-        // mutex_unlock(pl);
-
-        while (1) {
-            mutex_t *pl = &(pmap[idx].page_lock);
-            // mutex_lock(pl);
-            if (pmap[idx].free) {
-                // mutex_unlock(pl);
-                break;
-            } else {
-                // mutex_unlock(pl);
-                idx++;
-            }
-        }
-
-        uint32_t i = 0;
-        for (; i < pg_cnt && idx + i <= max_high_pfn; i++) {
-            mutex_t *pl = &(pmap[idx + i].page_lock);
-            // mutex_lock(pl);
-            if (pmap[idx + i].free) {
-                // mutex_unlock(pl);
-            } else {
-                // mutex_unlock(pl);
-                break;
-            }
-        }
-
-        if (i == pg_cnt) {
-            break; 
-        } else if (idx + i > max_high_pfn) {
-            // mutex_unlock(&pmem_lock);
-            set_int_status(old_status);
-            return NULL;
-        } else {
-            idx += i;
-        }
+    mutex_lock(&pmem_lock);
+    int idx = bitmap_scan(&pmem_btmp, pg_cnt);
+    if (idx == -1) {
+        mutex_unlock(&pmem_lock);
+        return NULL;
     }
-
-    for (uint32_t i = 0, t = idx; i < pg_cnt; i++, t++) {
-        ASSERT(t <= max_high_pfn);
-        ASSERT(pmap[t].free);
-        ASSERT(pmap[t].num_ref == 0);
-        ASSERT(list_find(&free_list, &(pmap[t].free_list_tag)));
-        list_erase(&(pmap[t].free_list_tag));
-        ASSERT(!list_find(&free_list, &(pmap[t].free_list_tag)));
-        pmap[t].free = False;
+    for (int i = 0, j = idx; i < pg_cnt; i++, j++) {
+        bitmap_set(&pmem_btmp, j, 1);
     }
-    // mutex_unlock(&pmem_lock);
     ppage_t *fp = &(pmap[idx]);
+    mutex_unlock(&pmem_lock);
     if (gfp_flags & GFP_ZERO) {
         memset(page2kva(fp), 0, PAGE_SIZE * pg_cnt);
     }
-    set_int_status(old_status);
     return fp;
 }
 
@@ -308,9 +334,13 @@ void page_incref(ppage_t *p) {
     ASSERT(p != NULL);
     mutex_lock(&(p->page_lock));
     // INT_STATUS old_status = disable_int();
-    if (p->free) {
+
+    mutex_lock(&pmem_lock);
+    if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
         PANIC("incref a free page");
     }
+    mutex_unlock(&pmem_lock);
+
     (p->num_ref)++;
     // set_int_status(old_status);
     mutex_unlock(&(p->page_lock));
@@ -321,15 +351,21 @@ void page_decref(ppage_t *p) {
     ASSERT(p != NULL);
     mutex_lock(&(p->page_lock));
     ASSERT(p->num_ref > 0);
-    if (p->free) {
-        PANIC("decref a free page");
+    // if (p->free) {
+    //     PANIC("decref a free page");
+    // }
+    mutex_lock(&pmem_lock);
+    if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
+        PANIC("incref a free page");
     }
+    mutex_unlock(&pmem_lock);
     (p->num_ref)--;
     if (p->num_ref == 0) {
         mutex_lock(&pmem_lock);
-        ASSERT(!list_find(&free_list, &(p->free_list_tag)));
-        list_push_front(&free_list, &(p->free_list_tag));
-        p->free = True;
+        // ASSERT(!list_find(&free_list, &(p->free_list_tag)));
+        // list_push_front(&free_list, &(p->free_list_tag));
+        // p->free = True;
+        bitmap_set(&pmem_btmp, (p - pmap), 0);
         mutex_unlock(&pmem_lock);
     }
     mutex_unlock(&(p->page_lock));
@@ -339,7 +375,8 @@ void page_decref(ppage_t *p) {
 void pmem_print() {
     INT_STATUS old_status = disable_int();
     mutex_lock(&pmem_lock);
-    kprintf(KPL_NOTICE, "free_list len=%d\n", list_length(&free_list));
+    // kprintf(KPL_NOTICE, "num_free_ppages=%d\n", pmem_btmp.num_zero);
+    print_btmp(&pmem_btmp);
     mutex_unlock(&pmem_lock);
     set_int_status(old_status);
 }
@@ -431,7 +468,7 @@ static pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool_t create) {
         if (!create) {
             return NULL;
         } else {
-            ppage_t *fp = __page_alloc(GFP_ZERO);
+            ppage_t *fp = pages_alloc(1, GFP_ZERO);
             if (fp == NULL) {
                 return NULL;
             }

@@ -1,7 +1,7 @@
 #include <bitmap.h>
 #include <string.h>
 #include <common/debug.h>
-#include <common/utils.h>
+#include <kprintf.h>
 
 #define BITMASK 1
 
@@ -116,4 +116,12 @@ void bitmap_set(btmp_t *btmp, uint32_t bit_idx, int value) {
             btmp->first_zero_bit = bit_idx;
         }
     }
+}
+
+void print_btmp(btmp_t *btmp) {
+    kprintf(
+        KPL_DEBUG,
+        "(0x%X){first_zero_bit=%d, num_zero=%d, byte_num=%d, bits=0x%X}",
+        btmp, btmp->first_zero_bit, btmp->num_zero, btmp->byte_num_, btmp->bits_
+    );
 }

@@ -82,8 +82,6 @@ static void thread_run_func(thread_func_t func, void *args) {
     func(args);
     // when the function is done executed
     disable_int();
-    // ASSERT(!list_find(&task_exit_list, &(current_task->general_tag)));
-    // list_push_back(&task_exit_list, &(current_task->general_tag));
     clear_exit_q();
     current_task->status = TASK_FINISHED;
     task_push_back(&task_exit_list, current_task);
@@ -155,8 +153,7 @@ task_t *thread_start(
     }
     INT_STATUS old_status = disable_int();
     ASSERT(task->status == TASK_READY);
-    ASSERT(!list_find(&task_ready_list, &(task->general_tag)));
-    list_push_back(&task_ready_list, &(task->general_tag));
+    task_push_back(&task_ready_list, task);
     ASSERT(!list_find(&task_all_list, &(task->list_all_tag)));
     list_push_back(&task_all_list, &(task->list_all_tag));
     set_int_status(old_status);
@@ -197,15 +194,6 @@ static void clear_exit_q() {
 static void schedule() {
     ASSERT(get_int_status() == INTERRUPT_OFF);
     task_t *old = current_task;
-    // if (old->status == TASK_RUNNING) {
-    //     ASSERT(!list_find(&task_ready_list, &(old->general_tag)));
-    //     list_push_back(&task_ready_list, &(old->general_tag));
-    //     old->status = TASK_READY;
-    //     old->ticks = old->priority;
-    // } else if (old->status == TASK_FINISHED) {
-    //     ASSERT(!list_find(&task_exit_list, &(old->general_tag)));
-    //     list_push_back(&task_exit_list, &(old->general_tag));
-    // }
     ASSERT(!list_empty(&task_ready_list));
     task_t *next = NULL;
     next = __list_node_struct(
@@ -304,8 +292,7 @@ void thread_join(task_t *task) {
         return;
     }
     ASSERT(task != current_task);
-    ASSERT(!list_find(&(task->join_list), &(current_task->general_tag)));
-    list_push_back(&(task->join_list), &(current_task->general_tag));
+    task_push_back(&(task->join_list), current_task);
     current_task->status = TASK_BLOCKED;
     schedule();
     set_int_status(old_status);
@@ -330,16 +317,11 @@ void thread_unblock(task_t *task) {
         task->status == TASK_SUSPENDING ||
         task->status == TASK_WAITING
     );
-    ASSERT(!list_find(&task_ready_list, &(task->general_tag)));
-    list_push_front(&task_ready_list, &(task->general_tag));
+    task_push_back(&task_ready_list, task);
     task->status = TASK_READY;
 }
 
 task_t *get_current_thread() {
-    // INT_STATUS old_status = disable_int();
-    // task_t *curr = current_task;
-    // set_int_status(old_status);
-    // return curr;
 #ifdef KDEBUG
     INT_STATUS old_status = disable_int();
     uint32_t esp;
@@ -393,8 +375,7 @@ void thread_msleep(uint32_t msec) {
         __thread_yield();
     }
     current_task->sleep_msec = msec;
-    ASSERT(!list_find(&sleeping_list, &(current_task->general_tag)));
-    list_push_front(&sleeping_list, &(current_task->general_tag));
+    task_push_back(&sleeping_list, current_task);
     current_task->status = TASK_BLOCKED;
     schedule();
     set_int_status(old_status);

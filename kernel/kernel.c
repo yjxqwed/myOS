@@ -339,7 +339,7 @@ static void test_thread_kmalloc() {
     print_page(pp);
     // pmem_print();
     MAGICBP;
-    mutex_init(&m);
+    // mutex_init(&m);
     task_t *tp0 = thread_start("tp0", 30, test_parent, NULL);
     task_t *tp1 = thread_start("tp1", 30, test_parent, NULL);
     task_t *tp2 = thread_start("tp2", 30, test_parent, NULL);
@@ -359,13 +359,15 @@ static void test_thread_kmalloc() {
     kprintf(KPL_DEBUG, "num_thread_started=%d\n", num_thread_started);
     print_all_tasks();
     print_ready_tasks();
-    // for (int i = 0; i < 1000000; i++);
-    // for (int i = 0; i < 1000000; i++);
-    // for (int i = 0; i < 1000000; i++);
-    // for (int i = 0; i < 1000000; i++);
-    // kprintf(KPL_DEBUG, "later\n");
-    // print_all_tasks();
-    // print_ready_tasks();
+    for (int i = 0; i < 1000000; i++);
+    for (int i = 0; i < 1000000; i++);
+    for (int i = 0; i < 1000000; i++);
+    for (int i = 0; i < 1000000; i++);
+    kprintf(KPL_DEBUG, "later\n");
+    print_all_tasks();
+    print_ready_tasks();
+    print_exit_tasks();
+    print_sleeping_tasks();
     // vmm_print();
     // while (1) {
     //     for (int i = 0; i < 1000000; i++);

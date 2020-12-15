@@ -21,11 +21,11 @@ struct PhysicalPageInfo {
     // ppage_t *prev_free;
 
     // doubly linked list in the free pages list
-    list_node_t free_list_tag;
+    // list_node_t free_list_tag;
     // num of references to this ppage
     // if num_ref == 0, I'm free
     uint32_t num_ref;
-    bool_t free;
+    // bool_t free;
     // every operation of this page struct should
     // acquire this lock
     mutex_t page_lock;
