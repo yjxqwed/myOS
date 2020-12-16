@@ -8,23 +8,48 @@
 #include <arch/x86.h>
 #include <thread/sync.h>
 #include <bitmap.h>
+#include <common/utils.h>
 
 // the page directory used by kernel
 static pte_t *kern_pg_dir = NULL;
 
+// the max free page frame number
 static uint32_t max_high_pfn = 0;
+// the min free page frame number (above 1MiB)
 static uint32_t min_high_pfn = 0;
+
+// free page frame number (after mem used by boot_alloc)
 static uint32_t free_pfn = 0;
-static uint32_t nppages = 0;
+
 
 // total memory installed (in megabytes)
 static uint32_t total_mem_mb = 0;
+// total physical pages
+static uint32_t nppages = 0;
 
-// the array of ppage_t, this array is used for page allocating
+
+/***********************************************************
+ * The machine is installed with physical memory size of N *
+ *                                                         *
+ * |<---- nppages/total_mem_mb ------>|                    *
+ * 0  1MB                             N                    *
+ * |---|------|------|------------|---|                    *
+ *   R    KI   ^ BA   ^          ^  R                      *
+ *             |      |          |                         *
+ *             |      |          +----- max_high_pfn       *
+ *             |      +---------------- free_pfn           *
+ *             +----------------------- min_high_pfn       *
+ *                                                         *
+ *  R: reserved                                            *
+ *  KI: kernel image                                       *
+ *  BA: mem used by boot_alloc                             *
+ *                                                         *
+ *  pages in [free_pfn, max_high_pfn] are free of use      *
+ ***********************************************************/
+
+// the array of ppage_t,
 static ppage_t *pmap = NULL;
-// static ppage_t *free_pages_list = NULL;
-// list of free pages
-// static list_t free_list;
+// the bitmap used for page allocating
 static btmp_t pmem_btmp;
 
 #define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
@@ -71,6 +96,8 @@ static void print_mem_info(multiboot_info_t *mbi) {
                 uint32_t base = mmap->addr;
                 uint32_t len = mmap->len;
                 total_mem_mb = base / 0x100000 + len / 0x10000;
+                // 1MiB = 0x100 pages
+                nppages = total_mem_mb * 0x100;
             }
         }
     }
@@ -97,7 +124,6 @@ void detect_memory(multiboot_info_t *mbi) {
         // _end is the (physical) end of the kernel binary image
         uintptr_t _end = __pa(&kernel_image_end);
         min_high_pfn = __page_number(_end) + 2;
-        nppages = max_high_pfn + 1;
         kprintf(
             KPL_NOTICE, "minpfn=0x%x, maxpfn=0x%x, npages=0x%x\n",
             min_high_pfn, max_high_pfn, nppages
@@ -129,10 +155,7 @@ static void *boot_alloc(uint32_t n, bool_t page_alligned) {
     uintptr_t addr = NULL;
 
     if (page_alligned) {
-        addr = __pg_start_addr(next_free_byte);
-        if (next_free_byte != addr) {
-            addr += PAGE_SIZE;
-        }
+        addr = ROUND_UP_DIV(next_free_byte, PAGE_SIZE) * PAGE_SIZE;
     } else {
         addr = next_free_byte;
     }
@@ -191,7 +214,7 @@ void pmem_init() {
     kprintf(KPL_DEBUG, "nppages=0x%x\nfree_page=0x%x\n", nppages, fpn);
     // These pages will never be freed or reused!
     for (int i = 0; i < fpn; i++) {
-        pmap[i].num_ref = 1;
+        pmap[i].num_ref = 0;
         mutex_init(&(pmap[i].page_lock));
         bitmap_set(&pmem_btmp, i, 1);
     }
@@ -201,112 +224,18 @@ void pmem_init() {
         mutex_init(&(pmap[i].page_lock));
         // list_push_back(&free_list, &(pmap[i].free_list_tag));
     }
+    // These pages are reserved by machine (known from mutiboot memory map)
+    for (int i = max_high_pfn + 1; i < nppages; i++) {
+        pmap[i].num_ref = 0;
+        mutex_init(&(pmap[i].page_lock));
+        bitmap_set(&pmem_btmp, i, 1);
+    }
     kprintf(KPL_DEBUG, "pmap=0x%X\n", pmap);
     kprintf(KPL_DEBUG, "pmem_btmp=");
     print_btmp(&pmem_btmp);
     kprintf(KPL_DEBUG, "\n");
 }
 
-// // alloc a physical page
-// static ppage_t *__page_alloc(uint32_t gfp_flags) {
-//     // INT_STATUS old_status = disable_int();
-//     mutex_lock(&pmem_lock);
-//     list_node_t *p = list_pop_front(&free_list);
-//     if (p == NULL) {
-//         // set_int_status(old_status);
-//         mutex_unlock(&pmem_lock);
-//         return NULL;
-//     }
-//     ppage_t *fp = __list_node_struct(ppage_t, free_list_tag, p);
-//     mutex_lock(&(fp->page_lock));
-//     ASSERT(fp->free && fp->num_ref == 0);
-//     fp->free = False;
-//     mutex_unlock(&(fp->page_lock));
-//     mutex_unlock(&pmem_lock);
-//     if (gfp_flags & GFP_ZERO) {
-//         memset(page2kva(fp), 0, PAGE_SIZE);
-//     }
-//     // set_int_status(old_status);
-//     return fp;
-// }
-
-
-// ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
-//     if (pg_cnt == 0) {
-//         return NULL;
-//     } else if (pg_cnt == 1) {
-//         return __page_alloc(gfp_flags);
-//     }
-
-//     ASSERT(False);
-
-//     uint32_t idx = free_pfn;
-//     // mutex_lock(&pmem_lock);
-
-//     INT_STATUS old_status = disable_int();
-//     // find pg_cnt free pages
-//     while (idx < max_high_pfn) {
-//         // mutex_t *pl = &(pmap[idx].page_lock);
-//         // mutex_lock(pl);
-//         // while (!(pmap[idx].free)) {
-//         //     mutex_unlock(pl);
-//         //     idx++;
-//         //     pl = &(pmap[idx].page_lock);
-//         // }
-//         // mutex_unlock(pl);
-
-//         while (1) {
-//             mutex_t *pl = &(pmap[idx].page_lock);
-//             // mutex_lock(pl);
-//             if (pmap[idx].free) {
-//                 // mutex_unlock(pl);
-//                 break;
-//             } else {
-//                 // mutex_unlock(pl);
-//                 idx++;
-//             }
-//         }
-
-//         uint32_t i = 0;
-//         for (; i < pg_cnt && idx + i <= max_high_pfn; i++) {
-//             mutex_t *pl = &(pmap[idx + i].page_lock);
-//             // mutex_lock(pl);
-//             if (pmap[idx + i].free) {
-//                 // mutex_unlock(pl);
-//             } else {
-//                 // mutex_unlock(pl);
-//                 break;
-//             }
-//         }
-
-//         if (i == pg_cnt) {
-//             break; 
-//         } else if (idx + i > max_high_pfn) {
-//             // mutex_unlock(&pmem_lock);
-//             set_int_status(old_status);
-//             return NULL;
-//         } else {
-//             idx += i;
-//         }
-//     }
-
-//     for (uint32_t i = 0, t = idx; i < pg_cnt; i++, t++) {
-//         ASSERT(t <= max_high_pfn);
-//         ASSERT(pmap[t].free);
-//         ASSERT(pmap[t].num_ref == 0);
-//         ASSERT(list_find(&free_list, &(pmap[t].free_list_tag)));
-//         list_erase(&(pmap[t].free_list_tag));
-//         ASSERT(!list_find(&free_list, &(pmap[t].free_list_tag)));
-//         pmap[t].free = False;
-//     }
-//     // mutex_unlock(&pmem_lock);
-//     ppage_t *fp = &(pmap[idx]);
-//     if (gfp_flags & GFP_ZERO) {
-//         memset(page2kva(fp), 0, PAGE_SIZE * pg_cnt);
-//     }
-//     set_int_status(old_status);
-//     return fp;
-// }
 
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
     if (pg_cnt == 0) {
