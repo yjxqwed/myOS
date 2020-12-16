@@ -36,48 +36,6 @@ void sem_down(sem_t *sem) {
     set_int_status(old_status);
 }
 
-// void mutex_init(mutex_t *mutex) {
-//     sem_init(&(mutex->sem), 1);
-//     mutex->holder = NULL;
-//     mutex->holder_repeat_nr = 0;
-// }
-
-// void mutex_lock(mutex_t *mutex) {
-//     if (mutex->holder != get_current_thread()) {
-//         sem_down(&(mutex->sem));
-//         ASSERT(mutex->holder == NULL && mutex->holder_repeat_nr == 0);
-//         mutex->holder = get_current_thread();
-//         mutex->holder_repeat_nr = 1;
-//     } else {
-//         (mutex->holder_repeat_nr)++;
-//     }
-//     // INT_STATUS old_status = disable_int();
-//     // kprintf(KPL_DEBUG, "(mutex lock 0x%X)", mutex);
-//     // set_int_status(old_status);
-// }
-
-// void mutex_unlock(mutex_t *mutex) {
-//     // kprintf(KPL_DEBUG, "mutex=0x%X\n", mutex);
-//     // INT_STATUS old_status = disable_int();
-//     // if (mutex->holder != get_current_thread()) {
-//     //     kprintf(KPL_DEBUG, "holder=0x%X, curr=0x%X\n", mutex->holder, get_current_thread());
-//     // }
-//     // set_int_status(old_status);
-//     ASSERT(mutex->holder != NULL);
-//     ASSERT(mutex->holder == get_current_thread());
-//     // INT_STATUS old_status = disable_int();
-//     // kprintf(KPL_DEBUG, "(mutex lock 0x%X)", mutex);
-//     // set_int_status(old_status);
-//     if (mutex->holder_repeat_nr > 1) {
-//         (mutex->holder_repeat_nr)--;
-//     } else {
-//         ASSERT(mutex->holder_repeat_nr == 1);
-//         mutex->holder_repeat_nr = 0;
-//         mutex->holder = NULL;
-//         sem_up(&(mutex->sem));
-//     }
-// }
-
 
 void mutex_init(mutex_t *mutex) {
     list_init(&(mutex->wait_list));
@@ -99,15 +57,15 @@ static void print_mutex(mutex_t *mutex) {
 void mutex_lock(mutex_t *mutex) {
     INT_STATUS old_status = disable_int();
     task_t *curr = get_current_thread();
-    kprintf(KPL_DEBUG, "lock: curr=%s, ", curr->task_name);
-    print_mutex(mutex);
+    // kprintf(KPL_DEBUG, "lock: curr=%s, ", curr->task_name);
+    // print_mutex(mutex);
     if (mutex->holder == curr) {
         (mutex->holder_repeat_nr)++;
         set_int_status(old_status);
         return;
     }
     while (mutex->holder != NULL) {
-        kprintf(KPL_NOTICE, "{curr(%s)->status(%d)}", curr->task_name, curr->status);
+        // kprintf(KPL_NOTICE, "{curr(%s)->status(%d)}", curr->task_name, curr->status);
         ASSERT(curr->status == TASK_RUNNING);
         ASSERT(!list_find(&(mutex->wait_list), &(curr->general_tag)));
         list_push_back(&(mutex->wait_list), &(curr->general_tag));
@@ -123,8 +81,8 @@ void mutex_lock(mutex_t *mutex) {
 void mutex_unlock(mutex_t *mutex) {
     INT_STATUS old_status = disable_int();
     task_t *curr = get_current_thread();
-    kprintf(KPL_DEBUG, "unlock: curr=%s, ", curr->task_name);
-    print_mutex(mutex);
+    // kprintf(KPL_DEBUG, "unlock: curr=%s, ", curr->task_name);
+    // print_mutex(mutex);
     ASSERT(mutex->holder != NULL);
     ASSERT(mutex->holder == curr);
     ASSERT(mutex->holder_repeat_nr > 0);

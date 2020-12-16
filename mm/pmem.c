@@ -222,7 +222,6 @@ void pmem_init() {
     for (int i = fpn; i <= max_high_pfn; i++) {
         pmap[i].num_ref = 0;
         mutex_init(&(pmap[i].page_lock));
-        // list_push_back(&free_list, &(pmap[i].free_list_tag));
     }
     // These pages are reserved by machine (known from mutiboot memory map)
     for (int i = max_high_pfn + 1; i < nppages; i++) {
@@ -262,7 +261,6 @@ ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
 void page_incref(ppage_t *p) {
     ASSERT(p != NULL);
     mutex_lock(&(p->page_lock));
-    // INT_STATUS old_status = disable_int();
 
     mutex_lock(&pmem_lock);
     if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
@@ -271,18 +269,13 @@ void page_incref(ppage_t *p) {
     mutex_unlock(&pmem_lock);
 
     (p->num_ref)++;
-    // set_int_status(old_status);
     mutex_unlock(&(p->page_lock));
 }
 
 void page_decref(ppage_t *p) {
-    // INT_STATUS old_status = disable_int();
     ASSERT(p != NULL);
     mutex_lock(&(p->page_lock));
     ASSERT(p->num_ref > 0);
-    // if (p->free) {
-    //     PANIC("decref a free page");
-    // }
     mutex_lock(&pmem_lock);
     if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
         PANIC("incref a free page");
@@ -291,20 +284,15 @@ void page_decref(ppage_t *p) {
     (p->num_ref)--;
     if (p->num_ref == 0) {
         mutex_lock(&pmem_lock);
-        // ASSERT(!list_find(&free_list, &(p->free_list_tag)));
-        // list_push_front(&free_list, &(p->free_list_tag));
-        // p->free = True;
         bitmap_set(&pmem_btmp, (p - pmap), 0);
         mutex_unlock(&pmem_lock);
     }
     mutex_unlock(&(p->page_lock));
-    // set_int_status(old_status);
 }
 
 void pmem_print() {
     INT_STATUS old_status = disable_int();
     mutex_lock(&pmem_lock);
-    // kprintf(KPL_NOTICE, "num_free_ppages=%d\n", pmem_btmp.num_zero);
     print_btmp(&pmem_btmp);
     mutex_unlock(&pmem_lock);
     set_int_status(old_status);

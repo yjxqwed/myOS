@@ -236,6 +236,8 @@ static void test(void *args) {
     // mutex_lock(&num_thread_started_lock);
     INT_STATUS old_status = disable_int();
     num_thread_started++;
+    kprintf(KPL_NOTICE, "\nnum_thread_started=%d\n", num_thread_started);
+    // pmem_print();
     set_int_status(old_status);
     // mutex_unlock(&num_thread_started_lock);
     // int id = (int)args;
@@ -257,8 +259,8 @@ static void test(void *args) {
     //     thread_yield();
     // }
     // test_kmalloc1();
-    // test_k_get_free_pages();
-    test_page_alloc();
+    test_k_get_free_pages();
+    // test_page_alloc();
     // test_page_ref();
     // for (int i = 0; i < 1000000; i++);
     // mutex_lock(&m);

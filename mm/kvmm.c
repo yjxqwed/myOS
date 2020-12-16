@@ -29,7 +29,11 @@ void k_free_pages(void *kva, uint32_t pgcnt) {
         ppage_t *p = kva2page(
             (void *)((uintptr_t)kva + i * PAGE_SIZE)
         );
+#ifdef KDEBUG
+        mutex_lock(&(p->page_lock));
         ASSERT(p->num_ref == 1);
+        mutex_unlock(&(p->page_lock));
+#endif
         page_decref(p);
     }
 }
