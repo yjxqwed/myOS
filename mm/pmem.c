@@ -65,12 +65,15 @@ static void print_mem_info(multiboot_info_t *mbi) {
         );
     }
 
+    uint32_t num_pages = 0;
+
     // check mmap
     if (CHECK_FLAG (mbi->flags, 6)) {
         kprintf(
             KPL_NOTICE, "mmap_addr = 0x%X, mmap_length = 0x%X\n",
             (uint32_t)mbi->mmap_addr, (uint32_t)mbi->mmap_length
         );
+
         for (
             multiboot_memory_map_t *mmap =
                 (multiboot_memory_map_t *)mbi->mmap_addr;
@@ -87,19 +90,24 @@ static void print_mem_info(multiboot_info_t *mbi) {
                 " length = 0x%X, type = 0x%x\n",
                 (uint32_t)(mmap->size),
                 // (uint32_t) (mmap->addr >> 32),
-                (uint32_t)(mmap->addr & 0xffffffff),
+                (uint32_t)(mmap->addr),
                 // (uint32_t) (mmap->len >> 32),
-                (uint32_t)(mmap->len & 0xffffffff),
+                (uint32_t)(mmap->len),
                 (uint32_t)(mmap->type)
             );
-            if (mmap->type == 0x3) {
-                uint32_t base = mmap->addr;
-                uint32_t len = mmap->len;
-                total_mem_mb = base / 0x100000 + len / 0x10000;
+            uint32_t base = mmap->addr;
+            uint32_t len = mmap->len;
+            if (base == 0xFFFC0000) {
+                nppages = num_pages;
                 // 1MiB = 0x100 pages
-                nppages = total_mem_mb * 0x100;
+                total_mem_mb = nppages / 0x100;
+            } else {
+                num_pages = base / 0x1000 + len / 0x1000;
             }
         }
+    } else {
+        kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
+        while (1);
     }
     kprintf(KPL_NOTICE, "total mem installed = 0x%x MiB\n", total_mem_mb);
     kprintf(KPL_NOTICE, "=============================================\n");

@@ -236,7 +236,7 @@ static void test(void *args) {
     // mutex_lock(&num_thread_started_lock);
     INT_STATUS old_status = disable_int();
     num_thread_started++;
-    kprintf(KPL_NOTICE, "\nnum_thread_started=%d\n", num_thread_started);
+    kprintf(KPL_NOTICE, "num_thread_started=%d", num_thread_started);
     // pmem_print();
     set_int_status(old_status);
     // mutex_unlock(&num_thread_started_lock);
@@ -477,18 +477,18 @@ void kernelMain() {
     // thread_join(d2);
     // mutex_init(&m);
     // thread_start("parent", 30, parent482t10, (void *)100);
-    vmm_print();
-    char *b0 = kmalloc(1024);
-    kprintf(KPL_DEBUG, "b0 = 0x%X\n", b0);
-    char *b1 = kmalloc(1320);
-    kprintf(KPL_DEBUG, "b1 = 0x%X\n", b1);
-    char *b2 = kmalloc(1300);
-    kprintf(KPL_DEBUG, "b2 = 0x%X\n", b2);
+    // vmm_print();
+    // char *b0 = kmalloc(1024);
+    // kprintf(KPL_DEBUG, "b0 = 0x%X\n", b0);
+    // char *b1 = kmalloc(1320);
+    // kprintf(KPL_DEBUG, "b1 = 0x%X\n", b1);
+    // char *b2 = kmalloc(1300);
+    // kprintf(KPL_DEBUG, "b2 = 0x%X\n", b2);
 
-    kfree(b0);
-    vmm_print();
-    kfree(b1);
-    kfree(b2);
-    vmm_print();
+    // kfree(b0);
+    // vmm_print();
+    // kfree(b1);
+    // kfree(b2);
+    // vmm_print();
     while (1);
 }
