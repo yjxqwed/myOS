@@ -297,7 +297,7 @@ static void test_parent(void *args) {
     // return;
     // while (1);
     // MAGICBP;
-    int num_threads = 1;
+    int num_threads = 200;
     // task_t **tasks = (task_t **)kmalloc(sizeof(task_t *) * num_threads);
     // int *ids = kmalloc(sizeof(int) * num_threads);
 
@@ -348,7 +348,7 @@ static void test_thread_kmalloc() {
     // page_incref(pp);
     // print_page(pp);
     // pmem_print();
-    MAGICBP;
+    // MAGICBP;
     // mutex_init(&m);
     task_t *tp0 = thread_start("tp0", 30, test_parent, NULL);
     task_t *tp1 = thread_start("tp1", 30, test_parent, NULL);

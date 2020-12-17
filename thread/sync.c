@@ -79,11 +79,16 @@ void mutex_lock(mutex_t *mutex) {
 }
 
 void mutex_unlock(mutex_t *mutex) {
+    // ASSERT(mutex != NULL);
     INT_STATUS old_status = disable_int();
+    // kprintf(KPL_DEBUG, "mutex=0x%X\n", mutex);
     task_t *curr = get_current_thread();
     // kprintf(KPL_DEBUG, "unlock: curr=%s, ", curr->task_name);
     // print_mutex(mutex);
     ASSERT(mutex->holder != NULL);
+    // if (mutex->holder != curr) {
+    //     kprintf(KPL_PANIC, "mutex=0x%X, curr=0x%X\n", mutex, curr);
+    // }
     ASSERT(mutex->holder == curr);
     ASSERT(mutex->holder_repeat_nr > 0);
     (mutex->holder_repeat_nr)--;

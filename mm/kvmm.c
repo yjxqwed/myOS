@@ -192,13 +192,13 @@ static void *__kmalloc(uint32_t size) {
         }
         ASSERT(!list_empty(&(desc->free_list)));
         list_node_t *p = list_pop_front(&(desc->free_list));
-        mutex_unlock(&(desc->lock));
         ASSERT(p != NULL);
         mem_blk_t *b = __list_node_struct(mem_blk_t, tag, p);
         arena_t *a = arena_of_blk(b);
         mutex_lock(&(a->arena_lock));
         (a->cnt)--;
         mutex_unlock(&(a->arena_lock));
+        mutex_unlock(&(desc->lock));
         return (void *)(b->data_addr);
     }
 }
@@ -207,6 +207,21 @@ static void *__kmalloc(uint32_t size) {
 void *kmalloc(uint32_t size) {
     void *kva = __kmalloc(size);
     return kva;
+}
+
+static void print(list_t *l) {
+    // INT_STATUS old_status = disable_int();
+    kprintf(KPL_DEBUG, "head->");
+    for (
+        list_node_t *p = l->head.next;
+        p != &(l->tail);
+        p = p->next
+    ) {
+        mem_blk_t *m = __list_node_struct(mem_blk_t, tag, p);
+        kprintf(KPL_DEBUG, "{0x%X}->", m->data_addr);
+    }
+    kprintf(KPL_DEBUG, "tail\n");
+    // set_int_status(old_status);
 }
 
 static void __kfree(void *kva) {
@@ -224,24 +239,27 @@ static void __kfree(void *kva) {
     } else {
         ASSERT(a->desc != NULL);
         mutex_lock(&(a->desc->lock));
+        // print(&(a->desc->free_list));
         ASSERT(!list_find(&(a->desc->free_list), &(mb->tag)));
         list_push_front(&(a->desc->free_list), &(mb->tag));
-        INT_STATUS old_status = disable_int();
-        kprintf(KPL_DEBUG, "PUSH. mb->data=0x%X\n", mb->data_addr);
-        set_int_status(old_status);
+        // INT_STATUS old_status = disable_int();
+        // kprintf(KPL_DEBUG, "PUSH. mb->data=0x%X\n", mb->data_addr);
+        // print(&(a->desc->free_list));
+        // set_int_status(old_status);
         mutex_lock(&(a->arena_lock));
         (a->cnt)++;
         if (a->cnt == a->desc->nr_blocks_per_arena) {
             // all blocks in a are freed, a can be freed
             for (uint32_t i = 0; i < a->desc->nr_blocks_per_arena; i++) {
                 mem_blk_t *b = arena_get_blk(a, i);
-                INT_STATUS old_status = disable_int();
-                kprintf(KPL_DEBUG, "b->tag={prev=0x%X, next=0x%X}, b->data=0x%X\n", b->tag.prev, b->tag.next, b->data_addr);
-                set_int_status(old_status);
+                // INT_STATUS old_status = disable_int();
+                // kprintf(KPL_DEBUG, "b->tag={prev=0x%X, next=0x%X}, b->data=0x%X\n", b->tag.prev, b->tag.next, b->data_addr);
+                // set_int_status(old_status);
                 ASSERT(list_find(&(a->desc->free_list), &(b->tag)));
                 list_erase(&(b->tag));
             }
             ASSERT(list_empty(&(a->arena_lock.wait_list)));
+            mutex_unlock(&(a->arena_lock));
             k_free_pages(a, 1);
         } else {
             mutex_unlock(&(a->arena_lock));
