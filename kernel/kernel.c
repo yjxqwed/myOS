@@ -458,10 +458,10 @@ void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
     // test_thread();
     // pmem_print();
-    pmem_print();
+    // pmem_print();
     // test_kmalloc();
-    test_thread_kmalloc();
-    pmem_print();
+    // test_thread_kmalloc();
+    // pmem_print();
     // test_page_alloc();
     // pmem_print();
     // mutex_init(&mutex1);
@@ -477,5 +477,18 @@ void kernelMain() {
     // thread_join(d2);
     // mutex_init(&m);
     // thread_start("parent", 30, parent482t10, (void *)100);
+    vmm_print();
+    char *b0 = kmalloc(1024);
+    kprintf(KPL_DEBUG, "b0 = 0x%X\n", b0);
+    char *b1 = kmalloc(1320);
+    kprintf(KPL_DEBUG, "b1 = 0x%X\n", b1);
+    char *b2 = kmalloc(1300);
+    kprintf(KPL_DEBUG, "b2 = 0x%X\n", b2);
+
+    kfree(b0);
+    vmm_print();
+    kfree(b1);
+    kfree(b2);
+    vmm_print();
     while (1);
 }

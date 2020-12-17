@@ -19,11 +19,6 @@ void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags);
 void k_free_pages(void *kva, uint32_t pgcnt);
 
 
-// there are 7 kinds of blocks 16B each -> 1024B each
-#define MIN_BLK_SIZE    32
-#define MAX_BLK_SIZE    1024
-#define NR_MEM_BLK_DESC 6
-
 // @brief get bytes of memory. FOR KERNEL USE ONLY!
 // @param size number of bytes
 // @return kva of the allocated block

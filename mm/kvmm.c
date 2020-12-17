@@ -5,6 +5,7 @@
 #include <kprintf.h>
 #include <list.h>
 #include <common/utils.h>
+#include <thread/sync.h>
 
 void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags) {
     ppage_t *fp = pages_alloc(pgcnt, gfp_flags);
@@ -43,8 +44,23 @@ void k_free_pages(void *kva, uint32_t pgcnt) {
  *  Below are kmalloc/kfree
  */
 
+// there are 16 kinds of blocks 32+B each -> 1024+B each
+#define MIN_BLK_SIZE    32
+#define NR_MEM_BLK_DESC 6
+
+
+/**
+ *  +---------+          \
+ *  |tag      |          |    mem_blk_t: header of the actuall memory block.
+ *  |magic    |           >   For kfree to check whether the pointer passed in
+ *  |data_addr| ---+     |    is a valid one.
+ *  +---------+    |     /
+ *  |         | <--+------->  start addr of the allocated memory block,
+ *  |         |               16B aligned (must be 0xABCDEFG0)
+ */
 
 typedef struct MemoryBlock {
+    // tag in free_list
     list_node_t tag;
     // for free to check
     uint32_t magic;
@@ -58,12 +74,19 @@ static void mem_blk_init(mem_blk_t *mb) {
 }
 
 typedef struct MemoryBlockDescriptor {
-    // size of blocks in this arena (16B, 32B, etc)
+    // size of blocks in this arena (32B, 64B, etc)
     uint32_t block_size;
     // number of blocks in this arena
     uint32_t nr_blocks_per_arena;
     // list of free blocks
     list_t free_list;
+
+    // for arena_get_blk use
+    // address of the first mem_blk_t in an arena
+    uintptr_t first;
+    // num of bytes between two adjacent mem_blk_ts
+    uint32_t delta;
+
 } mem_blk_desc_t;
 
 // array of mem blk descriptors
@@ -79,17 +102,37 @@ typedef struct Arena {
     // else cnt is block count
     uint32_t cnt;
 
-    uint8_t pending[4];
+    mutex_t arena_lock;
 } arena_t;
+
+#define MEM_BLK_ALIGNMENT 16
 
 void block_desc_init(mem_blk_desc_t descs[NR_MEM_BLK_DESC]) {
     uint32_t size = MIN_BLK_SIZE;
-    for (int i = 0; i < NR_MEM_BLK_DESC; i++) {
-        descs[i].block_size = size;
-        // TO-OPT: trailing bytes may be wasted
-        descs[i].nr_blocks_per_arena =
-            (PAGE_SIZE - sizeof(arena_t)) / (size + sizeof(mem_blk_t));
-        size *= 2;
+
+    uint32_t first = ROUND_UP_DIV(
+            sizeof(arena_t) + sizeof(mem_blk_t), MEM_BLK_ALIGNMENT
+        ) * MEM_BLK_ALIGNMENT - sizeof(mem_blk_t);
+
+    for (int i = 0; i < NR_MEM_BLK_DESC; i++, size *= 2) {
+
+        uint32_t delta = ROUND_UP_DIV(
+                sizeof(mem_blk_t) + size, MEM_BLK_ALIGNMENT
+            ) * MEM_BLK_ALIGNMENT;
+        uint32_t num = (PAGE_SIZE - first) / delta;
+        uint32_t waste_per_blk =
+            ((PAGE_SIZE - first) - num * delta) / num / MEM_BLK_ALIGNMENT *
+            MEM_BLK_ALIGNMENT;
+        uint32_t actual_size = size + waste_per_blk;
+        uint32_t actual_delta = ROUND_UP_DIV(
+                sizeof(mem_blk_t) + actual_size, MEM_BLK_ALIGNMENT
+            ) * MEM_BLK_ALIGNMENT;
+
+        descs[i].block_size = actual_size;
+        descs[i].first = first;
+        descs[i].nr_blocks_per_arena = num;
+        descs[i].delta = actual_delta;
+
         list_init(&(descs[i].free_list));
     }
 }
@@ -97,18 +140,18 @@ void block_desc_init(mem_blk_desc_t descs[NR_MEM_BLK_DESC]) {
 static mem_blk_t* arena_get_blk(arena_t *a, uint32_t idx) {
     ASSERT(a != NULL && a->desc != NULL && !((uintptr_t)a & PG_OFFSET_MASK));
     ASSERT(idx < a->desc->nr_blocks_per_arena);
-    uint32_t size = a->desc->block_size;
-    uintptr_t first = (uintptr_t)(a + 1);
-    return (mem_blk_t *)(first + idx * (size + sizeof(mem_blk_t)));
+    uint32_t delta = a->desc->delta;
+    uintptr_t first = (uintptr_t)a + a->desc->first;
+    return (mem_blk_t *)(first + idx * delta);
 }
 
 static arena_t* arena_of_blk(mem_blk_t* blk) {
-    return (arena_t *)((uintptr_t)blk & 0xfffff000);
+    return (arena_t *)((uintptr_t)blk & PG_START_ADDRESS_MASK);
 }
 
 static void *__kmalloc(uint32_t size) {
     ASSERT(get_int_status() == INTERRUPT_OFF);
-    if (size > MAX_BLK_SIZE) {
+    if (size > k_mem_blk_descs[NR_MEM_BLK_DESC - 1].block_size) {
         uint32_t pg_cnt = ROUND_UP_DIV(
             size + sizeof(arena_t) + sizeof(mem_blk_t), PAGE_SIZE
         );
@@ -206,6 +249,13 @@ void vmm_init() {
 
 void vmm_print() {
     for (int i = 0; i < NR_MEM_BLK_DESC; i++) {
-        kprintf(KPL_DEBUG, "blk_size=%d, list_len=%d\n", k_mem_blk_descs[i].block_size, list_length(&(k_mem_blk_descs[i].free_list)));
+        kprintf(
+            KPL_DEBUG,
+            "blk_size=%d, list_len=%d, first=0x%x, delta=%d, num=%d\n",
+            k_mem_blk_descs[i].block_size,
+            list_length(&(k_mem_blk_descs[i].free_list)),
+            k_mem_blk_descs[i].first, k_mem_blk_descs[i].delta,
+            k_mem_blk_descs[i].nr_blocks_per_arena
+        );
     }
 }
