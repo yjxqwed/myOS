@@ -26,8 +26,8 @@ void *kmalloc(uint32_t size);
 
 // @brief free the memory block allocated by kmalloc, 
 // panic otherwise. FOR KERNEL USE ONLY!
-// @param va the address allocated by kmalloc
-void kfree(void *va);
+// @param kva the address allocated by kmalloc
+void kfree(void *kva);
 
 void vmm_print();
 

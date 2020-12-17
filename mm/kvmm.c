@@ -80,10 +80,10 @@ typedef struct MemoryBlockDescriptor {
     uint32_t nr_blocks_per_arena;
     // list of free blocks
     list_t free_list;
+    // for multitasking
+    mutex_t lock;
 
     // for arena_get_blk use
-    // address of the first mem_blk_t in an arena
-    uintptr_t first;
     // num of bytes between two adjacent mem_blk_ts
     uint32_t delta;
 
@@ -107,21 +107,20 @@ typedef struct Arena {
 
 #define MEM_BLK_ALIGNMENT 16
 
+// address of the first mem_blk_t struct in each arena
+static uint32_t first_memblk_t_addr = 0;
+
 void block_desc_init(mem_blk_desc_t descs[NR_MEM_BLK_DESC]) {
     uint32_t size = MIN_BLK_SIZE;
-
-    uint32_t first = ROUND_UP_DIV(
-            sizeof(arena_t) + sizeof(mem_blk_t), MEM_BLK_ALIGNMENT
-        ) * MEM_BLK_ALIGNMENT - sizeof(mem_blk_t);
 
     for (int i = 0; i < NR_MEM_BLK_DESC; i++, size *= 2) {
 
         uint32_t delta = ROUND_UP_DIV(
                 sizeof(mem_blk_t) + size, MEM_BLK_ALIGNMENT
             ) * MEM_BLK_ALIGNMENT;
-        uint32_t num = (PAGE_SIZE - first) / delta;
+        uint32_t num = (PAGE_SIZE - first_memblk_t_addr) / delta;
         uint32_t waste_per_blk =
-            ((PAGE_SIZE - first) - num * delta) / num / MEM_BLK_ALIGNMENT *
+            ((PAGE_SIZE - first_memblk_t_addr) - num * delta) / num / MEM_BLK_ALIGNMENT *
             MEM_BLK_ALIGNMENT;
         uint32_t actual_size = size + waste_per_blk;
         uint32_t actual_delta = ROUND_UP_DIV(
@@ -129,11 +128,11 @@ void block_desc_init(mem_blk_desc_t descs[NR_MEM_BLK_DESC]) {
             ) * MEM_BLK_ALIGNMENT;
 
         descs[i].block_size = actual_size;
-        descs[i].first = first;
         descs[i].nr_blocks_per_arena = num;
         descs[i].delta = actual_delta;
 
         list_init(&(descs[i].free_list));
+        mutex_init(&(descs[i].lock));
     }
 }
 
@@ -141,7 +140,7 @@ static mem_blk_t* arena_get_blk(arena_t *a, uint32_t idx) {
     ASSERT(a != NULL && a->desc != NULL && !((uintptr_t)a & PG_OFFSET_MASK));
     ASSERT(idx < a->desc->nr_blocks_per_arena);
     uint32_t delta = a->desc->delta;
-    uintptr_t first = (uintptr_t)a + a->desc->first;
+    uintptr_t first = (uintptr_t)a + first_memblk_t_addr;
     return (mem_blk_t *)(first + idx * delta);
 }
 
@@ -150,10 +149,10 @@ static arena_t* arena_of_blk(mem_blk_t* blk) {
 }
 
 static void *__kmalloc(uint32_t size) {
-    ASSERT(get_int_status() == INTERRUPT_OFF);
+    ASSERT(get_int_status() == INTERRUPT_ON);
     if (size > k_mem_blk_descs[NR_MEM_BLK_DESC - 1].block_size) {
         uint32_t pg_cnt = ROUND_UP_DIV(
-            size + sizeof(arena_t) + sizeof(mem_blk_t), PAGE_SIZE
+            first_memblk_t_addr + sizeof(mem_blk_t) + size, PAGE_SIZE
         );
         arena_t *a = (arena_t *)k_get_free_pages(pg_cnt, GFP_ZERO);
         if (a == NULL) {
@@ -162,7 +161,7 @@ static void *__kmalloc(uint32_t size) {
         a->cnt = pg_cnt;
         a->large = True;
         a->desc = NULL;
-        mem_blk_t *mb = (mem_blk_t *)(a + 1);
+        mem_blk_t *mb = (mem_blk_t *)((uintptr_t)a + first_memblk_t_addr);
         mem_blk_init(mb);
         return (void *)(mb->data_addr);
     } else {
@@ -174,6 +173,7 @@ static void *__kmalloc(uint32_t size) {
         }
         ASSERT(idx < NR_MEM_BLK_DESC);
         mem_blk_desc_t *desc = &(k_mem_blk_descs[idx]);
+        mutex_lock(&(desc->lock));
         if (list_empty(&(desc->free_list))) {
             arena_t *a = (arena_t *)k_get_free_pages(1, GFP_ZERO);
             if (a == NULL) {
@@ -182,6 +182,7 @@ static void *__kmalloc(uint32_t size) {
             a->desc = desc;
             a->large = False;
             a->cnt = desc->nr_blocks_per_arena;
+            mutex_init(&(a->arena_lock));
             for (uint32_t i = 0; i < desc->nr_blocks_per_arena; i++) {
                 mem_blk_t *b = arena_get_blk(a, i);
                 mem_blk_init(b);
@@ -190,60 +191,68 @@ static void *__kmalloc(uint32_t size) {
             }
         }
         ASSERT(!list_empty(&(desc->free_list)));
-        mem_blk_t *b = __list_node_struct(
-            mem_blk_t, tag, list_pop_front(&(desc->free_list))
-        );
+        list_node_t *p = list_pop_front(&(desc->free_list));
+        mutex_unlock(&(desc->lock));
+        ASSERT(p != NULL);
+        mem_blk_t *b = __list_node_struct(mem_blk_t, tag, p);
         arena_t *a = arena_of_blk(b);
+        mutex_lock(&(a->arena_lock));
         (a->cnt)--;
+        mutex_unlock(&(a->arena_lock));
         return (void *)(b->data_addr);
     }
 }
 
 
 void *kmalloc(uint32_t size) {
-    INT_STATUS old_status = disable_int();
     void *kva = __kmalloc(size);
-    set_int_status(old_status);
     return kva;
 }
 
-static void __kfree(mem_blk_t *mb) {
-    ASSERT(get_int_status() == INTERRUPT_OFF);
+static void __kfree(void *kva) {
+    if (kva == NULL) {
+        return;
+    }
+    mem_blk_t *mb = (mem_blk_t *)((uintptr_t)kva - sizeof(mem_blk_t));
+    if (mb->magic != 0x19971015 || mb->data_addr != (uintptr_t)kva) {
+        PANIC("bad pointer for kfree");
+    }
     arena_t *a = arena_of_blk(mb);
     if (a->large) {
         ASSERT(a->desc == NULL);
         k_free_pages(a, a->cnt);
     } else {
         ASSERT(a->desc != NULL);
+        mutex_lock(&(a->desc->lock));
         ASSERT(!list_find(&(a->desc->free_list), &(mb->tag)));
         list_push_front(&(a->desc->free_list), &(mb->tag));
+        mutex_lock(&(a->arena_lock));
         (a->cnt)++;
         if (a->cnt == a->desc->nr_blocks_per_arena) {
             // all blocks in a are freed, a can be freed
             for (uint32_t i = 0; i < a->desc->nr_blocks_per_arena; i++) {
                 mem_blk_t *b = arena_get_blk(a, i);
                 ASSERT(list_find(&(a->desc->free_list), &(b->tag)));
-                list_erase( &(b->tag));
+                list_erase(&(b->tag));
             }
+            ASSERT(list_empty(&(a->arena_lock.wait_list)));
             k_free_pages(a, 1);
+        } else {
+            mutex_unlock(&(a->arena_lock));
         }
+
+        mutex_unlock(&(a->desc->lock));
     }
 }
 
-void kfree(void *va) {
-    if (va == NULL) {
-        return;
-    }
-    mem_blk_t *mb = (mem_blk_t *)((uintptr_t)va - sizeof(mem_blk_t));
-    if (mb->magic != 0x19971015 || mb->data_addr != (uintptr_t)va) {
-        PANIC("bad pointer for kfree");
-    }
-    INT_STATUS old_status = disable_int();
-    __kfree(mb);
-    set_int_status(old_status);
+void kfree(void *kva) {
+    __kfree(kva);
 }
 
 void vmm_init() {
+    first_memblk_t_addr = ROUND_UP_DIV(
+            sizeof(arena_t) + sizeof(mem_blk_t), MEM_BLK_ALIGNMENT
+        ) * MEM_BLK_ALIGNMENT - sizeof(mem_blk_t);
     block_desc_init(k_mem_blk_descs);
 }
 
@@ -251,10 +260,10 @@ void vmm_print() {
     for (int i = 0; i < NR_MEM_BLK_DESC; i++) {
         kprintf(
             KPL_DEBUG,
-            "blk_size=%d, list_len=%d, first=0x%x, delta=%d, num=%d\n",
+            "blk_size=%d, list_len=%d, delta=%d, num=%d\n",
             k_mem_blk_descs[i].block_size,
             list_length(&(k_mem_blk_descs[i].free_list)),
-            k_mem_blk_descs[i].first, k_mem_blk_descs[i].delta,
+            k_mem_blk_descs[i].delta,
             k_mem_blk_descs[i].nr_blocks_per_arena
         );
     }

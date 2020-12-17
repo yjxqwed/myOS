@@ -301,7 +301,9 @@ void page_decref(ppage_t *p) {
 void pmem_print() {
     INT_STATUS old_status = disable_int();
     mutex_lock(&pmem_lock);
+    kprintf(KPL_DUMP, "\n");
     print_btmp(&pmem_btmp);
+    kprintf(KPL_DUMP, "\n");
     mutex_unlock(&pmem_lock);
     set_int_status(old_status);
 }
