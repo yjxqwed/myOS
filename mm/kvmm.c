@@ -226,12 +226,18 @@ static void __kfree(void *kva) {
         mutex_lock(&(a->desc->lock));
         ASSERT(!list_find(&(a->desc->free_list), &(mb->tag)));
         list_push_front(&(a->desc->free_list), &(mb->tag));
+        INT_STATUS old_status = disable_int();
+        kprintf(KPL_DEBUG, "PUSH. mb->data=0x%X\n", mb->data_addr);
+        set_int_status(old_status);
         mutex_lock(&(a->arena_lock));
         (a->cnt)++;
         if (a->cnt == a->desc->nr_blocks_per_arena) {
             // all blocks in a are freed, a can be freed
             for (uint32_t i = 0; i < a->desc->nr_blocks_per_arena; i++) {
                 mem_blk_t *b = arena_get_blk(a, i);
+                INT_STATUS old_status = disable_int();
+                kprintf(KPL_DEBUG, "b->tag={prev=0x%X, next=0x%X}, b->data=0x%X\n", b->tag.prev, b->tag.next, b->data_addr);
+                set_int_status(old_status);
                 ASSERT(list_find(&(a->desc->free_list), &(b->tag)));
                 list_erase(&(b->tag));
             }

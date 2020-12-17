@@ -201,6 +201,15 @@ static void test_kmalloc1() {
     kfree(b7);
 }
 
+static void test_kmalloc2() {
+    uint32_t *b4 = kmalloc(1023);
+    *b4 = 0x12345678;
+    INT_STATUS old_status = disable_int();
+    kprintf(KPL_DEBUG, "b4=0x%X\n", b4);
+    set_int_status(old_status);
+    kfree(b4);
+}
+
 static void test_page_alloc() {
     ppage_t *p0 = pages_alloc(1, GFP_ZERO);
     ppage_t *p1 = pages_alloc(1, GFP_ZERO);
@@ -252,11 +261,12 @@ static void test(void *args) {
     // mutex_unlock(&m);
     // thread_msleep(slp);
     // for (int i = 0; i < 1000000; i++);
-    test_kmalloc();
+    // test_kmalloc();
     // if (id % 17 == 0) {
     //     thread_yield();
     // }
-    test_kmalloc1();
+    // test_kmalloc1();
+    test_kmalloc2();
     // test_k_get_free_pages();
     // test_page_alloc();
     // test_page_ref();
@@ -287,7 +297,7 @@ static void test_parent(void *args) {
     // return;
     // while (1);
     // MAGICBP;
-    int num_threads = 200;
+    int num_threads = 1;
     // task_t **tasks = (task_t **)kmalloc(sizeof(task_t *) * num_threads);
     // int *ids = kmalloc(sizeof(int) * num_threads);
 
@@ -296,7 +306,7 @@ static void test_parent(void *args) {
     // int *ids = (int *)k_get_free_pages(2, GFP_ZERO);
     for (int i = 0; i < num_threads; i++) {
         // ids[i] = i;
-        tasks[i] = thread_start("test", 7, test, i);
+        tasks[i] = thread_start("test", 1, test, i);
     }
     for (int i = 0; i < num_threads; i++) {
         thread_join(tasks[i]);
