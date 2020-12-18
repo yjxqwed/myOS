@@ -15,3 +15,6 @@ From 2020.9
 * <a href="https://book.douban.com/subject/26745156/"> 《操作系统真象还原》 郑钢 </a>
 * <a href=""> 《Linux 内核源代码情景分析》 毛德操，胡希明 </a>
 
+
+# Known Bugs
+1. `kfree` seems buggy. When calling it concurrently, sometimes (very unlikely) there will be a strange page fault exception. page fault addr = `0x28`

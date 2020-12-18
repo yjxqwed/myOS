@@ -49,7 +49,7 @@ static void print_mutex(mutex_t *mutex) {
     if (mutex->holder == NULL) {
         kprintf(KPL_DEBUG, "holder=NULL,");
     } else {
-        kprintf(KPL_DEBUG, "holder=%s,", mutex->holder->task_name);
+        kprintf(KPL_DEBUG, "holder=0x%X,", mutex->holder);
     }
     kprintf(KPL_DEBUG, "repeat_nr=%d}", mutex->holder_repeat_nr);
 }
@@ -87,7 +87,8 @@ void mutex_unlock(mutex_t *mutex) {
     // print_mutex(mutex);
     ASSERT(mutex->holder != NULL);
     // if (mutex->holder != curr) {
-    //     kprintf(KPL_PANIC, "mutex=0x%X, curr=0x%X\n", mutex, curr);
+    //     print_mutex(mutex);
+    //     kprintf(KPL_PANIC, "curr=0x%X\n", curr);
     // }
     ASSERT(mutex->holder == curr);
     ASSERT(mutex->holder_repeat_nr > 0);

@@ -5,7 +5,7 @@
 #include <thread/thread.h>
 
 void printISRParam(const isrp_t* p) {
-    kprintf(KPL_PANIC, " {eip=%x; errco=%x}", p->eip, p->err_code);
+    kprintf(KPL_PANIC, " {eip=%x; errco=%x; eax=0x%x}", p->eip, p->err_code, p->eax);
 }
 
 void panic_spin(

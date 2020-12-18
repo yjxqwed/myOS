@@ -261,11 +261,11 @@ static void test(void *args) {
     // mutex_unlock(&m);
     // thread_msleep(slp);
     // for (int i = 0; i < 1000000; i++);
-    // test_kmalloc();
+    test_kmalloc();
     // if (id % 17 == 0) {
     //     thread_yield();
     // }
-    // test_kmalloc1();
+    test_kmalloc1();
     test_kmalloc2();
     // test_k_get_free_pages();
     // test_page_alloc();

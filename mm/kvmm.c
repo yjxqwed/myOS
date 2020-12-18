@@ -248,6 +248,7 @@ static void __kfree(void *kva) {
         // set_int_status(old_status);
         mutex_lock(&(a->arena_lock));
         (a->cnt)++;
+        bool_t a_freed = False;
         if (a->cnt == a->desc->nr_blocks_per_arena) {
             // all blocks in a are freed, a can be freed
             for (uint32_t i = 0; i < a->desc->nr_blocks_per_arena; i++) {
@@ -258,13 +259,13 @@ static void __kfree(void *kva) {
                 ASSERT(list_find(&(a->desc->free_list), &(b->tag)));
                 list_erase(&(b->tag));
             }
-            ASSERT(list_empty(&(a->arena_lock.wait_list)));
-            mutex_unlock(&(a->arena_lock));
-            k_free_pages(a, 1);
-        } else {
-            mutex_unlock(&(a->arena_lock));
+            a_freed = True;
         }
-
+        mutex_unlock(&(a->arena_lock));
+        if (a_freed) {
+            ASSERT(list_empty(&(a->arena_lock.wait_list)));
+            k_free_pages(a, 1);
+        }
         mutex_unlock(&(a->desc->lock));
     }
 }
