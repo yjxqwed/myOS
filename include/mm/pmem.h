@@ -101,4 +101,7 @@ int page_map(pde_t *pgdir, void *va, ppage_t *p, uint32_t perm);
 // @param pd the page direcotry to be initialized.
 void page_dir_init(pde_t *pd);
 
+// @brief load pd to cr3 if pd is not NULL,
+//        else load kern_pg_dir
+void load_page_dir(pde_t *pd);
 #endif

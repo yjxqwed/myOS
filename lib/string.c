@@ -144,5 +144,5 @@ char* strncpy(const char* src, char* dest, uint32_t n) {
 }
 
 void *memcpy(const void *src, void *dest, uint32_t n) {
-    strncpy((const char *)src, (char *)dest, n);
+    return strncpy((const char *)src, (char *)dest, n);
 }

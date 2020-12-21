@@ -440,6 +440,18 @@ int page_map(pde_t *pgdir, void *va, ppage_t *p, uint32_t perm) {
     return ERR_NO_ERR;
 }
 
+
 void page_dir_init(pde_t *pd) {
-    
+    for (int i = __pde_idx(KERNEL_BASE); i < NRPDE; i++) {
+        pd[i] = kern_pg_dir[i];
+    }
+}
+
+
+void load_page_dir(pde_t *pd) {
+    if (pd == NULL) {
+        lcr3(__pa(kern_pg_dir));
+    } else {
+        lcr3(__pa(pd));
+    }
 }

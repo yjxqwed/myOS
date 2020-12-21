@@ -6,6 +6,7 @@
 #include <common/debug.h>
 #include <common/types.h>
 #include <kprintf.h>
+#include <sys/tss.h>
 
 typedef struct ThreadStack {
     uint32_t ebp;
@@ -75,6 +76,16 @@ static inline task_t *task_pop_back(list_t *l) {
     }
 }
 
+void task_push_back_ready(task_t *t) {
+    task_push_back(&task_ready_list, t);
+}
+
+void task_push_back_all(task_t *t) {
+    ASSERT(get_int_status() == INTERRUPT_OFF);
+    ASSERT(!list_find(&task_all_list, &(t->list_all_tag)));
+    list_push_back(&task_all_list, &(t->list_all_tag));
+}
+
 static void clear_exit_q();
 
 static void thread_run_func(thread_func_t func, void *args) {
@@ -110,9 +121,9 @@ static void task_init(
     list_init(&(task->join_list));
 }
 
-static task_t *task_create(
-    const char *name, uint16_t prio, thread_func_t func,
-    void *args
+task_t *task_create(
+    const char *name, uint16_t prio,
+    thread_func_t func, void *args
 ) {
     // if (num_tasks >= MAX_TASKS) {
     //     return NULL;
@@ -153,9 +164,11 @@ task_t *thread_start(
     }
     INT_STATUS old_status = disable_int();
     ASSERT(task->status == TASK_READY);
-    task_push_back(&task_ready_list, task);
-    ASSERT(!list_find(&task_all_list, &(task->list_all_tag)));
-    list_push_back(&task_all_list, &(task->list_all_tag));
+    // task_push_back(&task_ready_list, task);
+    // ASSERT(!list_find(&task_all_list, &(task->list_all_tag)));
+    // list_push_back(&task_all_list, &(task->list_all_tag));
+    task_push_back_ready(task);
+    task_push_back_all(task);
     set_int_status(old_status);
     return task;
 }
@@ -204,6 +217,12 @@ static void schedule() {
     next->status = TASK_RUNNING;
     current_task = next;
     if (old != next) {
+        load_page_dir(next->pg_dir);
+        if (next->pg_dir != NULL) {
+            // if next is a user process, the kernel stack should always
+            // be empty when in the user mode
+            tss_update_esp0((uint32_t)next + PAGE_SIZE);
+        }
         extern void switch_to(task_t *prev, task_t *next);
         switch_to(old, next);
     }

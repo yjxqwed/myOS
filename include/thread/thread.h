@@ -93,6 +93,13 @@ void print_ready_tasks();
 void print_exit_tasks();
 void print_sleeping_tasks();
 
+void task_push_back_ready(task_t *t);
+void task_push_back_all(task_t *t);
+task_t *task_create(
+    const char *name, uint16_t prio,
+    thread_func_t func, void *args
+);
+
 void thread_yield();
 
 // thread block self and set self status 

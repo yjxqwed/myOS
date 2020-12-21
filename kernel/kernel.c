@@ -5,6 +5,7 @@
 #include <thread/sync.h>
 #include <mm/kvmm.h>
 #include <common/debug.h>
+#include <thread/process.h>
 
 static void kmain(void *args) {
     kprintf(KPL_DEBUG, "main thread!\n");
@@ -461,6 +462,11 @@ static dead2(void *args) {
     mutex_unlock(&m2);
 }
 
+static void proc1() {
+    MAGICBP;
+    while (1);
+}
+
 
 void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
@@ -506,5 +512,9 @@ void kernelMain() {
     // kfree(b2);
     // pmem_print();
     // vmm_print();
-    while (1);
+    process_execute(proc1, "proc1");
+    while (1) {
+        thread_msleep(1000);
+        kprintf(KPL_DEBUG, "kernel still works\n");
+    }
 }

@@ -253,6 +253,10 @@ static inline void hlt() {
 // IF is bit 9 of eflags
 #define EFLAGS_IF_MASK 0x00000200
 
+#define EFLAGS_MSB(x)  ((x) << 1)
+#define EFLAGS_IF(x)   ((x) << 9)
+#define EFLAGS_IOPL(x) ((x) << 12)
+
 // for enable/disable interrupts (by setting/clearing IF)
 
 typedef enum INT_STATUS {

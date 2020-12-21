@@ -46,4 +46,6 @@ typedef struct TaskStateSegment tss_t;
 
 void init_tss(tss_t *tss_pointer);
 
+void tss_update_esp0(uint32_t esp0);
+
 #endif

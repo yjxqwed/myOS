@@ -12,3 +12,8 @@ void init_tss(tss_t *tss_pointer) {
     tss_pointer->ss0 = SELECTOR_KSTK;
     tss_pointer->iomap_base = tss_size;
 }
+
+
+void tss_update_esp0(uint32_t esp0) {
+    tss.esp0 = esp0;
+}
