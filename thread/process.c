@@ -24,9 +24,9 @@ static void start_process(void *filename) {
     ppage_t *p = pages_alloc(1, GFP_ZERO);
     ASSERT(p != NULL);
     task_t *curr = get_current_thread();
-    MAGICBP;
-    int ret = page_map(&(curr->pg_dir), KERNEL_BASE - 2 * PAGE_SIZE, p, PTE_USER);
-    MAGICBP;
+    int ret = page_map(
+        curr->pg_dir, KERNEL_BASE - 2 * PAGE_SIZE, p, PTE_USER | PTE_WRITABLE
+    );
     ASSERT(ret == ERR_NO_ERR);
     esp = KERNEL_BASE - PAGE_SIZE;
     uint32_t eflags = EFLAGS_MSB(1) | EFLAGS_IF(1);

@@ -470,7 +470,6 @@ static void proc1() {
     int a = 1;
     a = bar(a);
     int c = a + 2;
-    MAGICBP;
     while (1);
 }
 
