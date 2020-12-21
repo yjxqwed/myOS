@@ -462,7 +462,14 @@ static dead2(void *args) {
     mutex_unlock(&m2);
 }
 
+static int bar(int a) {
+    return a + 1;
+}
+
 static void proc1() {
+    int a = 1;
+    a = bar(a);
+    int c = a + 2;
     MAGICBP;
     while (1);
 }

@@ -19,7 +19,16 @@ static pde_t *create_pde() {
 static void start_process(void *filename) {
     void *func = filename;
     uint32_t ss = SELECTOR_USTK;
+
     uint32_t esp = 0;
+    ppage_t *p = pages_alloc(1, GFP_ZERO);
+    ASSERT(p != NULL);
+    task_t *curr = get_current_thread();
+    MAGICBP;
+    int ret = page_map(&(curr->pg_dir), KERNEL_BASE - 2 * PAGE_SIZE, p, PTE_USER);
+    MAGICBP;
+    ASSERT(ret == ERR_NO_ERR);
+    esp = KERNEL_BASE - PAGE_SIZE;
     uint32_t eflags = EFLAGS_MSB(1) | EFLAGS_IF(1);
     uint32_t cs = SELECTOR_UCODE;
     uint32_t eip = (uint32_t)func;
