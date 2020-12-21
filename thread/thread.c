@@ -226,7 +226,7 @@ void time_scheduler() {
 static void print_tasks(const list_t *l) {
     char *name;
     if (l == &task_all_list) {
-        name = "all";
+        return;
     } else if (l == &task_ready_list) {
         name = "ready";
     } else if (l == &task_exit_list) {

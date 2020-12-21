@@ -20,7 +20,7 @@ global isr%1
 isr%1:
     push byte %1 ; int number
     jmp isr_common_stub
-%endmacro;
+%endmacro
 
 [section .text]
 
@@ -59,7 +59,7 @@ isr_no_err_code 30  ; 30: Reserved
 isr_no_err_code 31  ; 31: Reserved
 
 ; interrupt requests handlers
-; isr 32-47 = irq 0 - 15
+; isr 32 ~ 47 = irq 0 ~ 15
 isr_no_err_code 32  ; 32: IRQ0
 isr_no_err_code 33  ; 33: IRQ1
 isr_no_err_code 34  ; 34: IRQ2

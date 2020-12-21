@@ -468,7 +468,7 @@ void kernelMain() {
     // pmem_print();
     // pmem_print();
     // test_kmalloc();
-    test_thread_kmalloc();
+    // test_thread_kmalloc();
     // pmem_print();
     // test_page_alloc();
     // pmem_print();

@@ -143,9 +143,6 @@ char* strncpy(const char* src, char* dest, uint32_t n) {
     return dest;
 }
 
-// char *strfmt(char *out, const char *fmt, ...) {
-//     if (out == NULL || fmt == NULL) {
-//         return NULL;
-//     }
-
-// }
+void *memcpy(const void *src, void *dest, uint32_t n) {
+    strncpy((const char *)src, (char *)dest, n);
+}

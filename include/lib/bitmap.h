@@ -17,7 +17,7 @@ void bitmap_init(btmp_t *btmp, uint32_t byte_len);
 int bitmap_bit_test(btmp_t *btmp, uint32_t bit_idx);
 
 // return the index of the first region continuous bits of length <len>
-// -1 if no region
+// -1 if no such region
 int bitmap_scan(btmp_t *btmp, uint32_t len);
 
 // set bit <bit_idx> in the bitmap

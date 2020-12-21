@@ -95,4 +95,10 @@ void page_unmap(pde_t *pgdir, void *va);
 //     @param va virtual address, should be page alligned
 //     @param p the physical page
 int page_map(pde_t *pgdir, void *va, ppage_t *p, uint32_t perm);
+
+// @brief init the page directory, will copy the kernel space
+//        to it.
+// @param pd the page direcotry to be initialized.
+void page_dir_init(pde_t *pd);
+
 #endif

@@ -425,6 +425,7 @@ void page_unmap(pde_t *pgdir, void *va) {
     *pte = 0;
 }
 
+
 int page_map(pde_t *pgdir, void *va, ppage_t *p, uint32_t perm) {
     pte_t *pte = pgdir_walk(pgdir, va, True);
     if (pte == NULL) {
@@ -437,4 +438,8 @@ int page_map(pde_t *pgdir, void *va, ppage_t *p, uint32_t perm) {
     *pte = (pte_t)__pg_entry(page2pa(p), PTE_PRESENT | perm);
     page_incref(p);
     return ERR_NO_ERR;
+}
+
+void page_dir_init(pde_t *pd) {
+    
 }

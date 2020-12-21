@@ -16,7 +16,9 @@ typedef uint32_t intptr_t;
 typedef float float32_t;
 typedef double float64_t;
 
+#ifndef NULL
 #define NULL ((void *)0)
+#endif
 
 #define False (0)
 #define True (!False)

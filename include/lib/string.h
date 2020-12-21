@@ -26,7 +26,6 @@ char* strcpy(const char* src, char* dest);
 // dest is not guaranteed to be null terminated
 char* strncpy(const char* src, char* dest, uint32_t n);
 
-// format string to out
-char *strfmt(char *out, const char *fmt, ...);
+void *memcpy(const void *src, void *dest, uint32_t n);
 
 #endif

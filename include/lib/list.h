@@ -46,6 +46,15 @@ void         list_insert_after(list_node_t *a, list_node_t *node);
 // return the first node that pred(node, args) is True
 list_node_t *list_pred(list_t *l, list_node_pred pred, void *args);
 
+typedef void (*list_traversal_func_t)(list_node_t *p);
+
+// @brief traverse list and perform tfunc for every node,
+//        tfunc should not modify the list l itself
+// @param l list pointer
+// @param tfunc traversal function
+void list_traverse(list_t *l, list_traversal_func_t tfunc);
+
+
 #define __list_node_offset(struct_type, member) \
     (uintptr_t)(&((struct_type*)0)->member)
 

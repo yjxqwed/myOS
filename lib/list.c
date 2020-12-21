@@ -148,3 +148,13 @@ void list_erase(list_node_t *node) {
     node->next->prev = node->prev;
     node->next = node->prev = NULL;
 }
+
+void list_traverse(list_t *l, list_traversal_func_t tfunc) {
+    if (l == NULL) {
+        return;
+    }
+    list_node_t *p;
+    for (p = l->head.next; p != &(l->tail); p = p->next) {
+        tfunc(p);
+    }
+}

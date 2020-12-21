@@ -109,7 +109,7 @@ void thread_unblock(task_t *task);
 // get the running thread
 task_t *get_current_thread();
 
-// @brief sleep for milisec, if msec is 0, does nothing
+// @brief sleep for milisec, if msec is 0, yield
 // @param msec time in milisec
 void thread_msleep(uint32_t msec);
 
