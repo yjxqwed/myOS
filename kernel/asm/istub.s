@@ -10,15 +10,15 @@
 %macro isr_no_err_code 1
 global isr%1
 isr%1:
-    push byte 0  ; dummy error code
-    push byte %1 ; int number
+    push 0  ; dummy error code
+    push %1 ; int number
     jmp isr_common_stub
 %endmacro
 
 %macro isr_err_code 1
 global isr%1
 isr%1:
-    push byte %1 ; int number
+    push %1 ; int number
     jmp isr_common_stub
 %endmacro
 
@@ -77,7 +77,7 @@ isr_no_err_code 45  ; 45: IRQ13
 isr_no_err_code 46  ; 46: IRQ14
 isr_no_err_code 47  ; 47: IRQ15
 
-
+isr_no_err_code 128 ; 128: syscall
 
 
 ; The C interrupt handler

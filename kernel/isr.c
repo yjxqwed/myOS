@@ -58,8 +58,12 @@ extern void isr45();
 extern void isr46();
 extern void isr47();
 
+extern void isr128();
+
 #define SETINTDES(x) do { \
-    setInterruptDescriptor(&(_idt[x]), (uint32_t)isr##x, SELECTOR_KCODE, 0x8e); \
+    setInterruptDescriptor( \
+        &(_idt[x]), isr##x, SELECTOR_KCODE, GATE_P_1 | GATE_INT_32 \
+    ); \
 } while (0);
 
 /* Normally, IRQs 0 to 7 are mapped to entries 8 to 15. This
@@ -136,6 +140,11 @@ void setISRs() {
     SETINTDES(45);
     SETINTDES(46);
     SETINTDES(47);
+
+    setInterruptDescriptor(
+        &(_idt[0x80]), isr128, SELECTOR_KCODE,
+        GATE_P_1 | GATE_DPL_3 | GATE_INT_32
+    );
 }
 
 char* cpu_execption_msgs[] = {
@@ -221,8 +230,10 @@ void interrupt_handler(isrp_t *p) {
         cpu_exception_handler(p);
     } else if (int_no <= 47) {
         interrupt_request_handler(p);
+    } else if (int_no == 0x80) {
+        kprintf(KPL_DUMP, "SYSCALL!\n");
     } else {
-        kprintf(KPL_DUMP, "Unknown interrupt!\n");
+        kprintf(KPL_DUMP, "Unknown interrupt! 0x%x\n", int_no);
     }
 }
 

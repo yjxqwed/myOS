@@ -1,6 +1,7 @@
 # build flags
 G_PARAMS = -Wall -m32 -I include -I include/lib -nostdlib -fno-builtin \
-           -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel
+           -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel \
+           -O3
 NASM_PARAMS = -I include -f elf32
 LD_PARAMS = -m elf_i386
 

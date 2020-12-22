@@ -470,6 +470,9 @@ static void proc1() {
     int a = 1;
     a = bar(a);
     int c = a + 2;
+    __asm_volatile(
+        "int 0x80"
+    );
     while (1);
 }
 
