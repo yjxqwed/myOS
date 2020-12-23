@@ -479,6 +479,8 @@ static void proc2() {
     int a = 1;
     a = bar(a);
     int c = a + 2;
+    void *p = sbrk(0);
+    kprintf(KPL_DEBUG, "p=0x%X\n", p);
     write("hello proc2\n");
     while (1);
 }

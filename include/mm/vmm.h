@@ -3,7 +3,6 @@
 
 #include <arch/x86.h>
 #include <common/types.h>
-#include <thread/sync.h>
 
 
 /**
@@ -31,5 +30,7 @@ typedef struct vmm_struct {
     uint32_t code_start;
 
 } vmm_t;
+
+bool_t init_vmm_struct(vmm_t *vmm);
 
 #endif

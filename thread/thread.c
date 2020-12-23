@@ -232,7 +232,8 @@ static void schedule() {
 }
 
 void time_scheduler() {
-    ASSERT(current_task != NULL && current_task->stack_guard == 0x19971125);
+    ASSERT(current_task != NULL);
+    ASSERT(current_task->stack_guard == 0x19971125);
     (current_task->elapsed_ticks)++;
     if (current_task->ticks == 0) {
         ASSERT(!list_find(&task_ready_list, &(current_task->general_tag)));

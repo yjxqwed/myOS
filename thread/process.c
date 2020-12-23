@@ -7,15 +7,6 @@
 #include <sys/gdt.h>
 
 
-static pde_t *create_pde() {
-    pde_t *pd = k_get_free_pages(1, GFP_ZERO);
-    if (pd == NULL) {
-        return NULL;
-    }
-    page_dir_init(pd);
-    return pd;
-}
-
 static void start_process(void *filename) {
     void *func = filename;
     uint32_t ss = SELECTOR_USTK;
@@ -25,9 +16,9 @@ static void start_process(void *filename) {
     ASSERT(p != NULL);
     task_t *curr = get_current_thread();
     int ret = page_map(
-        curr->pg_dir, KERNEL_BASE - 2 * PAGE_SIZE, p, PTE_USER | PTE_WRITABLE
+        curr->vmm->pgdir, KERNEL_BASE - 2 * PAGE_SIZE,
+        p, PTE_USER | PTE_WRITABLE
     );
-    ASSERT(ret == ERR_NO_ERR);
     esp = KERNEL_BASE - PAGE_SIZE;
     uint32_t eflags = EFLAGS_MSB(1) | EFLAGS_IF(1);
     uint32_t cs = SELECTOR_UCODE;
@@ -59,19 +50,16 @@ task_t *process_execute(char *filename, char *name) {
     if (t == NULL) {
         return NULL;
     }
-    // t->pg_dir = create_pde();
-    // if (t->pg_dir == NULL) {
-    //     k_free_pages(t, 1);
-    //     return NULL;
-    // }
     t->vmm = kmalloc(sizeof(vmm_t));
-    if (t->vmm == NULL) {
+    if (t->vmm == NULL || !init_vmm_struct(t->vmm)) {
         k_free_pages(t, 1);
         return NULL;
     }
+    init_vmm_struct(t->vmm);
     INT_STATUS old_status = disable_int();
     ASSERT(t->status == TASK_READY);
     task_push_back_ready(t);
     task_push_back_all(t);
     set_int_status(old_status);
+    return t;
 }
