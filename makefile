@@ -28,7 +28,7 @@ lib_objs = lib/debug.elf32 lib/utils.elf32 \
 
 mm_objs = mm/kvmm.elf32 mm/pmem.elf32 mm/vmm.elf32
 
-usr_asm_objs = usr/src/unistd.elf32
+usr_asm_objs = usr/src/unistd.elf32 usr/src/stdio.elf32
 
 arch_x86_objs = arch/x86/interrupt.elf32
 

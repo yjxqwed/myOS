@@ -10,7 +10,7 @@
 /**
  * @brief write str
  */
-void write(const char *str);
+int write(const char *str);
 
 /**
  * @brief set program brk to __addr

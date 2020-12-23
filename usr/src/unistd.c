@@ -29,8 +29,8 @@
 //     return _syscall0(SYSCALL_GETPID);
 // }
 
-void write(const char* str) {
-    _syscall1(SYSCALL_WRITE, str);
+int write(const char* str) {
+    return _syscall1(SYSCALL_WRITE, str);
 }
 
 void *sbrk(intptr_t __delta) {

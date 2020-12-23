@@ -24,6 +24,7 @@ void syscall_init() {
 
 static void sys_write(const char *str) {
     scrn_puts_safe(str, BLACK, WHITE);
+    return 0;
 }
 
 static void *sys_sbrk(intptr_t __delta) {

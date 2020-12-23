@@ -6,7 +6,9 @@
 #include <mm/kvmm.h>
 #include <common/debug.h>
 #include <thread/process.h>
-#include <unistd.h>
+// #include <usr/include/unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static void kmain(void *args) {
     kprintf(KPL_DEBUG, "main thread!\n");
@@ -480,7 +482,8 @@ static void proc2() {
     a = bar(a);
     int c = a + 2;
     void *p = sbrk(0);
-    kprintf(KPL_DEBUG, "p=0x%X\n", p);
+    // kprintf(KPL_DEBUG, "p=0x%X\n", p);
+    printf("proc2 p=0x%X\n", p);
     write("hello proc2\n");
     while (1);
 }
