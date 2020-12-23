@@ -58,6 +58,7 @@ extern void isr45();
 extern void isr46();
 extern void isr47();
 
+// int 0x80, for syscall
 extern void isr128();
 
 #define SETINTDES(x) do { \
@@ -203,18 +204,7 @@ void interrupt_request_handler(isrp_t *p) {
         outportb(PIC_S_CTL, 0x20);
     }
     outportb(PIC_M_CTL, 0x20);
-    // switch(irq_no) {
-    //     case 0: {
-    //         do_timer(p);
-    //         break;
-    //     } case 1: {
-    //         kb_handler(p);
-    //         break;
-    //     } default: {
-    //         kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
-    //         break;
-    //     }
-    // }
+
     if (handlers[p->int_no] != NULL) {
         handlers[p->int_no](p);
     } else {
@@ -236,7 +226,7 @@ void interrupt_handler(isrp_t *p) {
             handlers[0x80](p);
         }
     } else {
-        kprintf(KPL_DUMP, "Unknown interrupt! 0x%x\n", int_no);
+        // kprintf(KPL_DUMP, "Unknown interrupt! 0x%x\n", int_no);
     }
 }
 

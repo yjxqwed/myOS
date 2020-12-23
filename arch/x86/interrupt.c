@@ -24,12 +24,7 @@ INT_STATUS enable_int() {
 INT_STATUS disable_int() {
     INT_STATUS old_status = get_int_status();
     if (old_status == INTERRUPT_ON) {
-        __asm__ volatile(
-            "cli"
-            :           // output
-            :           // input
-            : "memory"  // clobber/modify (DONT KNOW WHY)
-        );
+        __asm__ volatile("cli");
     }
     return old_status;
 }

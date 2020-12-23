@@ -471,10 +471,15 @@ static void proc1() {
     int a = 1;
     a = bar(a);
     int c = a + 2;
-    // __asm_volatile(
-    //     "int 0x80"
-    // );
     write("hello proc1\n");
+    while (1);
+}
+
+static void proc2() {
+    int a = 1;
+    a = bar(a);
+    int c = a + 2;
+    write("hello proc2\n");
     while (1);
 }
 
@@ -524,6 +529,7 @@ void kernelMain() {
     // pmem_print();
     // vmm_print();
     process_execute(proc1, "proc1");
+    process_execute(proc2, "proc2");
     while (1) {
         thread_msleep(1000);
         kprintf(KPL_DEBUG, "kernel still works\n");

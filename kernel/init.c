@@ -12,7 +12,6 @@
 #include <mm/kvmm.h>
 #include <arch/x86.h>
 #include <thread/thread.h>
-#include <device/console.h>
 #include <sys/syscall.h>
 
 static void test_magic_number(uint32_t magic_number) {
@@ -43,18 +42,30 @@ void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
 
 // setup gdt, idt, etc
 void kinit() {
+    // setup new gdt
     setGlobalDescriptorTable();
+    // setup idt
     setInterruptDescriptorTable();
+    // init pagging system
     kernel_init_paging();
+    // init physical memory management
     pmem_init();
+    // init virtual memory management
     vmm_init();
+    // init thread
     thread_init();
+    // setup task_t for kernel execution flow
     thread_kmain();
-    init_screen();
+    // init syscall
     syscall_init();
-    // print_all_tasks();
+
+    // init device screen
+    init_screen();
+    // init device pit
     timer_init(10000);
+    // init device keyboard
     kb_init();
-    console_init();
+
+    // enable interrupt
     enable_int();
 }
