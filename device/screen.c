@@ -3,6 +3,7 @@
 #include <string.h>
 #include <arch/x86.h>
 #include <thread/sync.h>
+#include <common/debug.h>
 
 static int cursor_row = 0;
 static int cursor_col = 0;
@@ -149,7 +150,8 @@ void scrn_puts_safe(const char *str, COLOR bg, COLOR fg) {
 }
 
 void init_screen() {
-    clear_screen();
-    set_cursor(0, 0);
+    // clear_screen();
+    // __set_cursor(0, 0);
+    // video_mem = VIDEO_MEM;
     mutex_init(&scrn_lock);
 }

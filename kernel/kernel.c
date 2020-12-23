@@ -6,6 +6,7 @@
 #include <mm/kvmm.h>
 #include <common/debug.h>
 #include <thread/process.h>
+#include <unistd.h>
 
 static void kmain(void *args) {
     kprintf(KPL_DEBUG, "main thread!\n");
@@ -470,9 +471,10 @@ static void proc1() {
     int a = 1;
     a = bar(a);
     int c = a + 2;
-    __asm_volatile(
-        "int 0x80"
-    );
+    // __asm_volatile(
+    //     "int 0x80"
+    // );
+    write("hello proc1\n");
     while (1);
 }
 

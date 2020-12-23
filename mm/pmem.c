@@ -356,11 +356,11 @@ void kernel_init_paging() {
         ASSERT(pg_tab != NULL);
         for (int j = 0; j < NRPTE; j++, pfn++) {
             pg_tab[j] = (pte_t)__pg_entry(
-                pfn * PAGE_SIZE, PTE_USER | PTE_PRESENT
+                pfn * PAGE_SIZE, PTE_USER | PTE_PRESENT | PTE_WRITABLE
             );
         }
         kern_pg_dir[i] = (pde_t)__pg_entry(
-            __pa(pg_tab), PTE_USER | PTE_PRESENT
+            __pa(pg_tab), PTE_USER | PTE_PRESENT | PTE_WRITABLE
         );
     }
 
@@ -370,11 +370,11 @@ void kernel_init_paging() {
         ASSERT(pg_tab != NULL);
         for (int j = 0; j <= __pte_idx(va); j++, pfn++) {
             pg_tab[j] = (pte_t)__pg_entry(
-                pfn * PAGE_SIZE, PTE_USER | PTE_PRESENT
+                pfn * PAGE_SIZE, PTE_USER | PTE_PRESENT | PTE_WRITABLE
             );
         }
         kern_pg_dir[__pde_idx(va)] = (pde_t)__pg_entry(
-            __pa(pg_tab), PTE_USER | PTE_PRESENT
+            __pa(pg_tab), PTE_USER | PTE_PRESENT | PTE_WRITABLE
         );
     }
 

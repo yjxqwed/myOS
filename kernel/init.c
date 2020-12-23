@@ -13,6 +13,7 @@
 #include <arch/x86.h>
 #include <thread/thread.h>
 #include <device/console.h>
+#include <sys/syscall.h>
 
 static void test_magic_number(uint32_t magic_number) {
     // check magic number
@@ -49,6 +50,8 @@ void kinit() {
     vmm_init();
     thread_init();
     thread_kmain();
+    init_screen();
+    syscall_init();
     // print_all_tasks();
     timer_init(10000);
     kb_init();
