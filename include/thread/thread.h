@@ -4,6 +4,7 @@
 #include <common/types.h>
 #include <list.h>
 #include <arch/x86.h>
+#include <mm/vmm.h>
 
 #define MAX_TASKS 256
 
@@ -51,7 +52,10 @@ typedef struct Task {
 
     // process has its own page directory
     // (virtual address)
-    pde_t *pg_dir;
+    // pde_t *pg_dir;
+
+    // process has its own address space
+    vmm_t *vmm;
 
     // list of threads join this thread
     list_t join_list;

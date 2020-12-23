@@ -5,9 +5,23 @@
  *  myOS syscalls
  */
 
+#include <common/types.h>
+
 /**
- * @brief write str 
+ * @brief write str
  */
 void write(const char *str);
+
+/**
+ * @brief set program brk to __addr
+ * @return 0 on success
+ */
+int brk(uintptr_t __addr);
+
+/**
+ * @brief change program brk by __delta bytes
+ * @return new program brk
+ */
+void *sbrk(intptr_t __delta);
 
 #endif

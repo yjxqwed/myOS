@@ -7,10 +7,17 @@
 // Here are some information of myOS
 
 // myOS requires at least 128 MiB physical memory
-#define MIN_MEMORY_LIMIT_MB (128)
+#define MIN_MEMORY_LIMIT_MB 128
 
-// myOS kernel use high 2G virtual address space
-#define KERNEL_BASE (0x80000000)
+// myOS kernel uses high 2G virtual address space
+#define KERNEL_BASE 0x80000000
+
+
+#define USER_STACK_BOTTOM (KERNEL_BASE - 4 * PAGE_SIZE)
+// user stack size limit 8MiB
+#define USER_STACK_LIMIT 0x00800000
+
+#define USER_HEAP_BOTTOM 0x02000000
 
 // kernel space physical address
 #define __pa(x) (uintptr_t)((uintptr_t)(x) - KERNEL_BASE)

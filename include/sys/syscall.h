@@ -4,6 +4,8 @@
 enum {
     SYSCALL_GETPID,
     SYSCALL_WRITE,
+    SYSCALL_BRK,
+    SYSCALL_SBRK,
     NUM_SYSCALL
 };
 

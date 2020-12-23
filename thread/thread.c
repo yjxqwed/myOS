@@ -150,7 +150,8 @@ task_t *task_create(
     // end of init thread stack
 
     task->elapsed_ticks = 0;
-    task->pg_dir = NULL;
+    // task->pg_dir = NULL;
+    task->vmm = NULL;
     return task;
 }
 
@@ -217,11 +218,13 @@ static void schedule() {
     next->status = TASK_RUNNING;
     current_task = next;
     if (old != next) {
-        load_page_dir(next->pg_dir);
-        if (next->pg_dir != NULL) {
+        if (next->vmm != NULL) {
             // if next is a user process, the kernel stack should always
             // be empty when in the user mode
             tss_update_esp0((uint32_t)next + PAGE_SIZE);
+            load_page_dir(next->vmm->pgdir);
+        } else {
+            load_page_dir(NULL);
         }
         extern void switch_to(task_t *prev, task_t *next);
         switch_to(old, next);

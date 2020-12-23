@@ -59,8 +59,13 @@ task_t *process_execute(char *filename, char *name) {
     if (t == NULL) {
         return NULL;
     }
-    t->pg_dir = create_pde();
-    if (t->pg_dir == NULL) {
+    // t->pg_dir = create_pde();
+    // if (t->pg_dir == NULL) {
+    //     k_free_pages(t, 1);
+    //     return NULL;
+    // }
+    t->vmm = kmalloc(sizeof(vmm_t));
+    if (t->vmm == NULL) {
         k_free_pages(t, 1);
         return NULL;
     }
