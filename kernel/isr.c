@@ -221,9 +221,8 @@ void interrupt_handler(isrp_t *p) {
     } else if (int_no <= 47) {
         interrupt_request_handler(p);
     } else if (int_no == 0x80) {
-        kprintf(KPL_DUMP, "SYSCALL!\n");
         if (handlers[0x80] != NULL) {
-            handlers[0x80](p);
+            p->eax = handlers[0x80](p);
         }
     } else {
         // kprintf(KPL_DUMP, "Unknown interrupt! 0x%x\n", int_no);

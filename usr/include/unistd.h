@@ -24,4 +24,9 @@ int brk(uintptr_t __addr);
  */
 void *sbrk(intptr_t __delta);
 
+/**
+ * @brief sleep for ms milisec
+ */
+void sleep(uint32_t ms);
+
 #endif

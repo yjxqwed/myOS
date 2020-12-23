@@ -473,8 +473,10 @@ static void proc1() {
     int a = 1;
     a = bar(a);
     int c = a + 2;
-    write("hello proc1\n");
-    while (1);
+    while (1) {
+        sleep(1500);
+        printf("hello proc1\n");
+    }
 }
 
 static void proc2() {

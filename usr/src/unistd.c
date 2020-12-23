@@ -8,8 +8,8 @@
     __asm_volatile( \
         "int 0x80" \
         : "=a"(retval) \
-        : "a"(no)\
-        : \
+        : "a"(no) \
+        : "memory" \
     ); \
     retval; \
 })
@@ -20,7 +20,7 @@
         "int 0x80" \
         : "=a"(retval) \
         : "a"(no), "b"(arg1) \
-        : \
+        : "memory" \
     ); \
     retval; \
 })
@@ -35,4 +35,8 @@ int write(const char* str) {
 
 void *sbrk(intptr_t __delta) {
     return _syscall1(SYSCALL_SBRK, __delta);
+}
+
+void sleep(uint32_t ms) {
+    return _syscall1(SYSCALL_SLEEP, ms);
 }

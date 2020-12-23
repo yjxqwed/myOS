@@ -36,7 +36,7 @@ void setISRs();
 typedef struct InterruptStack isrp_t;
 typedef struct InterruptStack istk_t;
 
-typedef void (*interrupt_handler_t)(isrp_t *p);
+typedef void *(*interrupt_handler_t)(isrp_t *p);
 
 // register handler for interrupt
 void register_handler(uint32_t int_no, interrupt_handler_t handler);
