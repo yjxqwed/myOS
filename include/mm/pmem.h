@@ -60,7 +60,8 @@ void page_decref(ppage_t *p);
 
 void print_page(ppage_t *p);
 
-
+// get the static zero-out-ed page
+ppage_t *get_zpage();
 // page to its kernel virtual address
 void *page2kva(ppage_t *p);
 // page to its physical address
@@ -82,14 +83,14 @@ void install_boot_pg(void);
 // init the kernel's static mappings
 void kernel_init_paging(void);
 
-// unmap the page mapped and including va; 
-// if no page mapped, do nothing
+// @brief unmap the page mapped and including va;
+// if no page mapped, do nothing.
 // kernel won't use this
 //     @param pgdir page directory
 //     @param va virtual address
 void page_unmap(pde_t *pgdir, void *va);
 
-// map the page p at virtual address va; 
+// @brief map the page p at virtual address va;
 // panic if there's already a page mapped at va
 //     @param pgdir page directory
 //     @param va virtual address, should be page alligned

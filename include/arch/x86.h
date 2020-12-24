@@ -65,6 +65,7 @@ typedef PageDirectoryEntry pde_t;
 #define PDE_USER          0x004
 // set to make it writable; clear to make it read-only
 #define PDE_WRITABLE      0x002
+#define PDE_READABLE      0x000
 // set = in mem; clear = swapped-out
 #define PDE_PRESENT       0x001
 
@@ -94,6 +95,7 @@ typedef PageTableEntry pte_t;
 #define PTE_USER          0x004
 // set to make it writable; clear to make it read-only
 #define PTE_WRITABLE      0x002
+#define PTE_READABLE      0x000
 // set = in mem; clear = swapped-out
 #define PTE_PRESENT       0x001
 

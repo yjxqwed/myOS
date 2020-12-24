@@ -20,10 +20,13 @@ struct InterruptDescriptor {
 // | P |  DPL  | S |    GateType   |
 // +---+---+---+---+---+---+---+---+
 
+#define GATE_DPL_0  0x00
 #define GATE_DPL_3  0x60
 #define GATE_P_1    0x80
 // 80386 32-bit interrupt gate
-#define GATE_INT_32 0xe
+#define GATE_INT_32  0xe
+// 80386 32-bit trap gate
+#define GATE_TRAP_32 0xf
 
 typedef struct InterruptDescriptor Gate;
 

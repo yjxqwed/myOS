@@ -33,8 +33,8 @@ int write(const char* str) {
     return _syscall1(SYSCALL_WRITE, str);
 }
 
-void *sbrk(intptr_t __delta) {
-    return _syscall1(SYSCALL_SBRK, __delta);
+void *brk(uintptr_t __addr) {
+    return _syscall1(SYSCALL_BRK, __addr);
 }
 
 void sleep(uint32_t ms) {

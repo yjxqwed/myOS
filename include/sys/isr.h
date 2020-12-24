@@ -28,7 +28,9 @@ struct InterruptStack {
     // == interrupt number, error code ==
     uint32_t int_no, err_code;
     // == pushed by the processor automatically ==
-    uint32_t eip, cs, eflags, esp, ss;
+    uint32_t eip, cs, eflags;
+    // these 2 regs will be pushed when a privilege level change happens
+    uint32_t esp, ss;
 };
 
 void setISRs();

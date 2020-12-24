@@ -5,11 +5,13 @@
 #include <thread/thread.h>
 #include <common/types.h>
 #include <common/debug.h>
+#include <common/utils.h>
 #include <thread/thread.h>
+#include <mm/pmem.h>
 
 static int sys_write(const char *str);
-static void *sys_sbrk(intptr_t __delta);
-static int sys_brk(uintptr_t __addr);
+// static void *sys_sbrk(intptr_t __delta);
+static void *sys_brk(uintptr_t __addr);
 static void *sys_sleep(uint32_t ms);
 
 typedef void * (*syscall_handler0_t)(void);
@@ -33,7 +35,8 @@ static void *syscall_handler(isrp_t *p) {
 
 void syscall_init() {
     handlers[SYSCALL_WRITE] = sys_write;
-    handlers[SYSCALL_SBRK] = sys_sbrk;
+    handlers[SYSCALL_BRK] = sys_brk;
+    // handlers[SYSCALL_SBRK] = sys_sbrk;
     handlers[SYSCALL_SLEEP] = sys_sleep;
     register_handler(0x80, syscall_handler);
 }
@@ -43,17 +46,58 @@ static int sys_write(const char *str) {
     return 0;
 }
 
-static void *sys_sbrk(intptr_t __delta) {
+static void *sys_brk(uintptr_t __addr) {
     vmm_t *vmm = get_current_thread()->vmm;
+    // TODO: need to dev a lock to protect vmm
+    ASSERT(vmm != NULL);
+    void *retval = NULL;
     if (vmm == NULL) {
-        return -1;
-    }
-    if (__delta == 0) {
-        return vmm->heap_top;
+        retval = SYSCALL_FAIL;
     } else {
-        return (void *)-1;
+        uintptr_t new_top = ROUND_UP_DIV(__addr, PAGE_SIZE) * PAGE_SIZE;
+        if (
+            new_top >= vmm->heap_bot &&
+            new_top <= (vmm->heap_bot + USER_HEAP_LIMIT)
+        ) {
+            // only handle good request
+            if (new_top < vmm->heap_top) {
+                // shrink heap
+                for (
+                    uint32_t brk = new_top;
+                    brk < vmm->heap_top;
+                    brk += PAGE_SIZE
+                ) {
+                    page_unmap(vmm->pgdir, brk);
+                }
+            } else if (new_top > vmm->heap_top) {
+                // expand heap
+                ppage_t *zp = get_zpage();
+                for (
+                    uint32_t brk = vmm->heap_top;
+                    brk < new_top;
+                    brk += PAGE_SIZE
+                ) {
+                    page_map(vmm->pgdir, brk, zp, PTE_USER | PTE_READABLE);
+                }
+            }
+            vmm->heap_top = new_top;
+        }
+        retval = vmm->heap_top;
     }
+    return retval;
 }
+
+// static void *sys_sbrk(intptr_t __delta) {
+//     vmm_t *vmm = get_current_thread()->vmm;
+//     if (vmm == NULL) {
+//         return SYSCALL_FAIL;
+//     }
+//     if (__delta == 0) {
+//         return vmm->heap_top;
+//     } else {
+//         return SYSCALL_FAIL;
+//     }
+// }
 
 static void *sys_sleep(uint32_t ms) {
     thread_msleep(ms);

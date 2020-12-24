@@ -27,6 +27,8 @@ static uint32_t total_mem_mb = 0;
 // total physical pages
 static uint32_t nppages = 0;
 
+static ppage_t *zpage = NULL;
+
 
 /***********************************************************
  * The machine is installed with physical memory size of N *
@@ -193,6 +195,9 @@ ppage_t *pa2page(void *pa) {
 
 static mutex_t pmem_lock;
 
+static ppage_t *__pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags);
+static void __page_incref(ppage_t *p);
+
 void print_page(ppage_t *p) {
     if (p == NULL) {
         kprintf(KPL_DEBUG, "NULL");
@@ -241,28 +246,71 @@ void pmem_init() {
     kprintf(KPL_DEBUG, "pmem_btmp=");
     print_btmp(&pmem_btmp);
     kprintf(KPL_DEBUG, "\n");
+
+    zpage = __pages_alloc(1, GFP_ZERO);
+    __page_incref(zpage);
+
 }
 
 
-ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
+ppage_t *get_zpage() {
+    return zpage;
+}
+
+
+static ppage_t *__pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
     if (pg_cnt == 0) {
         return NULL;
     }
-    mutex_lock(&pmem_lock);
     int idx = bitmap_scan(&pmem_btmp, pg_cnt);
     if (idx == -1) {
-        mutex_unlock(&pmem_lock);
         return NULL;
     }
     for (int i = 0, j = idx; i < pg_cnt; i++, j++) {
         bitmap_set(&pmem_btmp, j, 1);
     }
     ppage_t *fp = &(pmap[idx]);
-    mutex_unlock(&pmem_lock);
     if (gfp_flags & GFP_ZERO) {
         memset(page2kva(fp), 0, PAGE_SIZE * pg_cnt);
     }
     return fp;
+}
+
+
+ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
+    // if (pg_cnt == 0) {
+    //     return NULL;
+    // }
+    // mutex_lock(&pmem_lock);
+    // int idx = bitmap_scan(&pmem_btmp, pg_cnt);
+    // if (idx == -1) {
+    //     mutex_unlock(&pmem_lock);
+    //     return NULL;
+    // }
+    // for (int i = 0, j = idx; i < pg_cnt; i++, j++) {
+    //     bitmap_set(&pmem_btmp, j, 1);
+    // }
+    // ppage_t *fp = &(pmap[idx]);
+    // mutex_unlock(&pmem_lock);
+    // if (gfp_flags & GFP_ZERO) {
+    //     memset(page2kva(fp), 0, PAGE_SIZE * pg_cnt);
+    // }
+    // return fp;
+    ppage_t *fp = NULL;
+    mutex_lock(&pmem_lock);
+    fp = __pages_alloc(pg_cnt, GFP_ZERO);
+    mutex_unlock(&pmem_lock);
+    return fp;
+}
+
+
+static void __page_incref(ppage_t *p) {
+    ASSERT(p != NULL);
+    if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
+        PANIC("incref a free page");
+    }
+
+    (p->num_ref)++;
 }
 
 

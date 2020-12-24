@@ -9,6 +9,7 @@
 // #include <usr/include/unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static void kmain(void *args) {
     kprintf(KPL_DEBUG, "main thread!\n");
@@ -483,9 +484,15 @@ static void proc2() {
     int a = 1;
     a = bar(a);
     int c = a + 2;
-    void *p = sbrk(0);
+    // void *p = sbrk(0);
     // kprintf(KPL_DEBUG, "p=0x%X\n", p);
+    void *p = brk(0);
     printf("proc2 p=0x%X\n", p);
+    void *p1 = brk(p + 27 * PAGE_SIZE);
+    c = *(int *)p;
+    printf("proc2 c=0x%X\n", c);
+    *(int *)p = 0x123;
+    printf("proc2 p1=0x%X\n", p1);
     write("hello proc2\n");
     while (1);
 }

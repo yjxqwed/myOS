@@ -18,6 +18,8 @@
 #define USER_STACK_LIMIT 0x00800000
 
 #define USER_HEAP_BOTTOM 0x02000000
+// user heap size limit 512MiB
+#define USER_HEAP_LIMIT 0x20000000
 
 // kernel space physical address
 #define __pa(x) (uintptr_t)((uintptr_t)(x) - KERNEL_BASE)

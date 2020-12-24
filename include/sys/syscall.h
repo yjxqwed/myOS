@@ -3,15 +3,22 @@
 
 #define NUM_SYSCALL 32
 
+#define SYSCALL_FAIL ((void *)-1)
+
 enum {
     SYSCALL_ARG0 = 0,
+
     SYSCALL_GETPID,
+
     SYSCALL_ARG1,
+
     SYSCALL_WRITE,
     SYSCALL_BRK,
-    SYSCALL_SBRK,
+    // SYSCALL_SBRK,
     SYSCALL_SLEEP,
+
     SYSCALL_ARG2,
+
     SYSCALL_ARG3
 };
 
