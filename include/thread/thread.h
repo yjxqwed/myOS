@@ -1,6 +1,8 @@
 #ifndef __THREAD_H__
 #define __THREAD_H__
 
+typedef struct Task task_t;
+
 #include <common/types.h>
 #include <list.h>
 #include <arch/x86.h>
@@ -29,7 +31,7 @@ typedef enum TaskStatus {
 #define TASK_NAME_LEN 16
 
 // the task struct
-typedef struct Task {
+struct Task {
 
     // the stack pointer to the stack used by this task
     // in the kernel mode
@@ -66,7 +68,7 @@ typedef struct Task {
     // a magic number to guard this struct
     uint32_t stack_guard;
 
-} task_t;
+};
 
 
 // start a new thread; return 0 on scuess

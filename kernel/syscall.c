@@ -48,13 +48,13 @@ static int sys_write(const char *str) {
 
 static void *sys_brk(uintptr_t __addr) {
     vmm_t *vmm = get_current_thread()->vmm;
-    // TODO: need to dev a lock to protect vmm
     ASSERT(vmm != NULL);
     void *retval = NULL;
     if (vmm == NULL) {
         retval = SYSCALL_FAIL;
     } else {
         uintptr_t new_top = ROUND_UP_DIV(__addr, PAGE_SIZE) * PAGE_SIZE;
+        mutex_lock(vmm->vmm_mutex);
         if (
             new_top >= vmm->heap_bot &&
             new_top <= (vmm->heap_bot + USER_HEAP_LIMIT)
@@ -83,6 +83,7 @@ static void *sys_brk(uintptr_t __addr) {
             vmm->heap_top = new_top;
         }
         retval = vmm->heap_top;
+        mutex_unlock(vmm->vmm_mutex);
     }
     return retval;
 }

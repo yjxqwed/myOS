@@ -13,7 +13,13 @@ static pde_t *create_pde() {
     return pd;
 }
 
+
 bool_t init_vmm_struct(vmm_t *vmm) {
+    vmm->vmm_mutex = (mutex_t *)kmalloc(sizeof(mutex_t));
+    if (vmm->vmm_mutex == NULL) {
+        return False;
+    }
+    mutex_init(vmm->vmm_mutex);
     vmm->pgdir = create_pde();
     if (vmm->pgdir == NULL) {
         return False;

@@ -1,15 +1,20 @@
 #ifndef __VMM_H__
 #define __VMM_H__
 
+typedef struct vmm_struct vmm_t;
+
 #include <arch/x86.h>
 #include <common/types.h>
+#include <thread/sync.h>
 
 
 /**
  * @brief struct related to process address space
  */
-typedef struct vmm_struct {
+struct vmm_struct {
+
     pde_t *pgdir;
+    mutex_t *vmm_mutex;
 
     uint32_t args_end;
     uint32_t args_start;
@@ -29,7 +34,7 @@ typedef struct vmm_struct {
     uint32_t code_end;
     uint32_t code_start;
 
-} vmm_t;
+};
 
 bool_t init_vmm_struct(vmm_t *vmm);
 
