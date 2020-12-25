@@ -186,14 +186,17 @@ static void *__kmalloc(uint32_t size) {
             for (uint32_t i = 0; i < desc->nr_blocks_per_arena; i++) {
                 mem_blk_t *b = arena_get_blk(a, i);
                 mem_blk_init(b);
-                ASSERT(!list_find(&(desc->free_list), &(b->tag)));
-                list_push_back(&(desc->free_list), &(b->tag));
+                // ASSERT(!list_find(&(desc->free_list), &(b->tag)));
+                // list_push_back(&(desc->free_list), &(b->tag));
+                __list_push_back(&(desc->free_list), b, tag);
             }
         }
         ASSERT(!list_empty(&(desc->free_list)));
-        list_node_t *p = list_pop_front(&(desc->free_list));
-        ASSERT(p != NULL);
-        mem_blk_t *b = __list_node_struct(mem_blk_t, tag, p);
+        // list_node_t *p = list_pop_front(&(desc->free_list));
+        // ASSERT(p != NULL);
+        // mem_blk_t *b = __container_of(mem_blk_t, tag, p);
+        mem_blk_t *b = __list_pop_front(&(desc->free_list), mem_blk_t, tag);
+        ASSERT(b != NULL);
         arena_t *a = arena_of_blk(b);
         mutex_lock(&(a->arena_lock));
         (a->cnt)--;
@@ -217,7 +220,7 @@ static void print(list_t *l) {
         p != &(l->tail);
         p = p->next
     ) {
-        mem_blk_t *m = __list_node_struct(mem_blk_t, tag, p);
+        mem_blk_t *m = __container_of(mem_blk_t, tag, p);
         kprintf(KPL_DEBUG, "{0x%X}->", m->data_addr);
     }
     kprintf(KPL_DEBUG, "tail\n");
@@ -238,10 +241,12 @@ static void __kfree(void *kva) {
         k_free_pages(a, a->cnt);
     } else {
         ASSERT(a->desc != NULL);
-        mutex_lock(&(a->desc->lock));
+        mutex_t *desc_lock = &(a->desc->lock);
+        mutex_lock(desc_lock);
         // print(&(a->desc->free_list));
-        ASSERT(!list_find(&(a->desc->free_list), &(mb->tag)));
-        list_push_front(&(a->desc->free_list), &(mb->tag));
+        // ASSERT(!list_find(&(a->desc->free_list), &(mb->tag)));
+        // list_push_front(&(a->desc->free_list), &(mb->tag));
+        __list_push_front(&(a->desc->free_list), mb, tag);
         // INT_STATUS old_status = disable_int();
         // kprintf(KPL_DEBUG, "PUSH. mb->data=0x%X\n", mb->data_addr);
         // print(&(a->desc->free_list));
@@ -266,7 +271,7 @@ static void __kfree(void *kva) {
             ASSERT(list_empty(&(a->arena_lock.wait_list)));
             k_free_pages(a, 1);
         }
-        mutex_unlock(&(a->desc->lock));
+        mutex_unlock(desc_lock);
     }
 }
 

@@ -5,7 +5,13 @@
 #include <thread/thread.h>
 
 void printISRParam(const isrp_t* p) {
-    kprintf(KPL_PANIC, " {eip=%x; errco=%x; eax=0x%x}", p->eip, p->err_code, p->eax);
+    kprintf(
+        KPL_PANIC, 
+        "\n{eip=%x; errco=%x; "
+        "edi=%X, esi=%X, ebx=%X, edx=%X, ecx=%X, eax=%X}\n",
+        p->eip, p->err_code,
+        p->edi, p->esi, p->ebx, p->edx, p->ecx, p->eax, p->eax
+    );
 }
 
 void panic_spin(

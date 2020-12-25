@@ -17,4 +17,4 @@ From 2020.9
 
 
 # Known Bugs
-1. `kfree` seems buggy. When calling it concurrently, sometimes (very unlikely) there will be a strange page fault exception. page fault addr = `0x28`
+1. ~~`kfree` seems buggy. When calling it concurrently, sometimes (very unlikely) there will be a strange page fault exception. page fault addr = `0x28`~~ FIXED

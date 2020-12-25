@@ -55,16 +55,84 @@ typedef void (*list_traversal_func_t)(list_node_t *p);
 void list_traverse(list_t *l, list_traversal_func_t tfunc);
 
 
-#define __list_node_offset(struct_type, member) \
+#define __member_offset(struct_type, member) \
     (uintptr_t)(&((struct_type*)0)->member)
 
-// get the struct from a list_node pointer
+// get the container struct pointer from a list_node pointer
 // @param struct_type the type name of the target struct
 // @param member the field name of node_ptr
 // @param node_ptr the pointer to the list_node_t type
-#define __list_node_struct(struct_type, member, node_ptr) \
+#define __container_of(struct_type, member, node_ptr) \
     (struct_type*)( \
-        (uintptr_t)node_ptr - __list_node_offset(struct_type, member) \
+        (uintptr_t)node_ptr - __member_offset(struct_type, member) \
     )
+
+/**
+ * @brief list iteration
+ * @param list pointer to list
+ * @param node_ptr the list node pointer for interation
+ */
+#define __list_for_each(list, node_ptr) \
+    for ( \
+        node_ptr = list->head.next; \
+        node_ptr != &(list->tail); \
+        node_ptr = node_ptr->next \
+    )
+
+/**
+ * @brief push front
+ * @param list pointer to list
+ * @param container_ptr pointer to container
+ * @param member field name of the list_node_t of the container type
+ */
+#define __list_push_front(list, container_ptr, member) { \
+    ASSERT(list != NULL && container_ptr != NULL); \
+    list_node_t *p = &(container_ptr->member); \
+    ASSERT(!list_find(list, p)); \
+    list_push_front(list, p); \
+}
+
+/**
+ * @brief push back
+ * @param list pointer to list
+ * @param container_ptr pointer to container
+ * @param member field name of the list_node_t of the container type
+ */
+#define __list_push_back(list, container_ptr, member) { \
+    ASSERT(list != NULL && container_ptr != NULL); \
+    list_node_t *p = &(container_ptr->member); \
+    ASSERT(!list_find(list, p)); \
+    list_push_back(list, p); \
+}
+
+/**
+ * @brief pop front
+ * @param list pointer to list
+ * @param struct_type type of container
+ * @param member field name of the list_node_t of the container type
+ */
+#define __list_pop_front(list, struct_type, member) ({ \
+    struct_type *front = NULL; \
+    list_node_t *p = list_pop_front(list); \
+    if (p != NULL) { \
+        front = __container_of(struct_type, member, p); \
+    } \
+    front; \
+})
+
+/**
+ * @brief pop back
+ * @param list pointer to list
+ * @param struct_type type of container
+ * @param member field name of the list_node_t of the container type
+ */
+#define __list_pop_back(list, struct_type, member) ({ \
+    struct_type *back = NULL; \
+    list_node_t *p = list_pop_back(list); \
+    if (p != NULL) { \
+        back = __container_of(struct_type, member, p); \
+    } \
+    back; \
+})
 
 #endif

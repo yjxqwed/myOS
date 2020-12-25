@@ -492,7 +492,7 @@ static void proc2() {
     c = *(int *)p;
     printf("proc2 c=0x%X\n", c);
     brk(p);
-    c = *(int *)p;
+    // c = *(int *)p;
     printf("proc2 c=0x%X\n", c);
     printf("proc2 p1=0x%X\n", p1);
     write("hello proc2\n");
@@ -504,10 +504,11 @@ void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
     // test_thread();
     // pmem_print();
-    // pmem_print();
+    pmem_print();
+    // MAGICBP;
     // test_kmalloc();
-    // test_thread_kmalloc();
-    // pmem_print();
+    test_thread_kmalloc();
+    pmem_print();
     // test_page_alloc();
     // pmem_print();
     // mutex_init(&mutex1);
