@@ -55,7 +55,7 @@ static ppage_t *pmap = NULL;
 static btmp_t pmem_btmp;
 
 #define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
-static void print_mem_info(multiboot_info_t *mbi) {
+static void analyze_mem_map(multiboot_info_t *mbi) {
     kprintf(KPL_NOTICE, "================ Memory Info ================\n");
     kprintf(KPL_NOTICE, "Flags = 0x%x\n", (uint32_t)mbi->flags);
 
@@ -67,7 +67,7 @@ static void print_mem_info(multiboot_info_t *mbi) {
         );
     }
 
-    uint32_t num_pages = 0;
+    uint32_t num_pages = 0x100000 / 0x1000;
 
     // check mmap
     if (CHECK_FLAG (mbi->flags, 6)) {
@@ -99,13 +99,18 @@ static void print_mem_info(multiboot_info_t *mbi) {
             );
             uint32_t base = mmap->addr;
             uint32_t len = mmap->len;
-            if (base == 0xFFFC0000) {
-                nppages = num_pages;
-                // 1MiB = 0x100 pages
-                total_mem_mb = nppages / 0x100;
-            } else {
-                num_pages = base / 0x1000 + len / 0x1000;
+            if (base >= 0x100000) {
+                if ((base / 0x1000) == num_pages) {
+                    num_pages = base / 0x1000 + len / 0x1000;
+                }
             }
+        } 
+        // 1MiB = 0x100 pages
+        nppages = num_pages;
+        total_mem_mb = nppages / 0x100;
+        if (total_mem_mb > MAX_MEMORY_LIMIT_MB) {
+            total_mem_mb = MAX_MEMORY_LIMIT_MB;
+            nppages = total_mem_mb * 0x100;
         }
     } else {
         kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
@@ -116,7 +121,7 @@ static void print_mem_info(multiboot_info_t *mbi) {
 }
 
 void detect_memory(multiboot_info_t *mbi) {
-    print_mem_info(mbi);
+    analyze_mem_map(mbi);
     if (CHECK_FLAG(mbi->flags, 0)) {
         // mbi->mem_upper is given in KiB
         uint32_t high_free_mem = mbi->mem_upper * 1024;
@@ -127,6 +132,9 @@ void detect_memory(multiboot_info_t *mbi) {
                 "try with >= 128 MiB mem. System Halted.\n"
             );
             while (1);
+        }
+        if (high_free_mem > (MAX_MEMORY_LIMIT_MB  - 1) * 0x100000) {
+            high_free_mem = (MAX_MEMORY_LIMIT_MB  - 1) * 0x100000;
         }
         max_high_pfn = __page_number(HIGH_MEM_BASE + high_free_mem - 1);
         // min_high_pfn is after the kernel image
@@ -278,24 +286,6 @@ static ppage_t *__pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
 
 
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
-    // if (pg_cnt == 0) {
-    //     return NULL;
-    // }
-    // mutex_lock(&pmem_lock);
-    // int idx = bitmap_scan(&pmem_btmp, pg_cnt);
-    // if (idx == -1) {
-    //     mutex_unlock(&pmem_lock);
-    //     return NULL;
-    // }
-    // for (int i = 0, j = idx; i < pg_cnt; i++, j++) {
-    //     bitmap_set(&pmem_btmp, j, 1);
-    // }
-    // ppage_t *fp = &(pmap[idx]);
-    // mutex_unlock(&pmem_lock);
-    // if (gfp_flags & GFP_ZERO) {
-    //     memset(page2kva(fp), 0, PAGE_SIZE * pg_cnt);
-    // }
-    // return fp;
     ppage_t *fp = NULL;
     mutex_lock(&pmem_lock);
     fp = __pages_alloc(pg_cnt, GFP_ZERO);
@@ -393,7 +383,7 @@ void kernel_init_paging() {
     kern_pg_dir = boot_alloc(PAGE_SIZE, True);
     kprintf(KPL_DEBUG, "kern_pg_dir=0x%X\n", (uintptr_t)kern_pg_dir);
     int pfn = 0;
-    uintptr_t va = __va(max_high_pfn * PAGE_SIZE);
+    uintptr_t va = __va((nppages - 1) * PAGE_SIZE);
     kprintf(KPL_DEBUG, "va=0x%X\n", va);
     for (
         int i = __pde_idx(KERNEL_BASE);

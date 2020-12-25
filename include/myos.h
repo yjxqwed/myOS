@@ -8,6 +8,7 @@
 
 // myOS requires at least 128 MiB physical memory
 #define MIN_MEMORY_LIMIT_MB 128
+#define MAX_MEMORY_LIMIT_MB 2048
 
 // myOS kernel uses high 2G virtual address space
 #define KERNEL_BASE 0x80000000

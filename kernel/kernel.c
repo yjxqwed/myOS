@@ -504,11 +504,11 @@ void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
     // test_thread();
     // pmem_print();
-    pmem_print();
+    // pmem_print();
     // MAGICBP;
     // test_kmalloc();
-    test_thread_kmalloc();
-    pmem_print();
+    // test_thread_kmalloc();
+    // pmem_print();
     // test_page_alloc();
     // pmem_print();
     // mutex_init(&mutex1);
@@ -545,10 +545,11 @@ void kernelMain() {
     // kfree(b2);
     // pmem_print();
     // vmm_print();
-    process_execute(proc1, "proc1");
-    process_execute(proc2, "proc2");
-    while (1) {
-        thread_msleep(1000);
-        kprintf(KPL_DEBUG, "kernel still works\n");
-    }
+    // process_execute(proc1, "proc1");
+    // process_execute(proc2, "proc2");
+    // while (1) {
+    //     thread_msleep(1000);
+    //     kprintf(KPL_DEBUG, "kernel still works\n");
+    // }
+    while(1);
 }
