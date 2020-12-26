@@ -249,6 +249,9 @@ static inline void ltr(uint16_t selector_tss) {
 static inline void hlt() {
     __asm_volatile (
         "hlt"
+        :
+        :
+        : "memory"
     );
 }
 

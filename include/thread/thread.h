@@ -87,11 +87,6 @@ void thread_join(task_t *task);
 // init thread related structures
 void thread_init();
 
-// init the main thread's task_struct
-// main thread is the execution flow that have been executing
-// after the bootstrap
-void thread_kmain();
-
 void time_scheduler();
 
 void print_all_tasks();

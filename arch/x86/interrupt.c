@@ -16,7 +16,7 @@ static uint32_t get_eflags() {
 INT_STATUS enable_int() {
     INT_STATUS old_status = get_int_status();
     if (old_status == INTERRUPT_OFF) {
-        __asm__ volatile("sti");
+        __asm__ volatile("sti" : : : "cc");
     }
     return old_status;
 }
@@ -24,7 +24,7 @@ INT_STATUS enable_int() {
 INT_STATUS disable_int() {
     INT_STATUS old_status = get_int_status();
     if (old_status == INTERRUPT_ON) {
-        __asm__ volatile("cli");
+        __asm__ volatile("cli" : : : "cc");
     }
     return old_status;
 }

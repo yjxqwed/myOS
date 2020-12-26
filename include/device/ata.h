@@ -10,7 +10,7 @@
 
 typedef struct Partition partition_t;
 typedef struct Disk disk_t;
-typedef struct ATAChannle ata_channel_t;
+typedef struct ATAChannel ata_channel_t;
 
 #include <common/types.h>
 #include <thread/sync.h>
@@ -36,5 +36,38 @@ struct Partition {
     list_t open_inodes;
 };
 
+
+struct Disk {
+    // name of this disk
+    // for example 'sda'
+    char disk_name[8];
+    // the ata channel to which this disk belongs
+    ata_channel_t *my_channel;
+    // each channel can have at most two devices
+    // 0 for primary and 1 for slave
+    uint8_t dev_no;
+    // at most 4 primary partitions
+    partition_t prim_parts[4];
+    // there can be infinitely many logic partitions
+    // myOS supports at most 8 logic partitions
+    partition_t logic_parts[8];
+};
+
+
+struct ATAChannel {
+    // name of this ata channel
+    // for example 'ata0' or 'ide0'
+    char chan_name[8];
+    // starting port number of this channel
+    uint16_t port_base;
+    // interrupt request number used by this channel
+    uint8_t irq_no;
+    mutex_t chan_lock;
+    // 向硬盘发完命令后等待来自硬盘的中断
+    bool_t expecting_intr;
+    // 硬盘处理完成.线程用这个信号量来阻塞自己,由硬盘完成后产生的中断将线程唤醒
+    sem_t disk_done;
+    disk_t devices[2];
+};
 
 #endif

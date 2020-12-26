@@ -24,6 +24,7 @@ typedef struct ThreadStack {
 static __PAGE_ALLIGNED uint8_t reserved_pcb[PAGE_SIZE];
 uint32_t kmain_stack_top = (uintptr_t)reserved_pcb + PAGE_SIZE;
 static task_t *kmain = NULL;
+static task_t *idle_thread = NULL;
 
 // @brief schedule the tasks
 static void schedule();
@@ -131,7 +132,10 @@ task_t *thread_start(
     return task;
 }
 
-void thread_kmain() {
+// init the main thread's task_struct
+// main thread is the execution flow that have been executing
+// after the bootstrap
+static void thread_kmain() {
     kmain = (task_t *)reserved_pcb;
     task_init(kmain, "kmain", 31);
     INT_STATUS old_status = disable_int();
@@ -142,11 +146,26 @@ void thread_kmain() {
 }
 
 
+static void idle(void *args) {
+    (void)args;
+    INT_STATUS old_status;
+    while (1) {
+        old_status = disable_int();
+        ASSERT(old_status == INTERRUPT_ON);
+        thread_block_self(TASK_BLOCKED);
+        set_int_status(old_status);
+        hlt();
+    }
+}
+
+
 void thread_init() {
     list_init(&task_ready_list);
     list_init(&task_all_list);
     list_init(&task_exit_list);
     list_init(&sleeping_list);
+    thread_kmain();
+    idle_thread = thread_start("idle", 10, idle, NULL);
 }
 
 static void clear_exit_q() {
@@ -163,8 +182,10 @@ static void clear_exit_q() {
 static void schedule() {
     ASSERT(get_int_status() == INTERRUPT_OFF);
     task_t *old = current_task;
-    ASSERT(!list_empty(&task_ready_list));
-
+    // ASSERT(!list_empty(&task_ready_list));
+    if (list_empty(&task_ready_list)) {
+        thread_unblock(idle_thread);
+    }
     task_t *next = __list_pop_front(&task_ready_list, task_t, general_tag);
     ASSERT(next->stack_guard == 0x19971125);
     ASSERT(next->status == TASK_READY);
@@ -330,6 +351,8 @@ void sleep_manage() {
 
 static void __thread_yield() {
     ASSERT(current_task->status == TASK_RUNNING);
+    current_task->status = TASK_READY;
+    task_push_back_ready(current_task);
     schedule();
 }
 

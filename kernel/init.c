@@ -54,8 +54,6 @@ void kinit() {
     vmm_init();
     // init thread
     thread_init();
-    // setup task_t for kernel execution flow
-    thread_kmain();
     // init syscall
     syscall_init();
 
