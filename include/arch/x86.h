@@ -119,6 +119,25 @@ typedef PageTableEntry pte_t;
 static inline uint8_t inportb(uint16_t port) __attr_always_inline;
 // write a byte to io port
 static inline void outportb(uint16_t port, uint8_t val) __attr_always_inline;
+/**
+ * @brief read from port and store to buf
+ * @param port port number
+ * @param buf data buffer
+ * @param word_cnt number of words (2 bytes) to read
+ */
+static inline void inportsw(
+    uint16_t port, void *buf, uint32_t word_cnt
+) __attr_always_inline;
+
+/**
+ * @brief write data to port from buf
+ * @param port port number
+ * @param buf data buffer
+ * @param word_cnt number of words (2 bytes) to write
+ */
+static inline void outportsw(
+    uint16_t port, void *buf, uint32_t word_cnt
+) __attr_always_inline;
 
 // load gdt
 static inline void lgdt(void *gp) __attr_always_inline;
@@ -167,6 +186,30 @@ static inline void outportb(uint16_t port, uint8_t val) {
         :             // output
         : "a"(val), "Nd"(port)  // input
         :             // clobbered regs
+    );
+}
+
+static inline void inportsw(
+    uint16_t port, void *buf, uint32_t word_cnt
+) {
+    __asm_volatile(
+        "cld;"
+        "rep insw;"
+        : "+D"(buf), "+c"(word_cnt)
+        : "Nd"(port)
+        : "memory", "cc"
+    );
+}
+
+static inline void outportsw(
+    uint16_t port, void *buf, uint32_t word_cnt
+) {
+    __asm_volatile(
+        "cld;"
+        "rep outsw;"
+        : "+S"(buf), "+c"(word_cnt)
+        : "Nd"(port)
+        : "cc"
     );
 }
 

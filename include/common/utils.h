@@ -6,4 +6,7 @@
 
 // round up of a / b
 #define ROUND_UP_DIV(a, b) (((a) + (b) - 1) / (b))
+
+#define __attr_packed __attribute__((packed))
+
 #endif

@@ -19,9 +19,9 @@ typedef enum KP_LEVEL {
 // %x -> unsigned hex uint32
 // %X -> unsigned hex uint32 full 8 bits
 // %c -> char
-void kprintf(KP_LEVEL kpl, const char *fmt, ...);
+int kprintf(KP_LEVEL kpl, const char *fmt, ...);
 // @brief kernel sprintf, string format
-char *ksprintf(char *out, const char *fmt, ...);
+int ksprintf(char *out, const char *fmt, ...);
 
 
 #endif

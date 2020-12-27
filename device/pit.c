@@ -92,10 +92,11 @@ static void every_sec() {
     ticks++;
 }
 
-static void do_timer(isrp_t *p) {
+static void *do_timer(isrp_t *p) {
     every_msec();
     every_sec();
     time_scheduler();
+    return NULL;
 }
 
 void timer_init(uint32_t hz) {

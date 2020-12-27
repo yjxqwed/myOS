@@ -89,9 +89,9 @@ static struct KPC_STRUCT {
     {RED, YELLOW},
 };
 
-static char *__ksprintf(char *out, const char *fmt, args_list args) {
+static int __ksprintf(char *out, const char *fmt, args_list args) {
     if (out == NULL || fmt == NULL) {
-        return NULL;
+        return 0;
     }
     int idx = 0;
     for (int i = 0; fmt[i] != '\0'; i++) {
@@ -140,22 +140,23 @@ static char *__ksprintf(char *out, const char *fmt, args_list args) {
         }
     }
     out[idx] = '\0';
-    return out;
+    return idx;
 }
 
-char *ksprintf(char *out, const char *fmt, ...) {
+int ksprintf(char *out, const char *fmt, ...) {
     args_list args;
     args_start(args, fmt);
-    char *ret = __ksprintf(out, fmt, args);
+    int ret = __ksprintf(out, fmt, args);
     args_end(args);
     return ret;
 }
 
-void kprintf(KP_LEVEL kpl, const char *fmt, ...) {
+int kprintf(KP_LEVEL kpl, const char *fmt, ...) {
     static char buf[1024];
     args_list args;
     args_start(args, fmt);
-    __ksprintf(buf, fmt, args);
+    int ret = __ksprintf(buf, fmt, args);
     scrn_puts(buf, KPL[kpl].bg, KPL[kpl].fg);
     args_end(args);
+    return ret;
 }

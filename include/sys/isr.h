@@ -14,8 +14,10 @@
 // #define BDRANGEXCEEDED 0x5
 // #define INVALIDOP 0x6
 
-#define INT_PIT 0x20
-#define INT_KB  0x21
+#define INT_PIT  0x20
+#define INT_KB   0x21
+#define INT_ATA0 0x2E
+#define INT_ATA1 0x2F
 
 struct InterruptStack {
     // == pushed the seg regs last ==
