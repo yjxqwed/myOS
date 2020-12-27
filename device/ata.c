@@ -153,13 +153,12 @@ typedef struct BootSector boot_sector_t;
 
 
 // 按硬盘数计算的通道数
-uint32_t channel_cnt;
+// uint32_t channel_cnt;
 // 有两个ATA通道
 static ata_channel_t channels[2];
 
 // list of partitions
 static list_t partition_list;
-
 
 /**
  * @brief select the disk and sector(s) to read/write
@@ -167,6 +166,94 @@ static list_t partition_list;
  * @param lba starting sector address
  * @param sec_cnt number of sectors (0 for 256)
  */
+static void select_disk_sector(disk_t *hd, uint32_t lba, uint8_t sec_cnt);
+
+/**
+ * @brief send command to channel
+ * @param chan target channel
+ * @param cmd command
+ */
+static inline void cmd_out(ata_channel_t *chan, uint8_t cmd) {
+    chan->expecting_intr = True;
+    outportb(reg_cmd(chan), cmd);
+}
+
+/**
+ * @brief read from sector
+ * @param hd target device
+ * @param buf data buffer
+ * @param sec_cnt number of sectors (0 for 256)
+ */
+static void read_sector(disk_t *hd, void *buf, uint8_t sec_cnt);
+
+/**
+ * @brief write sector
+ * @param hd target device
+ * @param buf data buffer
+ * @param sec_cnt number of sectors (0 for 256)
+ */
+static void write_sector(disk_t *hd, void *buf, uint8_t sec_cnt);
+
+/**
+ * @brief [0x12,0x34,0x56,0x78] -> [0x34, 0x12, 0x78, 0x56]
+ */
+static void swap_adjacent_bytes(const char *src, char *buf, uint32_t len) {
+    uint32_t i;
+    for (i = 0; i < len; i++) {
+        buf[i + 1] = *src++;
+        buf[i] = *src++;
+    }
+    buf[i] = '\0';
+}
+
+static bool_t busy_wait(disk_t *hd);
+
+/**
+ * @brief identify disk
+ * @return -1 if no device; 1 if not ata device; 0 if success
+ */
+static int identify_disk(disk_t *hd) {
+    char id_info[512];
+    select_disk_sector(hd, 0, 0);
+    cmd_out(hd->my_channel, ATA_CMD_IDENTIFY);
+    thread_msleep(100);
+    if (inportb(reg_status(hd->my_channel)) == 0) {
+        // no such device
+        return -1;
+    }
+    // kprintf(KPL_DEBUG, "status = %x\n", inportb(reg_status(hd->my_channel)));
+    sem_down(&(hd->my_channel->disk_done));
+
+    while (1) {
+        uint8_t status = inportb(reg_status(hd->my_channel));
+        if ((status & ATA_SR_ERR)) {
+            // If Err, Device is not ATA.
+            return 1;
+        }
+        if (!(status & ATA_SR_BSY) && (status & ATA_SR_DRQ)) {
+            // Everything is right.
+            break;
+        }
+        thread_msleep(10);
+    }
+    read_sector(hd, id_info, 1);
+
+    kprintf(KPL_NOTICE, "disk %s info:\n", hd->disk_name);
+    char buf[64];
+    uint32_t sn_start = 10 * 2, sn_len = 20;
+    uint32_t md_start = 27 * 2, md_len = 40;
+    swap_adjacent_bytes(id_info + sn_start, buf, sn_len);
+    kprintf(KPL_NOTICE, "    SN: %s\n", buf);
+    swap_adjacent_bytes(id_info + md_start, buf, md_len);
+    kprintf(KPL_NOTICE, "    MODULE: %s\n", buf);
+    uint32_t sec_start = 60 * 2;
+    uint32_t sectors = *(uint32_t *)(id_info + sec_start);
+    kprintf(KPL_NOTICE, "    SECTORS: %d\n", sectors);
+    kprintf(KPL_NOTICE, "    CAPACITY: %dMiB\n", sectors * 512 / 1024 / 1024);
+    return 0;
+}
+
+
 static void select_disk_sector(disk_t *hd, uint32_t lba, uint8_t sec_cnt) {
     ata_channel_t *chan = hd->my_channel;
     outportb(reg_sect_cnt(chan), sec_cnt);
@@ -182,24 +269,6 @@ static void select_disk_sector(disk_t *hd, uint32_t lba, uint8_t sec_cnt) {
 }
 
 
-/**
- * @brief send command to channel
- * @param chan target channel
- * @param cmd command
- */
-static inline void cmd_out(ata_channel_t *chan, uint8_t cmd) {
-    // TODO: Multitasking?
-    chan->expecting_intr = True;
-    outportb(reg_cmd(chan), cmd);
-}
-
-
-/**
- * @brief read from sector
- * @param hd target device
- * @param buf data buffer
- * @param sec_cnt number of sectors (0 for 256)
- */
 static void read_sector(disk_t *hd, void *buf, uint8_t sec_cnt) {
     uint32_t num_bytes = 512;
     if (sec_cnt == 0) {
@@ -211,12 +280,6 @@ static void read_sector(disk_t *hd, void *buf, uint8_t sec_cnt) {
 }
 
 
-/**
- * @brief write sector
- * @param hd target device
- * @param buf data buffer
- * @param sec_cnt number of sectors (0 for 256)
- */
 static void write_sector(disk_t *hd, void *buf, uint8_t sec_cnt) {
     uint32_t num_bytes = 512;
     if (sec_cnt == 0) {
@@ -233,8 +296,8 @@ static bool_t busy_wait(disk_t *hd) {
     int sleep_time = 30 * 1000;
     while ((sleep_time -= 10) >= 0) {
         uint8_t status = inportb(reg_status(chan));
-        if (!(status & ATA_SR_BSY)) {
-            return status & ATA_SR_DRQ;
+        if ((!(status & ATA_SR_BSY)) && (status & ATA_SR_DRQ)) {
+            return True;
         } else {
             thread_msleep(10);
         }
@@ -309,19 +372,20 @@ static void *hd_handler(isrp_t *p) {
          * to tell the hard drive controller that this interrupt is
          * handled so that further operations can be executed
          */
-        inb(reg_status(chan));
+        inportb(reg_status(chan));
     }
 }
 
 
 void ata_init() {
-    uint8_t hd_cnt = *(uint8_t *)(0x475);
-    if (hd_cnt == 0) {
-        return;
-    }
+    // uint8_t hd_cnt = *(uint8_t *)(__va(0x475));
+    // if (hd_cnt == 0) {
+    //     return;
+    // }
+    // kprintf(KPL_NOTICE, "num hd installed = %d\n", hd_cnt);
     list_init(&partition_list);
-    channel_cnt = ROUND_UP_DIV(hd_cnt, 2);
-    for (int i = 0; i < channel_cnt; i++) {
+    // uint32_t num_identified_hd = 0;
+    for (int i = 0; i < 2; i++) {
         ata_channel_t *ch = &(channels[i]);
         ksprintf(ch->chan_name, "ata%d", i);
         if (i == 0) {
@@ -335,5 +399,19 @@ void ata_init() {
         mutex_init(&(ch->chan_lock));
         sem_init(&(ch->disk_done), 0);
         register_handler(ch->irq_no, hd_handler);
+        // each channel has at most 2 devices
+        for (int j = 0; j < 2; j++) {
+            disk_t *hd = &(ch->devices[j]);
+            hd->dev_no = j;
+            hd->my_channel = ch;
+            ksprintf(hd->disk_name, "sd%c", 'a' + i * 2 + j);
+            kprintf(KPL_NOTICE, "%s-%s: ", ch->chan_name, j ? "slave" : "master");
+            if (identify_disk(hd) != 0) {
+                kprintf(KPL_NOTICE, "no ata device\n");
+                hd->existed = False;
+                continue;
+            }
+            hd->existed = True;
+        }
     }
 }

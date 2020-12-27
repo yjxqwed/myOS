@@ -1,12 +1,12 @@
 #include <common/types.h>
 #include <sys/gdt.h>
 #include <device/screen.h>
-#include <device/hd.h>
 #include <common/debug.h>
 #include <sys/idt.h>
 #include <kprintf.h>
 #include <device/pit.h>
 #include <device/kb.h>
+#include <device/ata.h>
 #include <multiboot/multiboot.h>
 #include <mm/pmem.h>
 #include <mm/kvmm.h>
@@ -57,13 +57,15 @@ void kinit() {
     // init syscall
     syscall_init();
 
+
     // init device screen
     init_screen();
     // init device pit
     timer_init(10000);
     // init device keyboard
     kb_init();
-
     // enable interrupt
     enable_int();
+    // init hard drives
+    ata_init();
 }

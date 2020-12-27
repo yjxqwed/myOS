@@ -153,6 +153,8 @@ static void idle(void *args) {
         old_status = disable_int();
         ASSERT(old_status == INTERRUPT_ON);
         thread_block_self(TASK_BLOCKED);
+        // print_ready_tasks();
+        // print_sleeping_tasks();
         set_int_status(old_status);
         hlt();
     }

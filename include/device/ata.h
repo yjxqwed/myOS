@@ -51,6 +51,8 @@ struct Disk {
     // there can be infinitely many logic partitions
     // myOS supports at most 8 logic partitions
     partition_t logic_parts[8];
+    // whether this device actually exists
+    bool_t existed;
 };
 
 
@@ -69,5 +71,9 @@ struct ATAChannel {
     sem_t disk_done;
     disk_t devices[2];
 };
+
+
+// init ata devices (hard drives)
+void ata_init();
 
 #endif
