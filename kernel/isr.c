@@ -77,14 +77,17 @@ extern void isr128();
 *  order to make IRQ0 to 15 be remapped to IDT entries 32 to
 *  47 */
 static void irq_remap(void) {
+    // init master chip
     outportb(PIC_M_CTL, 0x11);
-    outportb(PIC_S_CTL, 0x11);
     outportb(PIC_M_CTLMASK, 0x20);
-    outportb(PIC_S_CTLMASK, 0x28);
     outportb(PIC_M_CTLMASK, 0x04);
-    outportb(PIC_S_CTLMASK, 0x02);
     outportb(PIC_M_CTLMASK, 0x01);
+    // init slave chip
+    outportb(PIC_S_CTL, 0x11);
+    outportb(PIC_S_CTLMASK, 0x28);
+    outportb(PIC_S_CTLMASK, 0x02);
     outportb(PIC_S_CTLMASK, 0x01);
+    // enable all ints
     outportb(PIC_M_CTLMASK, 0x0);
     outportb(PIC_S_CTLMASK, 0x0);
 }
