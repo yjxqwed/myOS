@@ -6,6 +6,7 @@
 #include <myos.h>
 #include <kprintf.h>
 #include <sys/isr.h>
+#include <mm/kvmm.h>
 
 /**
  * @file device/ata.c
@@ -73,6 +74,26 @@
 // Identyfy ata device
 #define ATA_CMD_IDENTIFY          0xEC
 
+
+/**
+ * ATA_CMD_IDENTIFY_PACKET and ATA_CMD_IDENTIFY return
+ * a buffer of 512 bytes called the identification space;
+ * the following definitions are used to read information
+ * from the identification space.
+ */
+
+#define ATA_IDENT_DEVICETYPE   0
+#define ATA_IDENT_CYLINDERS    2
+#define ATA_IDENT_HEADS        6
+#define ATA_IDENT_SECTORS      12
+#define ATA_IDENT_SERIAL       20
+#define ATA_IDENT_MODEL        54
+#define ATA_IDENT_CAPABILITIES 98
+#define ATA_IDENT_FIELDVALID   106
+#define ATA_IDENT_MAX_LBA      120
+#define ATA_IDENT_COMMANDSETS  164
+#define ATA_IDENT_MAX_LBA_EXT  200
+
 /**
  * The commands below are for ATAPI^ devices.
  * ^ATAPI: ATA packet interface, i.e. CD-ROM.
@@ -117,17 +138,17 @@ struct PartitionTableEntry {
     // 起始磁头号
     uint8_t start_head;
     // 起始扇区号
-    uint8_t start_sec;
+    uint8_t start_sec : 6;
     // 起始柱面号
-    uint8_t start_chs;
+    uint16_t start_chs : 10;
     // 分区类型
     uint8_t fs_type;
     // 结束磁头号
     uint8_t end_head;
     // 结束扇区号
-    uint8_t end_sec;
+    uint8_t end_sec : 6;
     // 结束柱面号
-    uint8_t end_chs;
+    uint16_t end_chs : 10;
 
     /* 更需要关注的是下面这两项 */
     // 本分区起始扇区的lba地址
@@ -218,17 +239,21 @@ static int identify_disk(disk_t *hd) {
     cmd_out(hd->my_channel, ATA_CMD_IDENTIFY);
     thread_msleep(100);
     if (inportb(reg_status(hd->my_channel)) == 0) {
-        // no such device
+        // no device here
+        kprintf(KPL_NOTICE, "no device\n");
         return -1;
     }
     // kprintf(KPL_DEBUG, "status = %x\n", inportb(reg_status(hd->my_channel)));
     sem_down(&(hd->my_channel->disk_done));
 
+    // int err = 0;
+
     while (1) {
         uint8_t status = inportb(reg_status(hd->my_channel));
         if ((status & ATA_SR_ERR)) {
-            // If Err, Device is not ATA.
-            return 1;
+            // If Err, device is not ATA.
+            kprintf(KPL_NOTICE, "unknown device\n");
+            return;
         }
         if (!(status & ATA_SR_BSY) && (status & ATA_SR_DRQ)) {
             // Everything is right.
@@ -236,6 +261,20 @@ static int identify_disk(disk_t *hd) {
         }
         thread_msleep(10);
     }
+
+    // if (err == 1) {
+    //     uint8_t cm = inportb(reg_lba_m(hd->my_channel));
+    //     uint8_t ch = inportb(reg_lba_h(hd->my_channel));
+    //     if ((cm == 0x14 && ch == 0xEB) || (cm == 0x69 && ch == 0x96)) {
+    //         cmd_out(hd->my_channel, ATA_CMD_IDENTIFY_PACKET);
+    //         sem_down(&(hd->my_channel->disk_done));
+    //     } else {
+    //         // unknown device type
+    //         kprintf(KPL_NOTICE, "unknown device\n");
+    //         return 1;
+    //     }
+    // }
+
     read_sector(hd, id_info, 1);
 
     kprintf(KPL_NOTICE, "disk %s info:\n", hd->disk_name);
@@ -376,15 +415,70 @@ static void *hd_handler(isrp_t *p) {
     }
 }
 
+static uint32_t p_no, l_no, ext_lba_base;
+
+static void partition_scan(disk_t *hd, uint32_t base_lba) {
+    boot_sector_t *bs = kmalloc(sizeof(boot_sector_t));
+    ata_read(hd, base_lba, bs, 1);
+    // traverse the 4 entries
+    for (int i = 0; i < 4; i++) {
+        part_tab_entry_t *pe = &(bs->partition_table[i]);
+        if (pe->fs_type == 0) {
+            // unused entry
+            continue;
+        }
+        if (pe->fs_type == 0x5 || pe->fs_type == 0xf) {
+            // extended partition entry
+            partition_scan(hd, base_lba + pe->start_lba);
+        } else {
+            // normal partition entry
+            if (base_lba == 0) {
+                // primary partition
+                ASSERT(p_no < 4);
+                partition_t *part = &(hd->prim_parts[p_no]);
+                part->start_lba = base_lba + pe->start_lba;
+                part->sec_cnt = pe->sec_cnt;
+                part->my_disk = hd;
+                ksprintf(part->part_name, "%s%d", hd->disk_name, p_no + 1);
+                __list_push_back(&partition_list, part, part_tag);
+                p_no++;
+            } else {
+                // logical partition
+                if (l_no >= 8) {
+                    kfree(bs);
+                    return;
+                }
+                partition_t *part = &(hd->logic_parts[l_no]);
+                part->start_lba = base_lba + pe->start_lba;
+                part->sec_cnt = pe->sec_cnt;
+                part->my_disk = hd;
+                ksprintf(part->part_name, "%s%d", hd->disk_name, l_no + 5);
+                __list_push_back(&partition_list, part, part_tag);
+                l_no++;
+            }
+        }
+    }
+    kfree(bs);
+}
+
+
+static void print_partitions() {
+    kprintf(KPL_NOTICE, "All partitions info:\n");
+    list_node_t *p;
+    __list_for_each((&partition_list), p) {
+        partition_t *part = __container_of(partition_t, part_tag, p);
+        kprintf(
+            KPL_NOTICE,
+            "    %s start_lba:0x%X, sec_cnt:0x%X\n",
+            part->part_name, part->start_lba, part->sec_cnt
+        );
+    }
+}
+
 
 void ata_init() {
-    // uint8_t hd_cnt = *(uint8_t *)(__va(0x475));
-    // if (hd_cnt == 0) {
-    //     return;
-    // }
-    // kprintf(KPL_NOTICE, "num hd installed = %d\n", hd_cnt);
+    vmm_print();
     list_init(&partition_list);
-    // uint32_t num_identified_hd = 0;
     for (int i = 0; i < 2; i++) {
         ata_channel_t *ch = &(channels[i]);
         ksprintf(ch->chan_name, "ata%d", i);
@@ -407,11 +501,13 @@ void ata_init() {
             ksprintf(hd->disk_name, "sd%c", 'a' + i * 2 + j);
             kprintf(KPL_NOTICE, "%s-%s: ", ch->chan_name, j ? "slave" : "master");
             if (identify_disk(hd) != 0) {
-                kprintf(KPL_NOTICE, "no ata device\n");
                 hd->existed = False;
                 continue;
             }
             hd->existed = True;
+            p_no = l_no = ext_lba_base = 0;
+            partition_scan(hd, 0);
         }
     }
+    print_partitions();
 }

@@ -10,6 +10,7 @@
 
 typedef struct Partition partition_t;
 typedef struct Disk disk_t;
+typedef struct ATADevice ata_device_t;
 typedef struct ATAChannel ata_channel_t;
 
 #include <common/types.h>
@@ -44,13 +45,27 @@ struct Disk {
     // the ata channel to which this disk belongs
     ata_channel_t *my_channel;
     // each channel can have at most two devices
-    // 0 for primary and 1 for slave
+    // 0 for master and 1 for slave
     uint8_t dev_no;
     // at most 4 primary partitions
     partition_t prim_parts[4];
     // there can be infinitely many logic partitions
     // myOS supports at most 8 logic partitions
     partition_t logic_parts[8];
+    // whether this device actually exists
+    bool_t existed;
+};
+
+
+struct ATADevice {
+    // device name
+    // for example 'sda', 'sr'
+    char dev_name[8];
+    // the ata channel to which this device belongs
+    ata_channel_t *my_channel;
+    // each channel can have at most two devices
+    // 0 for master and 1 for slave
+    uint8_t dev_no;
     // whether this device actually exists
     bool_t existed;
 };
