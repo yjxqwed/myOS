@@ -10,7 +10,6 @@
 
 /**
  * @file device/ata.c
- * @brief from 《操作系统真象还原》
  */
 
 
@@ -124,58 +123,58 @@
 
 // dev reg placeholder (MBS is for must be set)
 #define DEV_REG_MBS      0xa0
+// CHS addressing mode
 #define DEV_REG_MOD_CHS  0x00
+// LBA addressing mode
 #define DEV_REG_MOD_LBA  0x40
 // master device
 #define DEV_REG_DEV_MST  0x00
 // slave device
 #define DEV_REG_DEV_SLV  0x10
 
-
+// for more info: https://wiki.osdev.org/Partition_Table
 struct PartitionTableEntry {
-    // 是否可引导
+    // 0x80 = bootable; 0x00 = no
     uint8_t bootable;
-    // 起始磁头号
-    uint8_t start_head;
-    // 起始扇区号
-    uint8_t start_sec : 6;
-    // 起始柱面号
-    uint16_t start_chs : 10;
-    // 分区类型
-    uint8_t fs_type;
-    // 结束磁头号
-    uint8_t end_head;
-    // 结束扇区号
-    uint8_t end_sec : 6;
-    // 结束柱面号
-    uint16_t end_chs : 10;
 
-    /* 更需要关注的是下面这两项 */
-    // 本分区起始扇区的lba地址
+    // starting head/sector/cylinder number of this partition
+    // 8bits/6bits/10bits each, 3bytes in total
+    uint8_t start_head;
+    uint8_t start_sec : 6;
+    uint16_t start_cyl : 10;
+
+    // system id
+    // 0x05 0r 0x0f = extended partition entry
+    uint8_t fs_type;
+
+    // starting head/sector/cylinder number of this partition
+    // 8bits/6bits/10bits each, 3bytes in total
+    uint8_t end_head;
+    uint8_t end_sec : 6;
+    uint16_t end_cyl : 10;
+
+    // starting lba of this partitioin
     uint32_t start_lba;
-    // 本分区的扇区数目
+    // number of sectors in this partition
     uint32_t sec_cnt;
 } __attr_packed;
 
 typedef struct PartitionTableEntry part_tab_entry_t;
 
-
-/* 引导扇区,mbr或ebr所在的扇区 */
 struct BootSector {
-    // 引导代码
+    // the first 446 bytes contain the boot code
     uint8_t boot_code[446];
-    // 分区表中有4项,共64字节
+    // the following 64 bytes contain 4 disk partition table entry
+    // 16 bytes each
     part_tab_entry_t partition_table[4];
-    // 启动扇区的结束标志是0x55,0xaa
+    // the last 2 bytes are 0x55, 0xaa
     uint16_t signature;
 } __attr_packed;
 
 typedef struct BootSector boot_sector_t;
 
 
-// 按硬盘数计算的通道数
-// uint32_t channel_cnt;
-// 有两个ATA通道
+// there are 2 ATA channels
 static ata_channel_t channels[2];
 
 // list of partitions

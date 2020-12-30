@@ -55,9 +55,6 @@ all: mykernel.iso
 mykernel.bin: linker.ld $(objects)
 	ld $(LD_PARAMS) -T $< -o $@ $(objects)
 
-# install: mykernel.bin
-# 	sudo cp $< /boot/mykernel.bin
-
 clean:
 	rm -rf *.o *.elf32 *.bin *.out iso *.iso $(objects)
 

@@ -79,11 +79,15 @@ struct ATAChannel {
     uint16_t port_base;
     // interrupt request number used by this channel
     uint8_t irq_no;
+    // for mutually exclusive
     mutex_t chan_lock;
-    // 向硬盘发完命令后等待来自硬盘的中断
+    // whether this channel just sent a command to the device
+    // and is waiting for an interrupt
     bool_t expecting_intr;
-    // 硬盘处理完成.线程用这个信号量来阻塞自己,由硬盘完成后产生的中断将线程唤醒
+    // when done sending out a command, use this semaphore to block itself
+    // avoid busy waiting
     sem_t disk_done;
+    // every channel has at most 2 devices
     disk_t devices[2];
 };
 

@@ -14,11 +14,6 @@ void list_init(list_t *l) {
 void list_push_back(list_t *l, list_node_t *node) {
     ASSERT(l != NULL);
     ASSERT(node != NULL);
-#ifdef KDEBUG
-    if (node->prev != NULL) {
-        kprintf(KPL_PANIC, "task = (0x%X){name=%s}\n", __container_of(task_t, general_tag, node));
-    }
-#endif
     ASSERT(node->prev == NULL && node->next == NULL);
     list_node_t *last = l->tail.prev;
     last->next = node;
@@ -93,9 +88,6 @@ size_t list_length(list_t *l) {
     ASSERT(l != NULL);
     size_t len = 0;
     list_node_t *p;
-    // for (p = l->head.next; p != &(l->tail); p = p->next) {
-    //     len++;
-    // }
     __list_for_each(l, p) {
         len++;
     }
@@ -108,11 +100,6 @@ bool_t list_find(list_t *l, list_node_t *node) {
         return False;
     }
     list_node_t *p;
-    // for (p = l->head.next; p != &(l->tail); p = p->next) {
-    //     if (p == node) {
-    //         return True;
-    //     }
-    // }
     __list_for_each(l, p) {
         if (p == node) {
             return True;
@@ -144,11 +131,6 @@ void list_insert_after(list_node_t *a, list_node_t *node) {
 list_node_t *list_pred(list_t *l, list_node_pred pred, void *args) {
     ASSERT(l != NULL);
     list_node_t *p;
-    // for (p = l->head.next; p != &(l->tail); p = p->next) {
-    //     if (pred(p, args)) {
-    //         return p;
-    //     }
-    // }
     __list_for_each(l, p) {
         if (pred(p, args)) {
             return p;
@@ -169,9 +151,6 @@ void list_traverse(list_t *l, list_traversal_func_t tfunc) {
         return;
     }
     list_node_t *p;
-    // for (p = l->head.next; p != &(l->tail); p = p->next) {
-    //     tfunc(p);
-    // }
     __list_for_each(l, p) {
         tfunc(p);
     }
