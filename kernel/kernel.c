@@ -547,10 +547,10 @@ void kernelMain() {
     // vmm_print();
     // process_execute(proc1, "proc1");
     // process_execute(proc2, "proc2");
-    while (1) {
-        thread_msleep(5 * 1000);
-        kprintf(KPL_DEBUG, "kernel still works\n");
-    }
+    // while (1) {
+    //     thread_msleep(5 * 1000);
+    //     kprintf(KPL_DEBUG, "kernel still works\n");
+    // }
     // thread_msleep(10000);
-    // while(1);
+    while(1);
 }

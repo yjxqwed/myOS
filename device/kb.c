@@ -5,421 +5,314 @@
 #include <kprintf.h>
 #include <sys/isr.h>
 #include <common/types.h>
+#include <common/debug.h>
 
 // keyboard data port
 #define KB_DATA_PORT 0x60
 // keyboard control port
 #define KB_CTRL_PORT 0x64
 
-// #define KB_BREAK_MASK 0x80
+#define KB_BREAK 0x80
+#define KB_SCAN_CODE_MSK 0x7F
 
 #define EXT_CODE 0xE0
 
-/* escapes characters */
-#define esc       '\x1b'
-#define backspace '\b'
-#define tab       '\t'
-#define enter     '\n'
-#define delete    '\x7f'
-
-/* control characters are invisable */
-#define char_invisible ('\0')
-#define ctrl_l_char    char_invisible
-#define ctrl_r_char    char_invisible
-#define shift_l_char   char_invisible
-#define shift_r_char   char_invisible
-#define alt_l_char     char_invisible
-#define alt_r_char     char_invisible
-#define caps_lock_char char_invisible
-
-/* make and break codes */
-#define shift_l_make    0x2A
-#define shift_l_break   (shift_l_make | KB_BREAK_MASK)
-#define shift_r_make    0x36
-#define shift_r_break   (shift_r_make | KB_BREAK_MASK)
-#define alt_l_make      0x38
-#define alt_l_break     (alt_l_make | KB_BREAK_MASK)
-#define alt_r_make      0xe038
-#define alt_r_break     (alt_r_make | KB_BREAK_MASK)
-#define ctrl_l_make     0x1d
-#define ctrl_l_break    (ctrl_l_make | KB_BREAK_MASK)
-#define ctrl_r_make     0xe01d
-#define ctrl_r_break    (ctrl_r_make | KB_BREAK_MASK)
-#define caps_lock_make  0x3a
-#define caps_lock_break (caps_lock_make | KB_BREAK_MASK)
-
-/* index is the make-code */
-static char keymap[][2] = {
-/* make-code {no-shift, with-shift, ext} */
-/* ---------------------------------- */
-/* 0x00 */ {0, 0},
-/* 0x01 */ {esc, esc},
-/* 0x02 */ {'1', '!'},
-/* 0x03 */ {'2', '@'},
-/* 0x04 */ {'3', '#'},
-/* 0x05 */ {'4', '$'},
-/* 0x06 */ {'5', '%'},
-/* 0x07 */ {'6', '^'},
-/* 0x08 */ {'7', '&'},
-/* 0x09 */ {'8', '*'},
-/* 0x0A */ {'9', '('},
-/* 0x0B */ {'0', ')'},
-/* 0x0C */ {'-', '_'},
-/* 0x0D */ {'=', '+'},
-/* 0x0E */ {backspace, backspace},
-/* 0x0F */ {tab, tab},
-/* 0x10 */ {'q', 'Q'},
-/* 0x11 */ {'w', 'W'},
-/* 0x12 */ {'e', 'E'},
-/* 0x13 */ {'r', 'R'},
-/* 0x14 */ {'t', 'T'},
-/* 0x15 */ {'y', 'Y'},
-/* 0x16 */ {'u', 'U'},
-/* 0x17 */ {'i', 'I'},
-/* 0x18 */ {'o', 'O'},
-/* 0x19 */ {'p', 'P'},
-/* 0x1A */ {'[', '{'},
-/* 0x1B */ {']', '}'},
-/* 0x1C */ {enter, enter},
-/* 0x1D */ {ctrl_l_char, ctrl_l_char},
-/* 0x1E */ {'a', 'A'},
-/* 0x1F */ {'s', 'S'},
-/* 0x20 */ {'d', 'D'},
-/* 0x21 */ {'f', 'F'},
-/* 0x22 */ {'g', 'G'},
-/* 0x23 */ {'h', 'H'},
-/* 0x24 */ {'j', 'J'},
-/* 0x25 */ {'k', 'K'},
-/* 0x26 */ {'l', 'L'},
-/* 0x27 */ {';', ':'},
-/* 0x28 */ {'\'', '"'},
-/* 0x29 */ {'`', '~'},
-/* 0x2A */ {shift_l_char, shift_l_char},
-/* 0x2B */ {'\\', '|'},
-/* 0x2C */ {'z', 'Z'},
-/* 0x2D */ {'x', 'X'},
-/* 0x2E */ {'c', 'C'},
-/* 0x2F */ {'v', 'V'},
-/* 0x30 */ {'b', 'B'},
-/* 0x31 */ {'n', 'N'},
-/* 0x32 */ {'m', 'M'},
-/* 0x33 */ {',', '<'},
-/* 0x34 */ {'.', '>'},
-/* 0x35 */ {'/', '?'},
-/* 0x36 */ {shift_r_char, shift_r_char},
-/* 0x37 */ {'*', '*'},  // keypad *
-/* 0x38 */ {alt_l_char, alt_l_char},
-/* 0x39 */ {' ', ' '},
-/* 0x3A */ {caps_lock_char, caps_lock_char}
-/* 0x3B */
-/* other chars are omitted for now */
+key_code_e keycodes[][2] = {
+/* scan_code               {keycode for scan_code, keycode for E0 scan code} */
+/* ==========================================================================*/
+/* 0x00 - none       */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x01 - ESC        */    {KEYCODE_ESC,             KEYCODE_NONE},
+/* 0x02 - '1'        */    {KEYCODE_ALPHA1,          KEYCODE_NONE},
+/* 0x03 - '2'        */    {KEYCODE_ALPHA2,          KEYCODE_NONE},
+/* 0x04 - '3'        */    {KEYCODE_ALPHA3,          KEYCODE_NONE},
+/* 0x05 - '4'        */    {KEYCODE_ALPHA4,          KEYCODE_NONE},
+/* 0x06 - '5'        */    {KEYCODE_ALPHA5,          KEYCODE_NONE},
+/* 0x07 - '6'        */    {KEYCODE_ALPHA6,          KEYCODE_NONE},
+/* 0x08 - '7'        */    {KEYCODE_ALPHA7,          KEYCODE_NONE},
+/* 0x09 - '8'        */    {KEYCODE_ALPHA8,          KEYCODE_NONE},
+/* 0x0A - '9'        */    {KEYCODE_ALPHA9,          KEYCODE_NONE},
+/* 0x0B - '0'        */    {KEYCODE_ALPHA0,          KEYCODE_NONE},
+/* 0x0C - '-'        */    {KEYCODE_MINUS,           KEYCODE_NONE},
+/* 0x0D - '='        */    {KEYCODE_EQUAL,           KEYCODE_NONE},
+/* 0x0E - BS         */    {KEYCODE_BACKSPACE,       KEYCODE_NONE},
+/* 0x0F - TAB        */    {KEYCODE_TAB,             KEYCODE_NONE},
+/* 0x10 - 'q'        */    {KEYCODE_Q,               KEYCODE_NONE},
+/* 0x11 - 'w'        */    {KEYCODE_W,               KEYCODE_NONE},
+/* 0x12 - 'e'        */    {KEYCODE_E,               KEYCODE_NONE},
+/* 0x13 - 'r'        */    {KEYCODE_R,               KEYCODE_NONE},
+/* 0x14 - 't'        */    {KEYCODE_T,               KEYCODE_NONE},
+/* 0x15 - 'y'        */    {KEYCODE_Y,               KEYCODE_NONE},
+/* 0x16 - 'u'        */    {KEYCODE_U,               KEYCODE_NONE},
+/* 0x17 - 'i'        */    {KEYCODE_I,               KEYCODE_NONE},
+/* 0x18 - 'o'        */    {KEYCODE_O,               KEYCODE_NONE},
+/* 0x19 - 'p'        */    {KEYCODE_P,               KEYCODE_NONE},
+/* 0x1A - '['        */    {KEYCODE_LEFTBRACKET,     KEYCODE_NONE},
+/* 0x1B - ']'        */    {KEYCODE_RIGHTBRACKET,    KEYCODE_NONE},
+/* 0x1C - CR/LF      */    {KEYCODE_ENTER,           KEYCODE_NONE},
+/* 0x1D - l. Ctrl    */    {KEYCODE_LCTRL,           KEYCODE_RCTRL},
+/* 0x1E - 'a'        */    {KEYCODE_A,               KEYCODE_NONE},
+/* 0x1F - 's'        */    {KEYCODE_S,               KEYCODE_NONE},
+/* 0x20 - 'd'        */    {KEYCODE_D,               KEYCODE_NONE},
+/* 0x21 - 'f'        */    {KEYCODE_F,               KEYCODE_NONE},
+/* 0x22 - 'g'        */    {KEYCODE_G,               KEYCODE_NONE},
+/* 0x23 - 'h'        */    {KEYCODE_H,               KEYCODE_NONE},
+/* 0x24 - 'j'        */    {KEYCODE_J,               KEYCODE_NONE},
+/* 0x25 - 'k'        */    {KEYCODE_K,               KEYCODE_NONE},
+/* 0x26 - 'l'        */    {KEYCODE_L,               KEYCODE_NONE},
+/* 0x27 - ';'        */    {KEYCODE_SEMICOLON,       KEYCODE_NONE},
+/* 0x28 - '\''       */    {KEYCODE_QUOTE,           KEYCODE_NONE},
+/* 0x29 - '`'        */    {KEYCODE_BACKQUOTE,       KEYCODE_NONE},
+/* 0x2A - l. SHIFT   */    {KEYCODE_LSHIFT,          KEYCODE_NONE},
+/* 0x2B - '\'        */    {KEYCODE_BACKSLASH,       KEYCODE_NONE},
+/* 0x2C - 'z'        */    {KEYCODE_Z,               KEYCODE_NONE},
+/* 0x2D - 'x'        */    {KEYCODE_X,               KEYCODE_NONE},
+/* 0x2E - 'c'        */    {KEYCODE_C,               KEYCODE_NONE},
+/* 0x2F - 'v'        */    {KEYCODE_V,               KEYCODE_NONE},
+/* 0x30 - 'b'        */    {KEYCODE_B,               KEYCODE_NONE},
+/* 0x31 - 'n'        */    {KEYCODE_N,               KEYCODE_NONE},
+/* 0x32 - 'm'        */    {KEYCODE_M,               KEYCODE_NONE},
+/* 0x33 - ','        */    {KEYCODE_COMMA,           KEYCODE_NONE},
+/* 0x34 - '.'        */    {KEYCODE_PERIOD,          KEYCODE_NONE},
+/* 0x35 - '/'        */    {KEYCODE_SLASH,           KEYCODE_NONE},
+/* 0x36 - r. SHIFT   */    {KEYCODE_RSHIFT,          KEYCODE_NONE},
+/* 0x37 - '*'        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x38 - ALT        */    {KEYCODE_LALT,            KEYCODE_RALT},
+/* 0x39 - ' '        */    {KEYCODE_SPACE,           KEYCODE_NONE},
+/* 0x3A - CapsLock   */    {KEYCODE_CAPSLOCK,        KEYCODE_NONE},
+/* 0x3B - F1         */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x3C - F2         */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x3D - F3         */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x3E - F4         */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x3F - F5         */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x40 - F6         */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x41 - F7         */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x42 - F8         */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x43 - F9         */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x44 - F10        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x45 - NumLock    */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x46 - ScrLock    */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x47 - Home       */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x48 - UP         */    {KEYCODE_NONE,            KEYCODE_UPARROW},
+/* 0x49 - PgUp       */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x4A - '-'        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x4B - Left       */    {KEYCODE_NONE,            KEYCODE_LEFTARROW},
+/* 0x4C - MID        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x4D - Right      */    {KEYCODE_NONE,            KEYCODE_RIGHTARROW},
+/* 0x4E - '+'        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x4F - End        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x50 - Down       */    {KEYCODE_NONE,            KEYCODE_DOWNARROW},
+/* 0x51 - PgDown     */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x52 - Insert     */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x53 - Delete     */    {KEYCODE_NONE,            KEYCODE_DELETE},
+/* 0x54 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x55 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x56 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x57 - F11        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x58 - F12        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x59 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x5A - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x5B - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x5C - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x5D - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x5E - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x5F - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x60 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x61 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x62 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x63 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x64 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x65 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x66 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x67 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x68 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x69 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x6A - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x6B - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x6C - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x6D - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x6E - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x6F - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x70 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x71 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x72 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x73 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x74 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x75 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x76 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x77 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x78 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x78 - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x7A - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x7B - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x7C - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x7D - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x7E - ???        */    {KEYCODE_NONE,            KEYCODE_NONE},
+/* 0x7F - ???        */    {KEYCODE_NONE,            KEYCODE_NONE}
 };
 
-uint16_t keymap1[][3] = {
-/* scan-code               !Shift        Shift        E0 XX    */
-/* ==================================================================== */
-/* 0x00 - none       */    {0,           0,           0},
-/* 0x01 - ESC        */    {ESC,         ESC,         0},
-/* 0x02 - '1'        */    {'1',         '!',         0},
-/* 0x03 - '2'        */    {'2',         '@',         0},
-/* 0x04 - '3'        */    {'3',         '#',         0},
-/* 0x05 - '4'        */    {'4',         '$',         0},
-/* 0x06 - '5'        */    {'5',         '%',         0},
-/* 0x07 - '6'        */    {'6',         '^',         0},
-/* 0x08 - '7'        */    {'7',         '&',         0},
-/* 0x09 - '8'        */    {'8',         '*',         0},
-/* 0x0A - '9'        */    {'9',         '(',         0},
-/* 0x0B - '0'        */    {'0',         ')',         0},
-/* 0x0C - '-'        */    {'-',         '_',         0},
-/* 0x0D - '='        */    {'=',         '+',         0},
-/* 0x0E - BS         */    {BACKSPACE,   BACKSPACE,   0},
-/* 0x0F - TAB        */    {TAB,         TAB,         0},
-/* 0x10 - 'q'        */    {'q',         'Q',         0},
-/* 0x11 - 'w'        */    {'w',         'W',         0},
-/* 0x12 - 'e'        */    {'e',         'E',         0},
-/* 0x13 - 'r'        */    {'r',         'R',         0},
-/* 0x14 - 't'        */    {'t',         'T',         0},
-/* 0x15 - 'y'        */    {'y',         'Y',         0},
-/* 0x16 - 'u'        */    {'u',         'U',         0},
-/* 0x17 - 'i'        */    {'i',         'I',         0},
-/* 0x18 - 'o'        */    {'o',         'O',         0},
-/* 0x19 - 'p'        */    {'p',         'P',         0},
-/* 0x1A - '['        */    {'[',         '{',         0},
-/* 0x1B - ']'        */    {']',         '}',         0},
-/* 0x1C - CR/LF      */    {ENTER,       ENTER,       PAD_ENTER},
-/* 0x1D - l. Ctrl    */    {CTRL_L,      CTRL_L,      CTRL_R},
-/* 0x1E - 'a'        */    {'a',         'A',         0},
-/* 0x1F - 's'        */    {'s',         'S',         0},
-/* 0x20 - 'd'        */    {'d',         'D',         0},
-/* 0x21 - 'f'        */    {'f',         'F',         0},
-/* 0x22 - 'g'        */    {'g',         'G',         0},
-/* 0x23 - 'h'        */    {'h',         'H',         0},
-/* 0x24 - 'j'        */    {'j',         'J',         0},
-/* 0x25 - 'k'        */    {'k',         'K',         0},
-/* 0x26 - 'l'        */    {'l',         'L',         0},
-/* 0x27 - ';'        */    {';',         ':',         0},
-/* 0x28 - '\''       */    {'\'',        '"',         0},
-/* 0x29 - '`'        */    {'`',         '~',         0},
-/* 0x2A - l. SHIFT   */    {SHIFT_L,     SHIFT_L,     0},
-/* 0x2B - '\'        */    {'\\',        '|',         0},
-/* 0x2C - 'z'        */    {'z',         'Z',         0},
-/* 0x2D - 'x'        */    {'x',         'X',         0},
-/* 0x2E - 'c'        */    {'c',         'C',         0},
-/* 0x2F - 'v'        */    {'v',         'V',         0},
-/* 0x30 - 'b'        */    {'b',         'B',         0},
-/* 0x31 - 'n'        */    {'n',         'N',         0},
-/* 0x32 - 'm'        */    {'m',         'M',         0},
-/* 0x33 - ','        */    {',',         '<',         0},
-/* 0x34 - '.'        */    {'.',         '>',         0},
-/* 0x35 - '/'        */    {'/',         '?',         PAD_SLASH},
-/* 0x36 - r. SHIFT   */    {SHIFT_R,     SHIFT_R,     0},
-/* 0x37 - '*'        */    {'*',         '*',         0},
-/* 0x38 - ALT        */    {ALT_L,       ALT_L,       ALT_R},
-/* 0x39 - ' '        */    {' ',         ' ',         0},
-/* 0x3A - CapsLock   */    {CAPS_LOCK,   CAPS_LOCK,   0},
-/* 0x3B - F1         */    {F1,          F1,          0},
-/* 0x3C - F2         */    {F2,          F2,          0},
-/* 0x3D - F3         */    {F3,          F3,          0},
-/* 0x3E - F4         */    {F4,          F4,          0},
-/* 0x3F - F5         */    {F5,          F5,          0},
-/* 0x40 - F6         */    {F6,          F6,          0},
-/* 0x41 - F7         */    {F7,          F7,          0},
-/* 0x42 - F8         */    {F8,          F8,          0},
-/* 0x43 - F9         */    {F9,          F9,          0},
-/* 0x44 - F10        */    {F10,         F10,         0},
-/* 0x45 - NumLock    */    {NUM_LOCK,    NUM_LOCK,    0},
-/* 0x46 - ScrLock    */    {SCROLL_LOCK, SCROLL_LOCK, 0},
-/* 0x47 - Home       */    {PAD_HOME,    '7',         HOME},
-/* 0x48 - CurUp      */    {PAD_UP,      '8',         UP},
-/* 0x49 - PgUp       */    {PAD_PAGEUP,  '9',         PAGEUP},
-/* 0x4A - '-'        */    {PAD_MINUS,   '-',         0},
-/* 0x4B - Left       */    {PAD_LEFT,    '4',         LEFT},
-/* 0x4C - MID        */    {PAD_MID,     '5',         0},
-/* 0x4D - Right      */    {PAD_RIGHT,   '6',         RIGHT},
-/* 0x4E - '+'        */    {PAD_PLUS,    '+',         0},
-/* 0x4F - End        */    {PAD_END,     '1',         END},
-/* 0x50 - Down       */    {PAD_DOWN,    '2',         DOWN},
-/* 0x51 - PgDown     */    {PAD_PAGEDOWN,'3',         PAGEDOWN},
-/* 0x52 - Insert     */    {PAD_INS,     '0',         INSERT},
-/* 0x53 - Delete     */    {PAD_DOT,     '.',         DELETE},
-/* 0x54 - Enter      */    {0,            0,          0},
-/* 0x55 - ???        */    {0,            0,          0},
-/* 0x56 - ???        */    {0,            0,          0},
-/* 0x57 - F11        */    {F11,          F11,        0},
-/* 0x58 - F12        */    {F12,          F12,        0},
-/* 0x59 - ???        */    {0,            0,          0},
-/* 0x5A - ???        */    {0,            0,          0},
-/* 0x5B - ???        */    {0,            0,          GUI_L},
-/* 0x5C - ???        */    {0,            0,          GUI_R},
-/* 0x5D - ???        */    {0,            0,          APPS},
-/* 0x5E - ???        */    {0,            0,          0},
-/* 0x5F - ???        */    {0,            0,          0},
-/* 0x60 - ???        */    {0,            0,          0},
-/* 0x61 - ???        */    {0,            0,          0},
-/* 0x62 - ???        */    {0,            0,          0},
-/* 0x63 - ???        */    {0,            0,          0},
-/* 0x64 - ???        */    {0,            0,          0},
-/* 0x65 - ???        */    {0,            0,          0},
-/* 0x66 - ???        */    {0,            0,          0},
-/* 0x67 - ???        */    {0,            0,          0},
-/* 0x68 - ???        */    {0,            0,          0},
-/* 0x69 - ???        */    {0,            0,          0},
-/* 0x6A - ???        */    {0,            0,          0},
-/* 0x6B - ???        */    {0,            0,          0},
-/* 0x6C - ???        */    {0,            0,          0},
-/* 0x6D - ???        */    {0,            0,          0},
-/* 0x6E - ???        */    {0,            0,          0},
-/* 0x6F - ???        */    {0,            0,          0},
-/* 0x70 - ???        */    {0,            0,          0},
-/* 0x71 - ???        */    {0,            0,          0},
-/* 0x72 - ???        */    {0,            0,          0},
-/* 0x73 - ???        */    {0,            0,          0},
-/* 0x74 - ???        */    {0,            0,          0},
-/* 0x75 - ???        */    {0,            0,          0},
-/* 0x76 - ???        */    {0,            0,          0},
-/* 0x77 - ???        */    {0,            0,          0},
-/* 0x78 - ???        */    {0,            0,          0},
-/* 0x78 - ???        */    {0,            0,          0},
-/* 0x7A - ???        */    {0,            0,          0},
-/* 0x7B - ???        */    {0,            0,          0},
-/* 0x7C - ???        */    {0,            0,          0},
-/* 0x7D - ???        */    {0,            0,          0},
-/* 0x7E - ???        */    {0,            0,          0},
-/* 0x7F - ???        */    {0,            0,          0}
+static char keycode2char [][2] = {
+    [KEYCODE_ALPHA0]       = {'0', ')'},
+    [KEYCODE_ALPHA1]       = {'1', '!'},
+    [KEYCODE_ALPHA2]       = {'2', '@'},
+    [KEYCODE_ALPHA3]       = {'3', '#'},
+    [KEYCODE_ALPHA4]       = {'4', '$'},
+    [KEYCODE_ALPHA5]       = {'5', '%'},
+    [KEYCODE_ALPHA6]       = {'6', '^'},
+    [KEYCODE_ALPHA7]       = {'7', '&'},
+    [KEYCODE_ALPHA8]       = {'8', '*'},
+    [KEYCODE_ALPHA9]       = {'9', '('},
+    [KEYCODE_MINUS]        = {'-', '_'},
+    [KEYCODE_EQUAL]        = {'=', '+'},
+    [KEYCODE_A]            = {'a', 'A'},
+    [KEYCODE_B]            = {'b', 'B'},
+    [KEYCODE_C]            = {'c', 'C'},
+    [KEYCODE_D]            = {'d', 'D'},
+    [KEYCODE_E]            = {'e', 'E'},
+    [KEYCODE_F]            = {'f', 'F'},
+    [KEYCODE_G]            = {'g', 'G'},
+    [KEYCODE_H]            = {'h', 'H'},
+    [KEYCODE_I]            = {'i', 'I'},
+    [KEYCODE_J]            = {'j', 'J'},
+    [KEYCODE_K]            = {'k', 'K'},
+    [KEYCODE_L]            = {'l', 'L'},
+    [KEYCODE_M]            = {'m', 'M'},
+    [KEYCODE_N]            = {'n', 'N'},
+    [KEYCODE_O]            = {'o', 'O'},
+    [KEYCODE_P]            = {'p', 'P'},
+    [KEYCODE_Q]            = {'q', 'Q'},
+    [KEYCODE_R]            = {'r', 'R'},
+    [KEYCODE_S]            = {'s', 'S'},
+    [KEYCODE_T]            = {'t', 'T'},
+    [KEYCODE_U]            = {'u', 'U'},
+    [KEYCODE_V]            = {'v', 'V'},
+    [KEYCODE_W]            = {'w', 'W'},
+    [KEYCODE_X]            = {'x', 'X'},
+    [KEYCODE_Y]            = {'y', 'Y'},
+    [KEYCODE_Z]            = {'z', 'Z'},
+    [KEYCODE_BACKQUOTE]    = {'`', '~'},
+    [KEYCODE_QUOTE]        = {'\'', '"'},
+    [KEYCODE_SPACE]        = {' ', ' '},
+    [KEYCODE_COMMA]        = {',', '<'},
+    [KEYCODE_PERIOD]       = {'.', '>'},
+    [KEYCODE_SLASH]        = {'/', '?'},
+    [KEYCODE_BACKSLASH]    = {'\\', '|'},
+    [KEYCODE_SEMICOLON]    = {';', ':'},
+    [KEYCODE_LEFTBRACKET]  = {'[', '{'},
+    [KEYCODE_RIGHTBRACKET] = {']', '}'}
 };
 
-static uint8_t pause_make_code = {
+static uint8_t pause_make_code[] = {
     0xE1, 0x1D, 0x45, 0xE1, 0x9D, 0xC5
 };
 
-static uint8_t print_screen_make_code = {
+static uint8_t print_screen_make_code[] = {
     0xE0, 0x2A, 0xE0, 0x37
 };
 
-static uint8_t print_screen_breake_code = {
+static uint8_t print_screen_breake_code[] = {
     0xE0, 0xB7, 0xE0, 0xAA
 };
 
-static void kb_handler(isrp_t *p) {
-    static bool_t ctrl_down = False;
-    static bool_t shift_down = False;
-    static bool_t alt_down = False;
-    static bool_t caps_locked = False;
-    static bool_t ext_code = False;
-
-
-    uint8_t scan_code = inportb(KB_DATA_PORT);
-
-    if (scan_code == 0xE1) {
-        // omit pause key for now
-        kprintf(KPL_PANIC, "\n*** PAUSE! ***\n");
-        while (1);
-    }
-
-    if (scan_code == EXT_CODE) {
-        ext_code = True;
-        return;
-    }
-
-    int col = 0;
-
-    if (ext_code) {
-        col = 2;
-        ext_code = False;
-    }
-
-    uint16_t key = keymap1[scan_code & 0x7f][col];
-
-    if (scan_code & KB_BREAK_MASK) {
-        // bit 7 set => break code
-        // if (scan_code == shift_l_break || scan_code == shift_r_break) {
-        //     shift_down = False;
-        // } else if (scan_code == ctrl_l_break || scan_code == ctrl_r_break) {
-        //     ctrl_down = False;
-        // } else if (scan_code == alt_l_break || scan_code == alt_r_break) {
-        //     alt_down = False;
-        // }
-        if (key == SHIFT_L || key == SHIFT_R) {
-            shift_down = False;
-        } else if (key == CTRL_L || key == CTRL_R) {
-            ctrl_down = False;
-        } else if (key == ALT_L || key == ALT_R) {
-            alt_down = False;
-        }
-        // break of other keys are unimportant
-        return;
-    } else if (
-        (scan_code >= 0x0 && scan_code <= 0x3a) ||
-        scan_code == alt_r_make ||
-        scan_code == ctrl_r_make
-    ) {
-        // only handle characters in our keymap plus right alt and right ctrl
-
-        if (scan_code == shift_l_make || scan_code == shift_r_make) {
-            shift_down = True;
-        } else if (scan_code == ctrl_l_make || scan_code == ctrl_r_make) {
-            ctrl_down = True;
-        } else if (scan_code == alt_l_make || scan_code == alt_r_make) {
-            alt_down = True;
-        } else if (scan_code == caps_lock_make) {
-            caps_locked = !caps_locked;
-        } else {
-            int shift = 0;
-            if (
-                (scan_code >= 0x10 && scan_code <= 0x19) ||  // q - p
-                (scan_code >= 0x1e && scan_code <= 0x26) ||  // a - l
-                (scan_code >= 0x2c && scan_code <= 0x32)     // z - m
-            ) {
-                // caps_lock only influence letters
-                shift = (shift_down ^ caps_locked) ? 1 : 0;
-            } else {
-                shift = shift_down ? 1 : 0;
-            }
-            char c = keymap[scan_code & 0xff][shift];
-            if (c != '\0') {
-                kprintf(KPL_DUMP, "%c", c);
-            }
-        }
-    } else {
-        kprintf(KPL_DEBUG, "[Unknown key down: %x]", scan_code);
-    }
+static void print_key_info(key_info_t *ki) {
+    kprintf(
+        KPL_DEBUG, "[%s, %s, %s, %s; %d]",
+        ki->key_flags & KIF_CAPS ? "CAPS" : "caps",
+        ki->key_flags & KIF_SHIFT ? "SHIFT" : "shift",
+        ki->key_flags & KIF_ALT ? "ALT" : "alt",
+        ki->key_flags & KIF_CTRL ? "CTRL" : "ctrl",
+        ki->keycode
+    );
 }
 
-static void kb_handler1(isrp_t *p) {
+static void *kb_handler(isrp_t *p) {
     static bool_t ctrl_down = False;
     static bool_t shift_down = False;
     static bool_t alt_down = False;
 
     static bool_t caps_locked = False;
-    static bool_t num_locked = False;
-    static bool_t scroll_locked = False;
 
+    // if ext_code is True, last scan_code is 0xE0
     static bool_t ext_code = False;
 
-
     uint8_t scan_code = inportb(KB_DATA_PORT);
-
-    if (scan_code == 0xE1) {
-        // omit pause key for now
-        kprintf(KPL_PANIC, "\n*** PAUSE! ***\n");
-        while (1);
-    }
+    // unable to handle pause key
+    ASSERT(scan_code != 0xE1);
 
     if (scan_code == EXT_CODE) {
-        ext_code = True;
+        ext_code = 1;
         return;
     }
 
-    uint16_t key = 0;
-
+    key_code_e keycode;
     if (ext_code) {
-        key = keymap1[scan_code & 0x7f][2];
+        keycode = keycodes[scan_code & KB_SCAN_CODE_MSK][1];
         ext_code = False;
     } else {
-        key = keymap1[scan_code & 0x7f][0];
+        keycode = keycodes[scan_code & KB_SCAN_CODE_MSK][0];
     }
 
-
-    if (scan_code & KB_BREAK_MASK) {
-        // bit 7 set => break code
-        if (key == SHIFT_L || key == SHIFT_R) {
-            shift_down = False;
-        } else if (key == CTRL_L || key == CTRL_R) {
-            ctrl_down = False;
-        } else if (key == ALT_L || key == ALT_R) {
-            alt_down = False;
-        }
-        // break of other keys are unimportant
+    if (keycode == KEYCODE_NONE) {
         return;
-    } else {
-        // make code
+    }
 
-        /**
-         *  shift ctrl alt caps_lock num_lock scroll_lock are
-         *  pure control keys
-         */
-        if (key == SHIFT_L || key == SHIFT_R) {
-            shift_down = True;
-        } else if (key == CTRL_L || key == CTRL_R) {
-            ctrl_down = True;
-        } else if (key == ALT_L || key == ALT_R) {
-            alt_down = True;
-        } else if (key == CAPS_LOCK) {
-            caps_locked = !caps_locked;
-        } else if (key == NUM_LOCK) {
-            num_locked = !num_locked;
-        } else if (key == SCROLL_LOCK) {
-            scroll_locked = !scroll_locked;
-        } else {
-            int col = 0;
-            if (key >= 'a' && key <= 'z') {
-                // caps_lock only influence letters
-                col = (shift_down ^ caps_locked) ? 1 : 0;
-            } else {
-                col = shift_down ? 1 : 0;
+    if (scan_code & KB_BREAK) {
+        // key released
+        switch (keycode) {
+            case KEYCODE_LCTRL:
+            case KEYCODE_RCTRL:
+                ctrl_down = False;
+                break;
+            case KEYCODE_LSHIFT:
+            case KEYCODE_RSHIFT:
+                shift_down = False;
+                break;
+            case KEYCODE_LALT:
+            case KEYCODE_RALT:
+                alt_down = False;
+                break;
+            default:
+                // ignore other keys' break
+                break;
+        }
+    } else {
+        switch (keycode) {
+            case KEYCODE_LCTRL:
+            case KEYCODE_RCTRL:
+                ctrl_down = True;
+                break;
+            case KEYCODE_LSHIFT:
+            case KEYCODE_RSHIFT:
+                shift_down = True;
+                break;
+            case KEYCODE_LALT:
+            case KEYCODE_RALT:
+                alt_down = True;
+                break;
+            case KEYCODE_CAPSLOCK:
+                caps_locked = !caps_locked;
+                break;
+            default: {
+                key_info_t ki;
+                if (ctrl_down) {
+                    ki.key_flags |= KIF_CTRL;
+                }
+                if (shift_down) {
+                    ki.key_flags |= KIF_SHIFT;
+                }
+                if (alt_down) {
+                    ki.key_flags |= KIF_ALT;
+                }
+                if (caps_locked) {
+                    ki.key_flags |= KIF_CAPS;
+                }
+                ki.keycode = keycode;
+                print_key_info(&ki);
+                break;
             }
         }
     }
+
+    return NULL;
 }
 
 void kb_init() {
