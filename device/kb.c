@@ -222,6 +222,14 @@ static void print_key_info(key_info_t *ki) {
         ki->key_flags & KIF_CTRL ? "CTRL" : "ctrl",
         ki->keycode
     );
+    if (
+        (ki->key_flags & KIF_SHIFT) &&
+        (ki->key_flags & KIF_CTRL) &&
+        !(ki->key_flags & KIF_ALT) &&
+        (ki->keycode == KEYCODE_C)
+    ) {
+        kprintf(KPL_NOTICE, "[HELLO WORLD! This myOS by Jiaxing Yang!]");
+    }
 }
 
 static void *kb_handler(isrp_t *p) {
