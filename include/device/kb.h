@@ -60,7 +60,7 @@ typedef enum KeyCode {
     KEYCODE_LEFTBRACKET,   // [ {
     KEYCODE_RIGHTBRACKET,  // ] }
 
-    KEYCODE_ESC = 100,
+    KEYCODE_ESC,
     KEYCODE_DELETE,
     KEYCODE_BACKSPACE,
     KEYCODE_CAPSLOCK,
@@ -91,14 +91,30 @@ typedef enum KeyCode {
     KEYCODE_F12,
 } key_code_e;
 
-#define KIF_CTRL  (1 << 0)
-#define KIF_ALT   (1 << 1)
-#define KIF_SHIFT (1 << 2)
-#define KIF_CAPS  (1 << 3)
+// typedef struct KeyInfo {
+//     uint32_t key_flags;
+//     key_code_e keycode;
+// } key_info_t;
 
-typedef struct KeyInfo {
-    uint32_t key_flags;
-    key_code_e keycode;
-} key_info_t;
+/**
+ *  |  flags  |keycode|
+ *  +---------+-------+
+ *  |31      8|7     0|
+ */
+typedef uint32_t key_info_t;
 
+#define KIF_CTRL  (1 << 8)
+#define KIF_ALT   (1 << 9)
+#define KIF_SHIFT (1 << 10)
+#define KIF_CAPS  (1 << 11)
+
+#define __keycode(key_info)  ((key_info) & 0xff)
+#define __keyflags(key_info) ((key_info) & 0xffffff00)
+
+// get a key stroke
+key_info_t getkey();
+
+
+// for debug only
+void print_key_info(key_info_t ki);
 #endif

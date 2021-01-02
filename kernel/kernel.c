@@ -6,7 +6,9 @@
 #include <mm/kvmm.h>
 #include <common/debug.h>
 #include <thread/process.h>
-// #include <usr/include/unistd.h>
+#include <device/kb.h>
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -551,6 +553,10 @@ void kernelMain() {
     //     thread_msleep(5 * 1000);
     //     kprintf(KPL_DEBUG, "kernel still works\n");
     // }
-    // thread_msleep(10000);
-    while(1);
+    thread_msleep(10000);
+    while(1) {
+        // thread_msleep(1000);
+        key_info_t ki = getkey();
+        print_key_info(ki);
+    }
 }
