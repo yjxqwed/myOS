@@ -6,7 +6,11 @@
 #include <mm/kvmm.h>
 #include <common/debug.h>
 #include <thread/process.h>
-// #include <usr/include/unistd.h>
+#include <device/kb.h>
+#include <device/tty.h>
+#include <device/console.h>
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -500,6 +504,24 @@ static void proc2() {
 }
 
 
+void *console_thread(void *args) {
+    int tty_no = (int)args;
+    while(1) {
+        key_info_t ki = tty_getkey(tty_no);
+        if ((ki & (KIF_ALT | KIF_CTRL)) == 0) {
+            char c = get_printable_char(
+                __keycode(ki),
+                (ki & KIF_CAPS) ? True : False,
+                (ki & KIF_SHIFT) ? True : False
+            );
+            if (c != '\0') {
+                tty_putc(tty_no, c, CONS_BLACK, CONS_GRAY);
+            }
+        }
+    }
+}
+
+
 void kernelMain() {
     kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
     // test_thread();
@@ -552,5 +574,31 @@ void kernelMain() {
     //     kprintf(KPL_DEBUG, "kernel still works\n");
     // }
     // thread_msleep(10000);
-    while(1);
+    // while(1) {
+    //     // thread_msleep(1000);
+    //     key_info_t ki = tty_getkey(0);
+    //     // print_key_info(ki);
+    //     if ((ki & (KIF_ALT | KIF_CTRL)) == 0) {
+    //         char c = get_printable_char(
+    //             __keycode(ki),
+    //             (ki & KIF_CAPS) ? True : False,
+    //             (ki & KIF_SHIFT) ? True : False
+    //         );
+    //         if (c != '\0') {
+    //             tty_putc(1, c, CONS_BLACK, CONS_GRAY);
+    //             // scrn_putc_safe(c, BLACK, GRAY);
+    //         }
+    //     }
+    // }
+    task_t *c1 = thread_start("c1", 30, console_thread, 1);
+    task_t *c2 = thread_start("c2", 30, console_thread, 2);
+    char tmp[10];
+    for (int i = 0; i < 1000; i++) {
+        thread_msleep(500);
+        ksprintf(tmp, "%d\n", i);
+        tty_puts(4, tmp, CONS_BLACK, CONS_GRAY);
+    }
+    thread_join(c1);
+    thread_join(c2);
+    while (1);
 }

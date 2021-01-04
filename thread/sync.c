@@ -11,6 +11,7 @@ void sem_init(sem_t *sem, uint16_t val) {
 }
 
 void sem_up(sem_t *sem) {
+    ASSERT(sem != NULL);
     INT_STATUS old_status = disable_int();
     (sem->val)++;
     // list_node_t *p = list_pop_front(&(sem->wait_list));
@@ -26,6 +27,7 @@ void sem_up(sem_t *sem) {
 }
 
 void sem_down(sem_t *sem) {
+    ASSERT(sem != NULL);
     INT_STATUS old_status = disable_int();
     while (sem->val == 0) {
         task_t *curr = get_current_thread();
