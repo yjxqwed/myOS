@@ -14,8 +14,8 @@ typedef struct Mutex mutex_t;
 #include <list.h>
 
 struct Semaphore {
-    uint16_t val;
     list_t wait_list;
+    uint16_t val;
 };
 
 void sem_init(sem_t *sem, uint16_t val);

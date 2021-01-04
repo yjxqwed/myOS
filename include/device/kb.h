@@ -8,21 +8,9 @@
 void kb_init();
 
 typedef enum KeyCode {
-    KEYCODE_NONE = 0,   // not a key
-
-    // keys on the top of the alphanumeric keyboard.
-    KEYCODE_ALPHA0,  // 0 )
-    KEYCODE_ALPHA1,  // 1 !
-    KEYCODE_ALPHA2,  // 2 @
-    KEYCODE_ALPHA3,  // 3 #
-    KEYCODE_ALPHA4,  // 4 $
-    KEYCODE_ALPHA5,  // 5 %
-    KEYCODE_ALPHA6,  // 6 ^
-    KEYCODE_ALPHA7,  // 7 &
-    KEYCODE_ALPHA8,  // 8 *
-    KEYCODE_ALPHA9,  // 9 (
-    KEYCODE_MINUS,   // - _
-    KEYCODE_EQUAL,   // = +
+    // unknown key
+    KEYCODE_NONE = 0,
+    // letter keys
     KEYCODE_A,
     KEYCODE_B,
     KEYCODE_C,
@@ -49,9 +37,23 @@ typedef enum KeyCode {
     KEYCODE_X,
     KEYCODE_Y,
     KEYCODE_Z,
+    // keys on the top of the alphanumeric keyboard.
+    KEYCODE_ALPHA0,  // 0 )
+    KEYCODE_ALPHA1,  // 1 !
+    KEYCODE_ALPHA2,  // 2 @
+    KEYCODE_ALPHA3,  // 3 #
+    KEYCODE_ALPHA4,  // 4 $
+    KEYCODE_ALPHA5,  // 5 %
+    KEYCODE_ALPHA6,  // 6 ^
+    KEYCODE_ALPHA7,  // 7 &
+    KEYCODE_ALPHA8,  // 8 *
+    KEYCODE_ALPHA9,  // 9 (
+    KEYCODE_MINUS,   // - _
+    KEYCODE_EQUAL,   // = +
+    // other printable keys
+    KEYCODE_SPACE,
     KEYCODE_BACKQUOTE,     // ` ~
     KEYCODE_QUOTE,         // ' ""
-    KEYCODE_SPACE,
     KEYCODE_COMMA,         // , <
     KEYCODE_PERIOD,        // . >
     KEYCODE_SLASH,         // / ?
@@ -59,7 +61,7 @@ typedef enum KeyCode {
     KEYCODE_SEMICOLON,     // ; :
     KEYCODE_LEFTBRACKET,   // [ {
     KEYCODE_RIGHTBRACKET,  // ] }
-
+    // special keys
     KEYCODE_ESC,
     KEYCODE_DELETE,
     KEYCODE_BACKSPACE,
@@ -76,7 +78,7 @@ typedef enum KeyCode {
     KEYCODE_RIGHTARROW,
     KEYCODE_ENTER,
     KEYCODE_TAB,
-
+    // functional keys
     KEYCODE_F1,
     KEYCODE_F2,
     KEYCODE_F3,
@@ -91,11 +93,6 @@ typedef enum KeyCode {
     KEYCODE_F12,
 } key_code_e;
 
-// typedef struct KeyInfo {
-//     uint32_t key_flags;
-//     key_code_e keycode;
-// } key_info_t;
-
 /**
  *  |  flags  |keycode|
  *  +---------+-------+
@@ -103,6 +100,7 @@ typedef enum KeyCode {
  */
 typedef uint32_t key_info_t;
 
+// Key Info Flags
 #define KIF_CTRL  (1 << 8)
 #define KIF_ALT   (1 << 9)
 #define KIF_SHIFT (1 << 10)
@@ -112,7 +110,15 @@ typedef uint32_t key_info_t;
 #define __keyflags(key_info) ((key_info) & 0xffffff00)
 
 // get a key stroke
-key_info_t getkey();
+// key_info_t getkey();
+
+/**
+ * @brief get the printable char
+ * @param keycode keycode
+ * @param caps capslocked or not
+ * @param shift shifted or not
+ */
+char get_printable_char(key_code_e keycode, bool_t caps, bool_t shift);
 
 
 // for debug only

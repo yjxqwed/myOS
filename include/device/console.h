@@ -6,23 +6,24 @@ typedef struct Console console_t;
 
 #include <myos.h>
 
-// there are 3 virtual consoles
-#define NR_VCONSOLES 3
-
 typedef enum Color {
-    BLACK, BLUE, GREEN, CYAN, RED, PURPLE, BROWN, GRAY,
-    DARK_GRAY, LIGHT_BLUE, LIGHT_GREEN, LIGHT_CYAN, 
-    LIGHT_RED, LIGHT_PURPLE, YELLOW, WHITE
+    CONS_BLACK, CONS_BLUE, CONS_GREEN, CONS_CYAN,
+    CONS_RED, CONS_PURPLE, CONS_BROWN, CONS_GRAY,
+    CONS_DARK_GRAY, CONS_LIGHT_BLUE, CONS_LIGHT_GREEN, CONS_LIGHT_CYAN,
+    CONS_LIGHT_RED, CONS_LIGHT_PURPLE, CONS_YELLOW, CONS_WHITE
 } color_e;
 
 
-// put a char with foreground color = fg and 
+// put a char with foreground color = fg and
 // background color = bg
-void scrn_putc(char c, color_e bg, color_e fg);
-void scrn_puts(const char *str, color_e bg, color_e fg);
-void scrn_putc_safe(char c, color_e bg, color_e fg);
-void scrn_puts_safe(const char *str, color_e bg, color_e fg);
+void console_putc(console_t *cons, char c, color_e bg, color_e fg);
+void console_puts(console_t *cons, const char *str, color_e bg, color_e fg);
 
+// get the tty_no of the current console
+int get_curr_console_tty();
+
+void select_console(int console);
+console_t *get_console(int tty_no);
 
 /**
  *   a word (16 B) for a char
@@ -39,18 +40,18 @@ void scrn_puts_safe(const char *str, color_e bg, color_e fg);
  */
 
 
-// For more info on text mode cursor 
+// For more info on text mode cursor:
 // https://wiki.osdev.org/Text_Mode_Cursor
 
-void get_cursor(int *row, int *col);
+void console_get_cursor(console_t *cons, int *row, int *col);
 
-void set_cursor(int row, int col);
+void console_set_cursor(console_t *cons, int row, int col);
 
-void enable_cursor(int cursor_start, int cursor_end);
 
-void disable_cursor();
+/**
+ * @brief set the start row of the display
+ * @param row row offset
+ */
+void set_video_start_row(uint32_t row);
 
-void init_screen();
-
-void video_mem_enable_paging();
 #endif

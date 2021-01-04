@@ -13,8 +13,8 @@ typedef struct Task task_t;
 typedef uint16_t thread_id_t;
 
 // thread_func_t is a function pointer to a function
-// accepts void * and return void *
-typedef void (* thread_func_t)(void *);
+// accepts void * and returns void *
+typedef void *(* thread_func_t)(void *);
 
 typedef enum TaskStatus {
     TASK_RUNNING,

@@ -7,6 +7,7 @@
 #include <common/types.h>
 #include <common/debug.h>
 #include <thread/sync.h>
+#include <device/tty.h>
 
 // keyboard data port
 #define KB_DATA_PORT 0x60
@@ -152,18 +153,7 @@ key_code_e keycodes[][2] = {
 };
 
 static char keycode2char [][2] = {
-    [KEYCODE_ALPHA0]       = {'0', ')'},
-    [KEYCODE_ALPHA1]       = {'1', '!'},
-    [KEYCODE_ALPHA2]       = {'2', '@'},
-    [KEYCODE_ALPHA3]       = {'3', '#'},
-    [KEYCODE_ALPHA4]       = {'4', '$'},
-    [KEYCODE_ALPHA5]       = {'5', '%'},
-    [KEYCODE_ALPHA6]       = {'6', '^'},
-    [KEYCODE_ALPHA7]       = {'7', '&'},
-    [KEYCODE_ALPHA8]       = {'8', '*'},
-    [KEYCODE_ALPHA9]       = {'9', '('},
-    [KEYCODE_MINUS]        = {'-', '_'},
-    [KEYCODE_EQUAL]        = {'=', '+'},
+    [0]                    = {'\0', '\0'},
     [KEYCODE_A]            = {'a', 'A'},
     [KEYCODE_B]            = {'b', 'B'},
     [KEYCODE_C]            = {'c', 'C'},
@@ -190,9 +180,21 @@ static char keycode2char [][2] = {
     [KEYCODE_X]            = {'x', 'X'},
     [KEYCODE_Y]            = {'y', 'Y'},
     [KEYCODE_Z]            = {'z', 'Z'},
+    [KEYCODE_ALPHA0]       = {'0', ')'},
+    [KEYCODE_ALPHA1]       = {'1', '!'},
+    [KEYCODE_ALPHA2]       = {'2', '@'},
+    [KEYCODE_ALPHA3]       = {'3', '#'},
+    [KEYCODE_ALPHA4]       = {'4', '$'},
+    [KEYCODE_ALPHA5]       = {'5', '%'},
+    [KEYCODE_ALPHA6]       = {'6', '^'},
+    [KEYCODE_ALPHA7]       = {'7', '&'},
+    [KEYCODE_ALPHA8]       = {'8', '*'},
+    [KEYCODE_ALPHA9]       = {'9', '('},
+    [KEYCODE_MINUS]        = {'-', '_'},
+    [KEYCODE_EQUAL]        = {'=', '+'},
+    [KEYCODE_SPACE]        = {' ', ' '},
     [KEYCODE_BACKQUOTE]    = {'`', '~'},
     [KEYCODE_QUOTE]        = {'\'', '"'},
-    [KEYCODE_SPACE]        = {' ', ' '},
     [KEYCODE_COMMA]        = {',', '<'},
     [KEYCODE_PERIOD]       = {'.', '>'},
     [KEYCODE_SLASH]        = {'/', '?'},
@@ -201,6 +203,17 @@ static char keycode2char [][2] = {
     [KEYCODE_LEFTBRACKET]  = {'[', '{'},
     [KEYCODE_RIGHTBRACKET] = {']', '}'}
 };
+
+char get_printable_char(key_code_e keycode, bool_t caps, bool_t shift) {
+    if (keycode == KEYCODE_NONE || keycode > KEYCODE_RIGHTBRACKET) {
+        return '\0';
+    }
+    if (keycode <= KEYCODE_Z) {
+        return keycode2char[keycode][(caps != shift) ? 1 : 0];
+    } else {
+        return keycode2char[keycode][shift ? 1 : 0];
+    }
+}
 
 static uint8_t pause_make_code[] = {
     0xE1, 0x1D, 0x45, 0xE1, 0x9D, 0xC5
@@ -228,34 +241,34 @@ void print_key_info(key_info_t ki) {
     }
 }
 
-#define KB_BUFFER_SIZE 64
-// the kb driver will buffer at most 64 key strokes
-static key_info_t kb_in_buffer[KB_BUFFER_SIZE];
-static uint32_t kb_inbuf_head;
-static size_t kb_inbuf_num;
-static sem_t kb_sem;
+// #define KB_BUFFER_SIZE 64
+// // the kb driver will buffer at most 64 key strokes
+// static key_info_t kb_in_buffer[KB_BUFFER_SIZE];
+// static uint32_t kb_inbuf_head;
+// static size_t kb_inbuf_num;
+// static sem_t kb_sem;
 
-static void putkey(key_info_t ki) {
-    ASSERT(get_int_status() == INTERRUPT_OFF);
-    if (kb_inbuf_num == KB_BUFFER_SIZE) {
-        return;
-    }
-    kb_in_buffer[(kb_inbuf_head + kb_inbuf_num) % KB_BUFFER_SIZE] = ki;
-    kb_inbuf_num++;
-    sem_up(&kb_sem);
-}
+// static void putkey(key_info_t ki) {
+//     ASSERT(get_int_status() == INTERRUPT_OFF);
+//     if (kb_inbuf_num == KB_BUFFER_SIZE) {
+//         return;
+//     }
+//     kb_in_buffer[(kb_inbuf_head + kb_inbuf_num) % KB_BUFFER_SIZE] = ki;
+//     kb_inbuf_num++;
+//     sem_up(&kb_sem);
+// }
 
-key_info_t getkey() {
-    sem_down(&kb_sem);
-    INT_STATUS old_status = disable_int();
-    ASSERT(kb_inbuf_num > 0);
-    ASSERT(kb_inbuf_num == kb_sem.val + 1);
-    key_info_t ki = kb_in_buffer[kb_inbuf_head];
-    kb_inbuf_head = (kb_inbuf_head + 1) % KB_BUFFER_SIZE;
-    kb_inbuf_num--;
-    set_int_status(old_status);
-    return ki;
-}
+// key_info_t getkey() {
+//     sem_down(&kb_sem);
+//     INT_STATUS old_status = disable_int();
+//     ASSERT(kb_inbuf_num > 0);
+//     ASSERT(kb_inbuf_num == kb_sem.val + 1);
+//     key_info_t ki = kb_in_buffer[kb_inbuf_head];
+//     kb_inbuf_head = (kb_inbuf_head + 1) % KB_BUFFER_SIZE;
+//     kb_inbuf_num--;
+//     set_int_status(old_status);
+//     return ki;
+// }
 
 static void *kb_handler(isrp_t *p) {
     static bool_t ctrl_down = False;
@@ -339,7 +352,8 @@ static void *kb_handler(isrp_t *p) {
                 }
                 ki |= keycode;
                 // print_key_info(ki);
-                putkey(ki);
+                // putkey(ki);
+                tty_putkey(ki);
                 break;
             }
         }
@@ -349,7 +363,7 @@ static void *kb_handler(isrp_t *p) {
 }
 
 void kb_init() {
-    sem_init(&kb_sem, 0);
-    kb_inbuf_head = kb_inbuf_num = 0;
+    // sem_init(&kb_sem, 0);
+    // kb_inbuf_head = kb_inbuf_num = 0;
     register_handler(INT_KB, kb_handler);
 }

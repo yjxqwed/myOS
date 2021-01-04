@@ -5,7 +5,7 @@
 #include <sys/idt.h>
 #include <kprintf.h>
 #include <device/pit.h>
-#include <device/kb.h>
+#include <device/tty.h>
 #include <device/ata.h>
 #include <multiboot/multiboot.h>
 #include <mm/pmem.h>
@@ -63,7 +63,9 @@ void kinit() {
     // init device pit
     timer_init(10000);
     // init device keyboard
-    kb_init();
+    // kb_init();
+    // init tty
+    tty_init();
     // enable interrupt
     enable_int();
     // init hard drives
