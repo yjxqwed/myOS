@@ -17,6 +17,7 @@ typedef struct ATAChannel ata_channel_t;
 #include <thread/sync.h>
 #include <lib/bitmap.h>
 #include <lib/list.h>
+#include <fs/myfs/superblock.h>
 
 struct Partition {
     // lba is for logical block addressing
@@ -30,7 +31,7 @@ struct Partition {
     // name of this partition
     char part_name[8];
 
-    struct super_block *sb;
+    super_block_t *sb;
     btmp_t block_btmp;
     btmp_t inode_btmp;
     // list of open inodes

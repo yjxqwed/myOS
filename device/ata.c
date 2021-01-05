@@ -13,6 +13,8 @@
  */
 
 
+// for more info: https://wiki.osdev.org/PCI_IDE_Controller
+
 /**
  * Block Registers
  */
