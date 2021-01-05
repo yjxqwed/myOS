@@ -500,7 +500,10 @@ static void proc2() {
     printf("proc2 c=0x%X\n", c);
     printf("proc2 p1=0x%X\n", p1);
     write("hello proc2\n");
-    while (1);
+    while (1) {
+        sleep(1000);
+        printf("hello, proc2\n");
+    }
 }
 
 
@@ -567,12 +570,12 @@ void kernelMain() {
     // kfree(b2);
     // pmem_print();
     // vmm_print();
-    // process_execute(proc1, "proc1");
-    // process_execute(proc2, "proc2");
-    // while (1) {
-    //     thread_msleep(5 * 1000);
-    //     kprintf(KPL_DEBUG, "kernel still works\n");
-    // }
+    process_execute(proc1, "proc1", 1);
+    process_execute(proc2, "proc2", 1);
+    while (1) {
+        thread_msleep(5 * 1000);
+        kprintf(KPL_DEBUG, "kernel still works\n");
+    }
     // thread_msleep(10000);
     // while(1) {
     //     // thread_msleep(1000);
@@ -590,15 +593,15 @@ void kernelMain() {
     //         }
     //     }
     // }
-    task_t *c1 = thread_start("c1", 30, console_thread, 1);
-    task_t *c2 = thread_start("c2", 30, console_thread, 2);
-    char tmp[10];
-    for (int i = 0; i < 1000; i++) {
-        thread_msleep(500);
-        ksprintf(tmp, "%d\n", i);
-        tty_puts(4, tmp, CONS_BLACK, CONS_GRAY);
-    }
-    thread_join(c1);
-    thread_join(c2);
+    // task_t *c1 = thread_start("c1", 30, console_thread, 1);
+    // task_t *c2 = thread_start("c2", 30, console_thread, 2);
+    // char tmp[10];
+    // for (int i = 0; i < 1000; i++) {
+    //     thread_msleep(500);
+    //     ksprintf(tmp, "%d\n", i);
+    //     tty_puts(4, tmp, CONS_BLACK, CONS_GRAY);
+    // }
+    // thread_join(c1);
+    // thread_join(c2);
     while (1);
 }

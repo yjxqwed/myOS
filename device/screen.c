@@ -2,13 +2,23 @@
 #include <device/screen.h>
 #include <string.h>
 #include <arch/x86.h>
-#include <thread/sync.h>
 #include <common/debug.h>
+
+// offset of the char at (row, col)
+#define CHAR_OFFSET(row, col) ((row * MAXCOL + col) * 2)
+
+// size in bytes of a whole row
+#define ROW_RAM (MAXCOL * 2)
+// size in bytes of a whole page (screen)
+#define PAGE_RAM (MAXROW * ROW_RAM)
+
+#define ATTR(bg, fg) (uint8_t)((bg << 4) | fg)
+
+#define BLANK_CHAR (' ')
+#define BLANK_ATTR ATTR(BLACK, GRAY)
 
 static int cursor_row = 0;
 static int cursor_col = 0;
-
-static mutex_t scrn_lock;
 
 static uint32_t video_mem = __pa(VIDEO_MEM);
 
@@ -48,9 +58,7 @@ static void __get_cursor(int *row, int *col) {
 }
 
 void get_cursor(int *row, int *col) {
-    mutex_lock(&scrn_lock);
     __get_cursor(row, col);
-    mutex_unlock(&scrn_lock);
 }
 
 static void __set_cursor(int row, int col) {
@@ -66,9 +74,7 @@ static void __set_cursor(int row, int col) {
 }
 
 void set_cursor(int row, int col) {
-    mutex_lock(&scrn_lock);
     __set_cursor(row, col);
-    mutex_unlock(&scrn_lock);
 }
 
 void scrn_putc(char c, COLOR bg, COLOR fg) {
@@ -133,25 +139,4 @@ void scrn_puts(const char *str, COLOR bg, COLOR fg) {
     for (int i = 0; str[i] != '\0'; i++) {
         scrn_putc(str[i], bg, fg);
     }
-}
-
-void scrn_putc_safe(char c, COLOR bg, COLOR fg) {
-    mutex_lock(&scrn_lock);
-    scrn_putc(c, bg, fg);
-    mutex_unlock(&scrn_lock);
-}
-
-void scrn_puts_safe(const char *str, COLOR bg, COLOR fg) {
-    mutex_lock(&scrn_lock);
-    for (int i = 0; str[i] != '\0'; i++) {
-        scrn_putc(str[i], bg, fg);
-    }
-    mutex_unlock(&scrn_lock);
-}
-
-void init_screen() {
-    // clear_screen();
-    // __set_cursor(0, 0);
-    // video_mem = VIDEO_MEM;
-    mutex_init(&scrn_lock);
 }

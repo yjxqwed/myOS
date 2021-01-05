@@ -57,13 +57,8 @@ void kinit() {
     // init syscall
     syscall_init();
 
-
-    // init device screen
-    init_screen();
     // init device pit
     timer_init(10000);
-    // init device keyboard
-    // kb_init();
     // init tty
     tty_init();
     // enable interrupt

@@ -1,7 +1,7 @@
 #include <sys/syscall.h>
 #include <sys/isr.h>
 #include <kprintf.h>
-#include <device/screen.h>
+#include <device/tty.h>
 #include <thread/thread.h>
 #include <common/types.h>
 #include <common/debug.h>
@@ -42,7 +42,7 @@ void syscall_init() {
 }
 
 static int sys_write(const char *str) {
-    scrn_puts_safe(str, BLACK, WHITE);
+    tty_puts(get_current_thread()->tty_no, str, CONS_BLACK, CONS_GRAY);
     return 0;
 }
 

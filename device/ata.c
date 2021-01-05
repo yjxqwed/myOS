@@ -414,7 +414,7 @@ static void *hd_handler(isrp_t *p) {
     }
 }
 
-static uint32_t p_no, l_no, ext_lba_base;
+static uint32_t p_no, l_no;
 
 static void partition_scan(disk_t *hd, uint32_t base_lba) {
     boot_sector_t *bs = kmalloc(sizeof(boot_sector_t));
@@ -504,7 +504,7 @@ void ata_init() {
                 continue;
             }
             hd->existed = True;
-            p_no = l_no = ext_lba_base = 0;
+            p_no = l_no = 0;
             partition_scan(hd, 0);
         }
     }

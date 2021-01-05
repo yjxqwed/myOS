@@ -65,9 +65,11 @@ struct Task {
     // msec left to sleep
     uint32_t sleep_msec;
 
+    // the associated tty
+    int tty_no;
+
     // a magic number to guard this struct
     uint32_t stack_guard;
-
 };
 
 
@@ -101,6 +103,9 @@ task_t *task_create(
     const char *name, uint16_t prio,
     thread_func_t func, void *args
 );
+
+// associate task with tty
+void task_assign_tty(task_t *task, int tty_no);
 
 void thread_yield();
 

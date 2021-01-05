@@ -45,7 +45,7 @@ static void start_process(void *filename) {
     );
 }
 
-task_t *process_execute(char *filename, char *name) {
+task_t *process_execute(char *filename, char *name, int tty_no) {
     task_t *t = task_create(name, 31, start_process, filename);
     if (t == NULL) {
         return NULL;
@@ -60,6 +60,7 @@ task_t *process_execute(char *filename, char *name) {
     ASSERT(t->status == TASK_READY);
     task_push_back_ready(t);
     task_push_back_all(t);
+    task_assign_tty(t, tty_no);
     set_int_status(old_status);
     return t;
 }

@@ -375,3 +375,7 @@ void thread_msleep(uint32_t msec) {
     schedule();
     set_int_status(old_status);
 }
+
+void task_assign_tty(task_t *task, int tty_no) {
+    task->tty_no = tty_no;
+}
