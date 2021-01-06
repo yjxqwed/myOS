@@ -19,7 +19,7 @@ void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags);
 void k_free_pages(void *kva, uint32_t pgcnt);
 
 
-// @brief get bytes of memory. FOR KERNEL USE ONLY!
+// @brief get bytes of zero-outed memory. FOR KERNEL USE ONLY!
 // @param size number of bytes
 // @return kva of the allocated block
 void *kmalloc(uint32_t size);

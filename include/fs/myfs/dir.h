@@ -8,7 +8,7 @@
 #define MAX_FILE_NAME_LENGTH 32
 
 /**
- * dir_t is a in memory structure
+ * dir_t is an in memory structure
  */
 typedef struct Directory {
     // pointer to my inode

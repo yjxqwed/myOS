@@ -96,4 +96,22 @@ struct ATAChannel {
 // init ata devices (hard drives)
 void ata_init();
 
+/**
+ * @brief read from ata device
+ * @param hd target disk
+ * @param lba start lba to read
+ * @param buf buffer to store data
+ * @param sec_cnt sector count to read
+ */
+void ata_read(disk_t *hd, uint32_t lba, void *buf, uint32_t sec_cnt);
+
+/**
+ * @brief write to ata device
+ * @param hd target disk
+ * @param lba start lba to write
+ * @param buf buffer of data to write
+ * @param sec_cnt sector count to write
+ */
+void ata_write(disk_t *hd, uint32_t lba, const void *buf, uint32_t sec_cnt);
+
 #endif

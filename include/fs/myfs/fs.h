@@ -15,4 +15,6 @@ typedef enum FileType {
     FT_DIRECTORY
 } file_type_e;
 
+void fs_init();
+
 #endif

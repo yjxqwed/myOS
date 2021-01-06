@@ -21,11 +21,6 @@ struct SuperBlock {
     // start lba of this partition
     uint32_t part_start_lba;
 
-    // block bitmap start lba
-    uint32_t block_btmp_start_lba;
-    // number of sectors used by block bitmap
-    uint32_t block_btmp_sec_cnt;
-
     // inode bitmap start lba
     uint32_t inode_btmp_start_lba;
     // number of sectors used by inode bitmap
@@ -35,6 +30,11 @@ struct SuperBlock {
     uint32_t inode_table_start_lba;
     // number of sectors used by inode table
     uint32_t inode_table_sec_cnt;
+
+    // block bitmap start lba
+    uint32_t block_btmp_start_lba;
+    // number of sectors used by block bitmap
+    uint32_t block_btmp_sec_cnt;
 
     // data region start lba
     uint32_t data_start_lba;

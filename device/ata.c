@@ -177,10 +177,10 @@ typedef struct BootSector boot_sector_t;
 
 
 // there are 2 ATA channels
-static ata_channel_t channels[2];
+ata_channel_t channels[2];
 
 // list of partitions
-static list_t partition_list;
+list_t partition_list;
 
 /**
  * @brief select the disk and sector(s) to read/write
@@ -214,7 +214,7 @@ static void read_sector(disk_t *hd, void *buf, uint8_t sec_cnt);
  * @param buf data buffer
  * @param sec_cnt number of sectors (0 for 256)
  */
-static void write_sector(disk_t *hd, void *buf, uint8_t sec_cnt);
+static void write_sector(disk_t *hd, const void *buf, uint8_t sec_cnt);
 
 /**
  * @brief [0x12,0x34,0x56,0x78] -> [0x34, 0x12, 0x78, 0x56]
@@ -320,7 +320,7 @@ static void read_sector(disk_t *hd, void *buf, uint8_t sec_cnt) {
 }
 
 
-static void write_sector(disk_t *hd, void *buf, uint8_t sec_cnt) {
+static void write_sector(disk_t *hd, const void *buf, uint8_t sec_cnt) {
     uint32_t num_bytes = 512;
     if (sec_cnt == 0) {
         num_bytes *= 256;
@@ -371,7 +371,7 @@ void ata_read(disk_t *hd, uint32_t lba, void *buf, uint32_t sec_cnt) {
 }
 
 
-void ata_write(disk_t *hd, uint32_t lba, void *buf, uint32_t sec_cnt) {
+void ata_write(disk_t *hd, uint32_t lba, const void *buf, uint32_t sec_cnt) {
     // we use ATA-1, which only supports 28-bit lba
     ASSERT(lba < 0x10000000);
     mutex_lock(&(hd->my_channel->chan_lock));

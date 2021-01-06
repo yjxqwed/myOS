@@ -27,6 +27,8 @@ lib_objs = lib/debug.elf32 lib/utils.elf32 \
 
 mm_objs = mm/kvmm.elf32 mm/pmem.elf32 mm/vmm.elf32
 
+fs_objs = fs/myfs/fs.elf32
+
 usr_objs = usr/src/unistd.elf32 usr/src/stdio.elf32
 
 arch_x86_objs = arch/x86/interrupt.elf32
@@ -36,7 +38,7 @@ thread_objs = thread/thread.elf32 thread/switch.elf32 thread/sync.elf32 \
 
 objects = $(device_objs) $(kernel_asm_objs) $(kernel_c_objs) \
           $(lib_objs) $(usr_objs) $(mm_objs) $(arch_x86_objs) \
-          $(thread_objs)
+          $(thread_objs) $(fs_objs)
 
 
 
