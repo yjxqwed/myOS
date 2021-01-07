@@ -524,9 +524,28 @@ void *console_thread(void *args) {
     }
 }
 
+static void print_myOS(void) {
+    kprintf(
+        KPL_NOTICE,
+        "\n\n"
+        ">>=====================================================<<\n"
+        "||   WELCOME!                 #######     #######      ||\n"
+        "||                           ##     ##   ##      #     ||\n"
+        "||                           ##     ##   ##            ||\n"
+        "||     ##     ##  ##     ##  ##     ##    ######       ||\n"
+        "||     #### ####   ##   ##   ##     ##         ##      ||\n"
+        "||     ## ### ##    ## ##    ##     ##  #      ##      ||\n"
+        "||     ##     ##     ###      #######    ######        ||\n"
+        "||                   ##                                ||\n"
+        "||                  ##              by Jiaxing Yang    ||\n"
+        "||                                       ver: 0.0.1    ||\n"
+        ">>=====================================================<<\n"
+    );
+}
 
 void kernelMain() {
-    kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
+    // kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
+    print_myOS();
     // test_thread();
     // pmem_print();
     // pmem_print();
