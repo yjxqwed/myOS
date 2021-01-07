@@ -12,6 +12,8 @@ void panic_spin(
 
 #define PANIC(...) panic_spin(__FILE__, __LINE__, __func__, __VA_ARGS__)
 
+#define __panic_if(cond) if (!(cond)) { PANIC(#cond); }
+
 #ifndef KDEBUG
 #define MAGICBP ((void)0)
 #else

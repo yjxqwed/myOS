@@ -109,16 +109,13 @@ static void __set_cursor(console_t *cons) {
     if (current_console == -1 || (cons != &(consoles[current_console]))) {
         return;
     }
-    // MAGICBP;
     int pos = (
         cons->cursor_row_base + cons->cursor_row
     ) * CONSOLE_MAXCOL + cons->cursor_col;
-    // INT_STATUS old_status = disable_int();
     outportb(0x3d4, 0x0f);
     outportb(0x3d5, (uint8_t)(pos & 0xff));
     outportb(0x3d4, 0x0e);
     outportb(0x3d5, (uint8_t)((pos >> 8) & 0xff));
-    // set_int_status(old_status);
 }
 
 void console_set_cursor(console_t *cons, int row, int col) {
@@ -137,13 +134,6 @@ static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
     uint16_t *p = &(cons->video_mem[
         CONSOLE_CHAR_OFFSET(cons->cursor_row, cons->cursor_col)
     ]);
-    // MAGICBP;
-    // __asm_volatile(
-    //     "mov eax, %0"
-    //     :
-    //     : "m"(p)
-    //     : "eax"
-    // );
     switch (c) {
         case '\a': {
             break;

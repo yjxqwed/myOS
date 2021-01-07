@@ -38,4 +38,6 @@ struct vmm_struct {
 
 bool_t init_vmm_struct(vmm_t *vmm);
 
+void destroy_vmm_struct(vmm_t *vmm);
+
 #endif

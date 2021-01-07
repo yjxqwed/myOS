@@ -47,15 +47,21 @@ static void start_process(void *filename) {
 
 task_t *process_execute(char *filename, char *name, int tty_no) {
     task_t *t = task_create(name, 31, start_process, filename);
+    int rollback = 0;
     if (t == NULL) {
-        return NULL;
+        goto rb;
     }
-    t->vmm = kmalloc(sizeof(vmm_t));
+    t->vmm = (vmm_t *)kmalloc(sizeof(vmm_t));
     if (t->vmm == NULL || !init_vmm_struct(t->vmm)) {
-        k_free_pages(t, 1);
-        return NULL;
+        rollback = 1;
+        goto rb;
     }
     init_vmm_struct(t->vmm);
+    t->fd_table = (int *)kmalloc(NR_OPEN * sizeof(int));
+    if (t->fd_table == NULL) {
+        rollback = 2;
+        goto rb;
+    }
     INT_STATUS old_status = disable_int();
     ASSERT(t->status == TASK_READY);
     task_push_back_ready(t);
@@ -63,4 +69,27 @@ task_t *process_execute(char *filename, char *name, int tty_no) {
     task_assign_tty(t, tty_no);
     set_int_status(old_status);
     return t;
+
+rb:
+    switch (rollback) {
+        case 2:
+            destroy_vmm_struct(t->vmm);
+            kfree(t->vmm);
+        case 1:
+            k_free_pages(t, 1);
+        default:
+            return NULL;
+    }
+}
+
+int install_global_fd(int gfd) {
+    task_t *task = get_current_thread();
+    ASSERT(task->fd_table != NULL);
+    for (int i = 3; i < NR_OPEN; i++) {
+        if (task->fd_table[i] == -1) {
+            task->fd_table[i] = gfd;
+            return i;
+        }
+    }
+    return -1;
 }

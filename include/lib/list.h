@@ -6,6 +6,7 @@
 */
 
 #include <common/types.h>
+#include <common/debug.h>
 
 struct ListNode;
 typedef struct ListNode list_node_t;
@@ -88,6 +89,7 @@ void list_traverse(list_t *l, list_traversal_func_t tfunc);
 #define __list_push_front(list, container_ptr, member) { \
     ASSERT(list != NULL && container_ptr != NULL); \
     list_node_t *p = &(container_ptr->member); \
+    ASSERT(p->next == NULL && p->prev == NULL); \
     ASSERT(!list_find(list, p)); \
     list_push_front(list, p); \
 }
@@ -101,6 +103,7 @@ void list_traverse(list_t *l, list_traversal_func_t tfunc);
 #define __list_push_back(list, container_ptr, member) { \
     ASSERT(list != NULL && container_ptr != NULL); \
     list_node_t *p = &(container_ptr->member); \
+    ASSERT(p->next == NULL && p->prev == NULL); \
     ASSERT(!list_find(list, p)); \
     list_push_back(list, p); \
 }

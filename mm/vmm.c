@@ -22,8 +22,17 @@ bool_t init_vmm_struct(vmm_t *vmm) {
     mutex_init(vmm->vmm_mutex);
     vmm->pgdir = create_pde();
     if (vmm->pgdir == NULL) {
+        kfree(vmm->vmm_mutex);
         return False;
     }
     vmm->heap_bot = USER_HEAP_BOTTOM;
     vmm->heap_top = USER_HEAP_BOTTOM;
+}
+
+void destroy_vmm_struct(vmm_t *vmm) {
+    if (vmm == NULL) {
+        return;
+    }
+    kfree(vmm->vmm_mutex);
+    k_free_pages(vmm->pgdir, 1);
 }

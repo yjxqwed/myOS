@@ -13,6 +13,9 @@ typedef struct BitMap {
 // always call this function when init a bitmap
 void bitmap_init(btmp_t *btmp, uint32_t byte_len);
 
+// reinit a bitmap loaded from another storage (like a disk)
+void bitmap_reinit(btmp_t *btmp, uint32_t byte_len);
+
 // return true if bit <bit_idx> is set
 int bitmap_bit_test(btmp_t *btmp, uint32_t bit_idx);
 

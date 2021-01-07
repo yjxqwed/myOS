@@ -28,4 +28,10 @@ char* strncpy(const char* src, char* dest, uint32_t n);
 
 void *memcpy(const void *src, void *dest, uint32_t n);
 
+/**
+ * @brief compare 2 strings; both strings should be null terminated
+ * @return 0 if a == b; -1 if a < b; 1 if a > b
+ */
+int strcmp(const char *a, const char *b);
+
 #endif

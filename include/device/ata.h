@@ -19,6 +19,7 @@ typedef struct ATAChannel ata_channel_t;
 #include <lib/list.h>
 #include <fs/myfs/superblock.h>
 
+// an in memory structure for a partition
 struct Partition {
     // lba is for logical block addressing
     // the start sector number
@@ -32,9 +33,16 @@ struct Partition {
     char part_name[8];
 
     super_block_t *sb;
+
     btmp_t block_btmp;
+    // if is true, need to sync
+    bool_t block_btmp_dirty;
+
     btmp_t inode_btmp;
-    // list of open inodes
+    // if is true, need to sync
+    bool_t inode_btmp_dirty;
+
+    // list of open inodes (a in memory cache for performance)
     list_t open_inodes;
 };
 

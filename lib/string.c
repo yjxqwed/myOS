@@ -146,3 +146,23 @@ char* strncpy(const char* src, char* dest, uint32_t n) {
 void *memcpy(const void *src, void *dest, uint32_t n) {
     return strncpy((const char *)src, (char *)dest, n);
 }
+
+int strcmp(const char *a, const char *b) {
+    int i;
+    for (i = 0; a[i] != '\0' && b[i] != '\0'; i++) {
+        if (a[i] == b[i]) {
+            continue;
+        } else if (a[i] < b[i]) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+    if (a[i] == '\0' && b[i] != '\0') {
+        return -1;
+    } else if (a[i] != '\0' && b[i] == '\0') {
+        return 1;
+    } else {
+        return 0;
+    }
+}

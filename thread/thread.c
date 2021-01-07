@@ -113,6 +113,7 @@ task_t *task_create(
 
     task->elapsed_ticks = 0;
     task->vmm = NULL;
+    task->fd_table = NULL;
     return task;
 }
 

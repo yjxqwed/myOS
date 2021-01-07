@@ -9,6 +9,8 @@ typedef struct Task task_t;
 #include <mm/vmm.h>
 
 #define MAX_TASKS 256
+// a task can open at most 8 files
+#define NR_OPEN 8
 
 typedef uint16_t thread_id_t;
 
@@ -65,8 +67,12 @@ struct Task {
     // msec left to sleep
     uint32_t sleep_msec;
 
-    // the associated tty
+    // the associated tty; -1 = no tty
     int tty_no;
+
+    // file discriptor table
+    // int fd_table[NR_OPEN];
+    int *fd_table;
 
     // a magic number to guard this struct
     uint32_t stack_guard;

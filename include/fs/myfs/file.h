@@ -1,0 +1,45 @@
+#ifndef __MYFS_FILE_H__
+#define __MYFS_FILE_H__
+
+#include <fs/myfs/inode.h>
+#include <common/types.h>
+
+// std io fds
+enum {
+    FD_STDIN = 0,
+    FD_STDOUT,
+    FD_STDERR
+};
+
+typedef struct File {
+    // inode of this file
+    im_inode_t *inode;
+    // current file pointer position
+    uint32_t file_pos;
+    // flags
+    uint32_t file_flags;
+} file_t;
+
+// myfs supports at most 32 open files at any moment
+#define MAX_FILE_OPEN 32
+
+/**
+ * @brief assign a node from a part
+ */
+int inode_alloc(partition_t *part);
+
+/**
+ * @brief assign a block from a part
+ */
+int block_alloc(partition_t *part);
+
+/**
+ * @brief sync inode bitmap to disk
+ */
+void inode_btmp_sync(partition_t *part, int bit_idx);
+
+/**
+ * @brief sync block bitmap to disk
+ */
+void block_btmp_sync(partition_t *part, int bit_idx);
+#endif

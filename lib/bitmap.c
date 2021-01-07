@@ -7,11 +7,38 @@
 
 #define CHECK_BITIDX(btmp, bit_idx) ASSERT(bit_idx < 8 * btmp->byte_num_)
 
+static int bitmap_find_first_zero_bit(btmp_t *btmp, uint32_t start_bit_idx);
+
 void bitmap_init(btmp_t *btmp, uint32_t byte_len) {
     btmp->first_zero_bit = 0;
     btmp->byte_num_ = byte_len;
     btmp->num_zero = byte_len * 8;
     memset(btmp->bits_, 0, btmp->byte_num_);
+}
+
+static uint32_t count_bit0_in_byte(uint8_t byte) {
+    if (byte == 0) {
+        return 8;
+    }
+    if (byte == 0xff) {
+        return 0;
+    }
+    uint32_t num = 0;
+    for (int i = 0; i < 8; i++) {
+        if ((byte & 0x01) == 0) {
+            num++;
+        }
+        byte >>= 1;
+    }
+    return num;
+}
+
+void bitmap_reinit(btmp_t *btmp, uint32_t byte_len) {
+    btmp->byte_num_ = byte_len;
+    btmp->first_zero_bit = bitmap_find_first_zero_bit(btmp, 0);
+    for (uint32_t i = btmp->first_zero_bit / 8; i < byte_len; i++) {
+        btmp->num_zero += count_bit0_in_byte(btmp->bits_[i]);
+    }
 }
 
 int bitmap_bit_test(btmp_t *btmp, uint32_t bit_idx) {

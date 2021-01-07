@@ -289,7 +289,7 @@ static int identify_disk(disk_t *hd) {
     uint32_t sec_start = 60 * 2;
     uint32_t sectors = *(uint32_t *)(id_info + sec_start);
     kprintf(KPL_NOTICE, "    SECTORS: %d\n", sectors);
-    kprintf(KPL_NOTICE, "    CAPACITY: %dMiB\n", sectors * 512 / 1024 / 1024);
+    kprintf(KPL_NOTICE, "    CAPACITY: %dMiB\n", sectors / 2048);
     return 0;
 }
 
@@ -418,6 +418,9 @@ static void *hd_handler(isrp_t *p) {
 
 static uint32_t p_no, l_no;
 
+partition_t *first_part = NULL;
+disk_t *first_disk = NULL;
+
 static void partition_scan(disk_t *hd, uint32_t base_lba) {
     boot_sector_t *bs = kmalloc(sizeof(boot_sector_t));
     ata_read(hd, base_lba, bs, 1);
@@ -427,35 +430,32 @@ static void partition_scan(disk_t *hd, uint32_t base_lba) {
         if (pe->fs_type == 0) {
             // unused entry
             continue;
-        }
-        if (pe->fs_type == 0x5 || pe->fs_type == 0xf) {
+        } else if (pe->fs_type == 0x5 || pe->fs_type == 0xf) {
             // extended partition entry
             partition_scan(hd, base_lba + pe->start_lba);
         } else {
             // normal partition entry
+            partition_t *part;
             if (base_lba == 0) {
                 // primary partition
                 ASSERT(p_no < 4);
-                partition_t *part = &(hd->prim_parts[p_no]);
-                part->start_lba = base_lba + pe->start_lba;
-                part->sec_cnt = pe->sec_cnt;
-                part->my_disk = hd;
-                ksprintf(part->part_name, "%s%d", hd->disk_name, p_no + 1);
-                __list_push_back(&partition_list, part, part_tag);
-                p_no++;
+                part = &(hd->prim_parts[p_no]);
+                ksprintf(part->part_name, "%s%d", hd->disk_name, 1 + p_no++);
             } else {
                 // logical partition
                 if (l_no >= 8) {
                     kfree(bs);
                     return;
                 }
-                partition_t *part = &(hd->logic_parts[l_no]);
-                part->start_lba = base_lba + pe->start_lba;
-                part->sec_cnt = pe->sec_cnt;
-                part->my_disk = hd;
-                ksprintf(part->part_name, "%s%d", hd->disk_name, l_no + 5);
-                __list_push_back(&partition_list, part, part_tag);
-                l_no++;
+                part = &(hd->logic_parts[l_no]);
+                ksprintf(part->part_name, "%s%d", hd->disk_name, 5 + l_no++);
+            }
+            part->start_lba = base_lba + pe->start_lba;
+            part->sec_cnt = pe->sec_cnt;
+            part->my_disk = hd;
+            __list_push_back(&partition_list, part, part_tag);
+            if (!first_part) {
+                first_part = part;
             }
         }
     }
@@ -506,6 +506,9 @@ void ata_init() {
                 continue;
             }
             hd->existed = True;
+            if (!first_disk) {
+                first_disk = hd;
+            }
             p_no = l_no = 0;
             partition_scan(hd, 0);
         }
