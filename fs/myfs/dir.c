@@ -124,3 +124,34 @@ __success__:
     dir->im_inode->dirty = True;
     return True;
 }
+
+/**
+ * search record
+ * @example search a/b/c, if c exists, path = "a/b/c" and
+ *   pdir = a/b; if b doesn't exist, path = "a/b" and
+ *   pdir = a
+ */
+typedef struct {
+    // full path if file found or
+    // path to the last unfound file
+    char path[MAX_PATH_LENGTH];
+    // direct parent dir to the last file
+    dir_t *pdir;
+    // file type fo the last file
+    file_type_e ftype;
+} path_record_t;
+
+/**
+ * 找文件, 如果找到, 返回该文件 inode, 父目录 dir,
+ * 如果找不到, 返回第一个不存在文件的父目录 dir, 到第一个不存在文件的路径.
+ */
+static int search_file(
+    const partition_t *part, const dir_t *current_dir,
+    const char *parthname, path_record_t *pr
+) {
+    ASSERT(strlen(parthname) <= MAX_PATH_LENGTH);
+    const dir_t *base_dir = (parthname[0] == '/') ? &root_dir : current_dir;
+
+    char *p = (char *)parthname;
+    
+}

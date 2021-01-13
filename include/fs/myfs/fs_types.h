@@ -16,6 +16,12 @@
 // each partition can have at most 4096 files
 #define MAX_FILE_CNT_PER_PART 4096
 
+// max path depth is 16
+#define MAX_PATH_DEPTH 16
+
+// max path length is 512
+#define MAX_PATH_LENGTH 512
+
 #define BOOT_BLOCK_SEC_CNT 1
 #define SUPER_BLOCK_SEC_CNT 1
 
@@ -29,6 +35,18 @@ typedef enum FileType {
     // directory
     FT_DIRECTORY
 } file_type_e;
+
+// open file flags
+typedef enum OFlags {
+    // read only
+    O_RDONLY = 0,
+    // write only
+    O_WRONLY = 1,
+    // read & write
+    O_RDWR   = 2,
+    // create
+    O_CREAT  = 4
+} oflags_e;
 
 enum {
     FSERR_NOERR = 0,
