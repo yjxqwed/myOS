@@ -14,10 +14,16 @@ typedef struct ATADevice ata_device_t;
 typedef struct ATAChannel ata_channel_t;
 
 #include <common/types.h>
+
+typedef __pair(uint32_t, void *) lba_data_pair_t;
+
+
 #include <thread/sync.h>
 #include <lib/bitmap.h>
 #include <lib/list.h>
 #include <fs/myfs/superblock.h>
+
+#define NR_DIRTY_BLOCKS 16
 
 // an in memory structure for a partition
 struct Partition {
@@ -35,16 +41,34 @@ struct Partition {
     super_block_t *sb;
 
     btmp_t block_btmp;
-    // if is true, need to sync
-    bool_t block_btmp_dirty;
 
     btmp_t inode_btmp;
-    // if is true, need to sync
-    bool_t inode_btmp_dirty;
+
+    /**
+     * Blocks need to be sync after an operation
+     *   first is lba, second is kva to write to disk
+     *     write BLOCK_SIZE bytes starting from kva to blocks start from lba
+     *   if an entry is not 0, it should be sync
+     *   will be checked after an operation
+     */
+    lba_data_pair_t dirty_blocks[NR_DIRTY_BLOCKS];
 
     // list of open inodes (a in memory cache for performance)
     list_t open_inodes;
 };
+
+/**
+ * @brief add a dirty block to sync
+ * @param lba block address on disk
+ * @param data data address in memory
+ */
+void dirty_blocks_add(partition_t *part, uint32_t lba, void *data);
+
+/**
+ * @brief sync dirty blocks to disk
+ */
+void dirty_blocks_sync(partition_t *part);
+
 
 
 struct Disk {

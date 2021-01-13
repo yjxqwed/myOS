@@ -34,12 +34,14 @@ int inode_alloc(partition_t *part);
 int block_alloc(partition_t *part);
 
 /**
- * @brief sync inode bitmap to disk
+ * @brief add dirty blocks to sync
  */
 void inode_btmp_sync(partition_t *part, int bit_idx);
 
 /**
- * @brief sync block bitmap to disk
+ * @brief add dirty blocks to sync
  */
 void block_btmp_sync(partition_t *part, int bit_idx);
+
+
 #endif

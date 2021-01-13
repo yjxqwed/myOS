@@ -39,7 +39,7 @@ static int format_partition(partition_t *part) {
         part->start_lba + boot_block_secs + super_block_secs;
 
     sb->inode_btmp_start_lba = curr_free_secs_start_lba;
-    sb->inode_btmp_sec_cnt = ROUND_UP_DIV(sb->inode_cnt, SECTOR_SIZE_IN_BIT);
+    sb->inode_btmp_sec_cnt = ROUND_UP_DIV(sb->inode_cnt, BLOCK_SIZE_IN_BIT);
     curr_free_secs_start_lba += sb->inode_btmp_sec_cnt;
 
     sb->inode_table_start_lba = curr_free_secs_start_lba;
@@ -48,7 +48,7 @@ static int format_partition(partition_t *part) {
     curr_free_secs_start_lba += sb->inode_table_sec_cnt;
 
     sb->block_btmp_start_lba = curr_free_secs_start_lba;
-    sb->block_btmp_sec_cnt = ROUND_UP_DIV(sb->sec_cnt, SECTOR_SIZE_IN_BIT);
+    sb->block_btmp_sec_cnt = ROUND_UP_DIV(sb->sec_cnt, BLOCK_SIZE_IN_BIT);
     curr_free_secs_start_lba += sb->block_btmp_sec_cnt;
 
     sb->data_start_lba = curr_free_secs_start_lba;
@@ -197,7 +197,6 @@ static int mount_partition(const char *part_name) {
                 part->inode_btmp.bits_, sb->inode_btmp_sec_cnt
             );
             bitmap_reinit(&(part->inode_btmp), sb->inode_btmp_sec_cnt * SECTOR_SIZE);
-            part->inode_btmp_dirty = False;
 
             // read block bitmap of this partition
             part->block_btmp.bits_ = (uint8_t *)kmalloc(sb->block_btmp_sec_cnt * SECTOR_SIZE);
@@ -211,7 +210,11 @@ static int mount_partition(const char *part_name) {
                 part->block_btmp.bits_, sb->block_btmp_sec_cnt
             );
             bitmap_reinit(&(part->block_btmp), sb->block_btmp_sec_cnt * SECTOR_SIZE);
-            part->block_btmp_dirty = False;
+
+            for (int i = 0; i < NR_DIRTY_BLOCKS; i++) {
+                part->dirty_blocks[i].first = 0;
+                part->dirty_blocks[i].second = NULL;
+            }
 
             part->sb = sb;
             list_init(&(part->open_inodes));
@@ -248,7 +251,7 @@ void fs_init() {
         PANIC("failed to mount sdc1");
     }
     kfree(sb);
-    MAGICBP;
+    // MAGICBP;
 }
 
 static char *parse_path(char *pathname, char *name_store) {

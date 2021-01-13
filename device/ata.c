@@ -515,3 +515,36 @@ void ata_init() {
     }
     print_partitions();
 }
+
+
+void dirty_blocks_add(partition_t *part, uint32_t lba, void *data) {
+    for (int i = 0; i < NR_DIRTY_BLOCKS; i++) {
+        if (lba == part->dirty_blocks[i].first) {
+            ASSERT(part->dirty_blocks[i].second == data);
+            return;
+        } else if (part->dirty_blocks[i].first == 0) {
+            part->dirty_blocks[i].first = lba;
+            part->dirty_blocks[i].second = data;
+            return;
+        }
+    }
+    dirty_blocks_sync(part);
+    ASSERT(part->dirty_blocks[0].first == 0);
+    part->dirty_blocks[0].first = lba;
+    part->dirty_blocks[0].second = data;
+    return;
+}
+
+void dirty_blocks_sync(partition_t *part) {
+    for (int i = 0; i < NR_DIRTY_BLOCKS; i++) {
+        lba_data_pair_t *p = &(part->dirty_blocks[i]);
+        if (p->first != 0) {
+            ASSERT(__valid_kva(p->second));
+            ata_write(part->my_disk, p->first, p->second, 1);
+            p->first = 0;
+            p->second = NULL;
+        } else {
+            break;
+        }
+    }
+}

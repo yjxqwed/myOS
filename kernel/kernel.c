@@ -64,7 +64,7 @@ static void parent1(void *args) {
     kprintf(KPL_DEBUG, "args=0x%x\n", args);
     int x = 0;
     kprintf(KPL_DEBUG, "parent(%d) start\n", interval);
-    MAGICBP;
+    // MAGICBP;
     // mutex_init(&m);
     // task_t *task1 = thread_start("supplier", 5, test1, "supplier");
     // task_t *task2 = thread_start("consumer1", 5, test2, "consumer1");

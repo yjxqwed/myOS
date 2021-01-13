@@ -1,10 +1,18 @@
 #ifndef __MYFS_FS_TYPES_H__
 #define __MYFS_FS_TYPES_H__
 
+/**
+ * @file fs/myfs/fs_types.h
+ * @brief some definitions of myfs
+ */
+
 #define SECTOR_SIZE 512
+#define SECTOR_SIZE_IN_BIT 4096
+
 // myfs use a sector as a block
 #define BLOCK_SIZE (1 * SECTOR_SIZE)
-#define SECTOR_SIZE_IN_BIT 4096
+#define BLOCK_SIZE_IN_BIT (1 * SECTOR_SIZE_IN_BIT)
+
 // each partition can have at most 4096 files
 #define MAX_FILE_CNT_PER_PART 4096
 

@@ -38,17 +38,17 @@ int block_alloc(partition_t *part) {
 void inode_btmp_sync(partition_t *part, int bit_idx) {
     uint32_t sec_off = bit_idx / SECTOR_SIZE_IN_BIT;
     uint32_t byte_off = sec_off * SECTOR_SIZE;
-    ata_write(
-        part->my_disk, part->sb->inode_btmp_start_lba + sec_off,
-        part->inode_btmp.bits_ + byte_off, 1
-    );
+
+    uint32_t lba = part->sb->inode_btmp_start_lba + sec_off;
+    void *data = part->inode_btmp.bits_ + byte_off;
+    dirty_blocks_add(part, lba, data);
 }
 
 void block_btmp_sync(partition_t *part, int bit_idx) {
     uint32_t sec_off = bit_idx / SECTOR_SIZE_IN_BIT;
     uint32_t byte_off = sec_off * SECTOR_SIZE;
-    ata_write(
-        part->my_disk, part->sb->block_btmp_start_lba + sec_off,
-        part->block_btmp.bits_ + byte_off, 1
-    );
+
+    uint32_t lba = part->sb->block_btmp_start_lba + sec_off;
+    void *data = part->block_btmp.bits_ + byte_off;
+    dirty_blocks_add(part, lba, data);
 }

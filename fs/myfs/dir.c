@@ -81,6 +81,7 @@ bool_t write_dir_entry(
 ) {
     // make sure dir is in part
     ASSERT(list_find(part->open_inodes, dir->im_inode->i_tag));
+
     uint32_t dir_entry_size = part->sb->dir_entry_size;
     uint32_t nr_de_per_block = __nr_des_per_block(dir_entry_size);
     ASSERT(dir->im_inode->inode.i_size % nr_de_per_block == 0);
@@ -93,7 +94,8 @@ bool_t write_dir_entry(
                 // no enough block
                 return False;
             }
-            part->block_btmp_dirty = True;
+
+            block_btmp_sync(part, block_idx);
 
             uint32_t block_lba = part->start_lba + block_idx;
             memset(buf, 0, BLOCK_SIZE);
