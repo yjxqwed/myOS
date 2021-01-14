@@ -254,14 +254,13 @@ void fs_init() {
     // MAGICBP;
 }
 
-static char *parse_path(char *pathname, char *name_store) {
+static char *parse_path(
+    char *pathname, char name_store[MAX_FILE_NAME_LENGTH + 1]
+) {
     // ASSERT(pathname != NULL);
     ASSERT(__valid_kva(pathname));
     ASSERT(__valid_kva(name_store));
 
-    // if (pathname[0] == '/') {
-    //     while(*(++pathname) == '/');
-    // }
     if (pathname[0] == '\0') {
         return NULL;
     }
@@ -301,4 +300,83 @@ uint32_t path_depth(char* pathname) {
     }
 
     return depth;
+}
+
+/**
+ * search result
+ */
+typedef struct {
+    // info about the last found file
+    char filename[MAX_FILE_NAME_LENGTH + 1];
+    file_type_e ftype;
+    // parent dir of the last found file
+    dir_t *pdir;
+} search_result_t;
+
+
+extern dir_t root_dir;
+
+/**
+ * 找文件, 如果找到, 返回该文件 inode no, 父目录 dir,
+ * 如果找不到, 返回第一个不存在文件的父目录 dir, 到第一个不存在文件的路径.
+ */
+static int search_file(
+    const partition_t *part, const dir_t *current_dir,
+    char *pathname, search_result_t *pr, void *io_buffer
+) {
+    ASSERT(strlen(pathname) <= MAX_PATH_LENGTH);
+    pr->filename[0] = '\0';
+    pr->ftype = FT_NONE;
+    pr->pdir = NULL;
+
+    char filename[MAX_FILE_NAME_LENGTH + 1];
+
+    if (pathname[0] == '.' && pathname[1] == '\0') {
+        return current_dir->im_inode->inode.i_no;
+    } else if (pathname[0] == '/') {
+        char *p = pathname;
+        p = parse_path(p, filename);
+        if (p[0] == '\0' && filename[0] == '\0') {
+            return root_dir.im_inode->inode.i_no;
+        }
+    }
+
+    const dir_t *base_dir = (pathname[0] == '/') ? &root_dir : current_dir;
+    const dir_t *cdir = base_dir;
+    dir_entry_t dir_entry;
+
+    pathname = parse_path(pathname, filename);
+    while (filename[0] != '\0') {
+        if (filename[0] == '.' && filename[1] == '\0') {
+            pathname = parse_path(pathname, filename);
+            continue;
+        }
+        int res = get_dir_entry_by_name(
+            part, cdir, filename, &dir_entry, io_buffer
+        );
+        if (res == FSERR_NOERR) {
+            // found
+            ASSERT(strcmp(filename, dir_entry.filename) == 0);
+            if (pathname[0] == '\0') {
+                // found target
+                return dir_entry.i_no;
+            } else {
+                // not target
+                if (dir_entry.f_type == FT_DIRECTORY) {
+                    // is dir
+                    dir_close(cdir);
+                    cdir = dir_open(part, dir_entry.i_no);
+                    pathname = parse_path(pathname, filename);
+                    ASSERT(filename[0] != '\0');
+                    continue;
+                } else {
+                    // not dir
+                    return -FSERR_NOTDIR;
+                }
+            }
+        } else {
+            // not found
+            return -FSERR_NONEXIST;
+        }
+    }
 }

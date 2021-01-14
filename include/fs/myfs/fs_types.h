@@ -51,7 +51,12 @@ typedef enum OFlags {
 enum {
     FSERR_NOERR = 0,
     // no such partition
-    FSERR_NOPART = 1
+    FSERR_NOPART = 1,
+    FSERR_NOMEM = 2,
+    // file not exist
+    FSERR_NONEXIST,
+    // file not a dir
+    FSERR_NOTDIR
 };
 
 #endif

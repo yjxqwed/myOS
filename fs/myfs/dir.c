@@ -28,14 +28,10 @@ dir_t *dir_open(partition_t *part, uint32_t i_no) {
 // num of dir entries per block
 #define __nr_des_per_block(de_size) (BLOCK_SIZE / de_size)
 
-dir_entry_t *get_dir_entry_by_name(
-    partition_t *part, dir_t *dir, const char *name
+int get_dir_entry_by_name(
+    const partition_t *part, const dir_t *dir, const char *name,
+    dir_entry_t *dir_entry, void *io_buffer
 ) {
-    void *buffer = kmalloc(SECTOR_SIZE);
-    if (buffer == NULL) {
-        return NULL;
-    }
-    dir_entry_t *dir_entry = NULL;
     uint32_t nr_de_per_block = __nr_des_per_block(part->sb->dir_entry_size);
     // handle direct blocks only for now
     for (int i = 0; i < 12; i++) {
@@ -43,18 +39,18 @@ dir_entry_t *get_dir_entry_by_name(
         if (lba == 0) {
             continue;
         }
-        ata_read(part->my_disk, lba, buffer, 1);
-        dir_entry_t *des = (dir_entry_t *)buffer;
+        ata_read(part->my_disk, lba, io_buffer, 1);
+        dir_entry_t *des = (dir_entry_t *)io_buffer;
         for (int j = 0; j < nr_de_per_block; j++) {
             // a valid dir entry should have a valid inode number
             if (des[j].i_no != 0 && strcmp(name, des[j].filename) == 0) {
                 dir_entry = &(des[j]);
-                break;
+                memcpy(&(des[j]), dir_entry, part->sb->dir_entry_size);
+                return FSERR_NOERR;
             }
         }
     }
-    kfree(buffer);
-    return dir_entry;
+    return -FSERR_NONEXIST;
 }
 
 void dir_close(dir_t *dir) {
@@ -123,35 +119,4 @@ __success__:
     dir->im_inode->inode.i_size += dir_entry_size;
     dir->im_inode->dirty = True;
     return True;
-}
-
-/**
- * search record
- * @example search a/b/c, if c exists, path = "a/b/c" and
- *   pdir = a/b; if b doesn't exist, path = "a/b" and
- *   pdir = a
- */
-typedef struct {
-    // full path if file found or
-    // path to the last unfound file
-    char path[MAX_PATH_LENGTH];
-    // direct parent dir to the last file
-    dir_t *pdir;
-    // file type fo the last file
-    file_type_e ftype;
-} path_record_t;
-
-/**
- * 找文件, 如果找到, 返回该文件 inode, 父目录 dir,
- * 如果找不到, 返回第一个不存在文件的父目录 dir, 到第一个不存在文件的路径.
- */
-static int search_file(
-    const partition_t *part, const dir_t *current_dir,
-    const char *parthname, path_record_t *pr
-) {
-    ASSERT(strlen(parthname) <= MAX_PATH_LENGTH);
-    const dir_t *base_dir = (parthname[0] == '/') ? &root_dir : current_dir;
-
-    char *p = (char *)parthname;
-    
 }
