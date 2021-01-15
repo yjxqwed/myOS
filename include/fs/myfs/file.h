@@ -13,7 +13,7 @@ enum {
 
 typedef struct File {
     // inode of this file
-    im_inode_t *inode;
+    im_inode_t *im_inode;
     // current file pointer position
     uint32_t file_pos;
     // flags
@@ -24,12 +24,12 @@ typedef struct File {
 #define MAX_FILE_OPEN 32
 
 /**
- * @brief assign a node from a part
+ * @brief assign an inode from a partition
  */
 int inode_alloc(partition_t *part);
 
 /**
- * @brief assign a block from a part
+ * @brief assign a block from a partition
  */
 int block_alloc(partition_t *part);
 

@@ -30,9 +30,16 @@ typedef struct DirectoryEntry {
 /**
  * @brief get dir entry by name
  */
-bool_t get_dir_entry_by_name(
+int get_dir_entry_by_name(
     const partition_t *part, const dir_t *dir, const char *name,
     dir_entry_t *dir_entry, void *io_buffer
+);
+
+/**
+ * @brief write dir entry to disk
+ */
+int write_dir_entry(
+    partition_t *part, dir_t *dir, dir_entry_t *dir_entry, void *buf
 );
 
 /**
@@ -44,6 +51,14 @@ dir_t *dir_open(partition_t *part, uint32_t i_no);
  * @brief close a directory
  */
 void dir_close(dir_t *dir);
+
+/**
+ * @brief init dir entry
+ */
+void create_dir_entry(
+    const char *filename, uint32_t i_no,
+    file_type_e ft, dir_entry_t *de
+);
 
 #define NR_DIR_ENTRY_PER_BLOCK (BLOCK_SIZE / sizeof(dir_entry_t))
 

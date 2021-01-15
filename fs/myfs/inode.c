@@ -77,6 +77,16 @@ void inode_close(im_inode_t *im_inode) {
     }
 }
 
-void inode_init(inode_t *inode) {
+void im_inode_init(im_inode_t *im_inode, int i_no) {
+    im_inode->dirty = False;
+    im_inode->i_open_times = 1;
+    im_inode->write_deny = False;
+    im_inode->i_tag.next = NULL;
+    im_inode->i_tag.prev = NULL;
 
+    im_inode->inode.i_no = i_no;
+    im_inode->inode.i_size = 0;
+    for (int i = 0; i < NR_BLOCKS_PER_INODE; i++) {
+        im_inode->inode.i_blocks[i] = 0;
+    }
 }

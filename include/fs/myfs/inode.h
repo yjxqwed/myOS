@@ -12,6 +12,8 @@
  * sizeof(inode_t) should be a divisor of 512
  */
 
+#define NR_BLOCKS_PER_INODE 15
+
 typedef struct INode {
     // inode number
     uint32_t i_no;
@@ -29,7 +31,7 @@ typedef struct INode {
      * i_blocks[13] is the two-level indirect sector
      * i_blocks[14] is the three-level indirect sector
      */
-    uint32_t i_blocks[15];
+    uint32_t i_blocks[NR_BLOCKS_PER_INODE];
 } inode_t;
 
 
@@ -67,5 +69,10 @@ im_inode_t *inode_open(partition_t *part, uint32_t i_no);
  * @param im_inode in memory representative of the inode
  */
 void inode_close(im_inode_t *im_inode);
+
+/**
+ * @brief init an im_inode
+ */
+void im_inode_init(im_inode_t *im_inode, int i_no);
 
 #endif

@@ -65,14 +65,12 @@ void create_dir_entry(
     const char *filename, uint32_t i_no,
     file_type_e ft, dir_entry_t *de
 ) {
-    ASSERT(i_no != 0);
-    ASSERT(strlen(filename) <= MAX_FILE_NAME_LENGTH);
     de->f_type = ft;
     de->i_no = i_no;
     strcpy(filename, de->filename);
 }
 
-bool_t write_dir_entry(
+int write_dir_entry(
     partition_t *part, dir_t *dir, dir_entry_t *dir_entry, void *buf
 ) {
     // make sure dir is in part
@@ -81,6 +79,8 @@ bool_t write_dir_entry(
     uint32_t dir_entry_size = part->sb->dir_entry_size;
     uint32_t nr_de_per_block = __nr_des_per_block(dir_entry_size);
     ASSERT(dir->im_inode->inode.i_size % nr_de_per_block == 0);
+
+    // only use direct blocks for now
     for (int i = 0; i < 12; i++) {
         uint32_t lba = dir->im_inode->inode.i_blocks[i];
         if (lba == 0) {
@@ -88,7 +88,7 @@ bool_t write_dir_entry(
             int block_idx = block_alloc(part);
             if (block_idx == -1) {
                 // no enough block
-                return False;
+                return -FSERR_NOBLOCK;
             }
 
             block_btmp_sync(part, block_idx);
@@ -113,10 +113,10 @@ bool_t write_dir_entry(
         }
     }
     // dir is full
-    return False;
+    return -FSERR_DIRFULL;
 
 __success__:
     dir->im_inode->inode.i_size += dir_entry_size;
     dir->im_inode->dirty = True;
-    return True;
+    return FSERR_NOERR;
 }

@@ -56,7 +56,17 @@ enum {
     // file not exist
     FSERR_NONEXIST,
     // file not a dir
-    FSERR_NOTDIR
+    FSERR_NOTDIR,
+    // no inode in a partition
+    FSERR_NOINODE,
+    // no block in a partition
+    FSERR_NOBLOCK,
+    // no global fd (system level)
+    FSERR_NOGLOFD,
+    // no local fd (per process)
+    FSERR_NOLOCFD,
+    // directory is full
+    FSERR_DIRFULL,
 };
 
 #endif
