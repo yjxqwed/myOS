@@ -17,14 +17,14 @@ void bitmap_init(btmp_t *btmp, uint32_t byte_len);
 void bitmap_reinit(btmp_t *btmp, uint32_t byte_len);
 
 // return true if bit <bit_idx> is set
-int bitmap_bit_test(btmp_t *btmp, uint32_t bit_idx);
+int bitmap_bit_test(btmp_t *btmp, int bit_idx);
 
 // return the index of the first region continuous bits of length <len>
 // -1 if no such region
 int bitmap_scan(btmp_t *btmp, uint32_t len);
 
 // set bit <bit_idx> in the bitmap
-void bitmap_set(btmp_t *btmp, uint32_t bit_idx, int value);
+void bitmap_set(btmp_t *btmp, int bit_idx, int value);
 
 void print_btmp(btmp_t *btmp);
 

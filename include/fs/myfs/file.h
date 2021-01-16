@@ -23,25 +23,13 @@ typedef struct File {
 // myfs supports at most 32 open files at any moment
 #define MAX_FILE_OPEN 32
 
-/**
- * @brief assign an inode from a partition
- */
-int inode_alloc(partition_t *part);
 
 /**
- * @brief assign a block from a partition
+ * @brief create a file under pdir
+ * @return fd
  */
-int block_alloc(partition_t *part);
-
-/**
- * @brief add dirty blocks to sync
- */
-void inode_btmp_sync(partition_t *part, int bit_idx);
-
-/**
- * @brief add dirty blocks to sync
- */
-void block_btmp_sync(partition_t *part, int bit_idx);
-
+int file_create(
+    partition_t *part, dir_t *pdir, const char *filename, uint32_t flags
+);
 
 #endif

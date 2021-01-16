@@ -2,6 +2,7 @@
 #include <fs/myfs/inode.h>
 #include <fs/myfs/fs_types.h>
 #include <fs/myfs/file.h>
+#include <fs/myfs/utils.h>
 #include <device/ata.h>
 #include <mm/kvmm.h>
 #include <string.h>

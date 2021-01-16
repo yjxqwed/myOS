@@ -7,7 +7,7 @@
 
 #define CHECK_BITIDX(btmp, bit_idx) ASSERT(bit_idx < 8 * btmp->byte_num_)
 
-static int bitmap_find_first_zero_bit(btmp_t *btmp, uint32_t start_bit_idx);
+static int bitmap_find_first_zero_bit(btmp_t *btmp, int start_bit_idx);
 
 void bitmap_init(btmp_t *btmp, uint32_t byte_len) {
     btmp->first_zero_bit = 0;
@@ -41,7 +41,7 @@ void bitmap_reinit(btmp_t *btmp, uint32_t byte_len) {
     }
 }
 
-int bitmap_bit_test(btmp_t *btmp, uint32_t bit_idx) {
+int bitmap_bit_test(btmp_t *btmp, int bit_idx) {
     CHECK_BITIDX(btmp, bit_idx);
     return (btmp->bits_[bit_idx / 8] & (BITMASK << (bit_idx % 8))) ? 1 : 0;
 }
@@ -60,13 +60,13 @@ static inline int byte_find_first_zero_bit(uint8_t byte) {
 }
 
 // return the first zero bit from start_bit_idx, -1 if no such bit
-static int bitmap_find_first_zero_bit(btmp_t *btmp, uint32_t start_bit_idx) {
+static int bitmap_find_first_zero_bit(btmp_t *btmp, int start_bit_idx) {
     // if start_bit_idx overflows, return -1
     if (start_bit_idx >= btmp->byte_num_ * 8) {
         return -1;
     }
 
-    uint32_t byte_idx = start_bit_idx / 8;
+    int byte_idx = start_bit_idx / 8;
     int bit_offset = start_bit_idx % 8;
     // if not a whole byte, search the first byte specifically
     if (bit_offset != 0) {
@@ -119,7 +119,7 @@ int bitmap_scan(btmp_t *btmp, uint32_t len) {
     return -1;
 }
 
-void bitmap_set(btmp_t *btmp, uint32_t bit_idx, int value) {
+void bitmap_set(btmp_t *btmp, int bit_idx, int value) {
     CHECK_BITIDX(btmp, bit_idx);
     uint8_t *byte = &(btmp->bits_[bit_idx / 8]);
     uint8_t mask = BITMASK << (bit_idx % 8);

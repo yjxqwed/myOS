@@ -3,6 +3,7 @@
 #include <fs/myfs/superblock.h>
 #include <fs/myfs/inode.h>
 #include <fs/myfs/dir.h>
+#include <fs/myfs/utils.h>
 #include <myos.h>
 #include <device/ata.h>
 #include <common/types.h>
@@ -254,64 +255,64 @@ void fs_init() {
     // MAGICBP;
 }
 
-static char *parse_path(
-    char *pathname, char name_store[MAX_FILE_NAME_LENGTH + 1]
-) {
-    // ASSERT(pathname != NULL);
-    ASSERT(__valid_kva(pathname));
-    ASSERT(__valid_kva(name_store));
+// static char *parse_path(
+//     char *pathname, char name_store[MAX_FILE_NAME_LENGTH + 1]
+// ) {
+//     // ASSERT(pathname != NULL);
+//     ASSERT(__valid_kva(pathname));
+//     ASSERT(__valid_kva(name_store));
 
-    if (pathname[0] == '\0') {
-        return NULL;
-    }
+//     if (pathname[0] == '\0') {
+//         return NULL;
+//     }
 
-    // skip / s
-    while (*pathname == '/') {
-        pathname++;
-    }
+//     // skip / s
+//     while (*pathname == '/') {
+//         pathname++;
+//     }
 
-    while (*pathname != '/' && *pathname != '\0') {
-        *name_store = *pathname;
-        name_store++;
-        pathname++;
-    }
-    *name_store = '\0';
+//     while (*pathname != '/' && *pathname != '\0') {
+//         *name_store = *pathname;
+//         name_store++;
+//         pathname++;
+//     }
+//     *name_store = '\0';
 
-    while (*pathname == '/') {
-        pathname++;
-    }
+//     while (*pathname == '/') {
+//         pathname++;
+//     }
 
-    return pathname;
-}
+//     return pathname;
+// }
 
 
-/**
- * @brief depth of a path; "/a/b/c"'s depth is 3
- */
-uint32_t path_depth(char* pathname) {
-    ASSERT(__valid_kva(pathname));
-    char name[MAX_FILE_NAME_LENGTH + 1];
-    uint32_t depth = 0;
+// /**
+//  * @brief depth of a path; "/a/b/c"'s depth is 3
+//  */
+// uint32_t path_depth(char* pathname) {
+//     ASSERT(__valid_kva(pathname));
+//     char name[MAX_FILE_NAME_LENGTH + 1];
+//     uint32_t depth = 0;
 
-    pathname = parse_path(pathname, name);
-    while (pathname) {
-        depth++;
-        pathname = parse_path(pathname, name);
-    }
+//     pathname = parse_path(pathname, name);
+//     while (pathname) {
+//         depth++;
+//         pathname = parse_path(pathname, name);
+//     }
 
-    return depth;
-}
+//     return depth;
+// }
 
 /**
  * search result
  */
-typedef struct {
-    // info about the last found file
-    char filename[MAX_FILE_NAME_LENGTH + 1];
-    file_type_e ftype;
-    // parent dir of the last found file
-    dir_t *pdir;
-} search_result_t;
+// typedef struct {
+//     // info about the last found file
+//     char filename[MAX_FILE_NAME_LENGTH + 1];
+//     file_type_e ftype;
+//     // parent dir of the last found file
+//     dir_t *pdir;
+// } search_result_t;
 
 
 extern dir_t root_dir;
@@ -320,63 +321,111 @@ extern dir_t root_dir;
  * 找文件, 如果找到, 返回该文件 inode no, 父目录 dir,
  * 如果找不到, 返回第一个不存在文件的父目录 dir, 到第一个不存在文件的路径.
  */
-static int search_file(
-    const partition_t *part, const dir_t *current_dir,
-    char *pathname, search_result_t *pr, void *io_buffer
-) {
-    ASSERT(strlen(pathname) <= MAX_PATH_LENGTH);
-    pr->filename[0] = '\0';
-    pr->ftype = FT_NONE;
-    pr->pdir = NULL;
+// static int search_file(
+//     const partition_t *part, const dir_t *current_dir,
+//     path_info_t *pi, void *io_buffer
+// ) {
 
-    char filename[MAX_FILE_NAME_LENGTH + 1];
+//     const dir_t *cdir = pi->abs ? &root_dir : current_dir;
+//     if (pi->depth == 0) {
+//         pi->valid_depth = 0;
+//         return cdir->im_inode->inode.i_no;
+//     }
+//     dir_entry_t dir_entry;
 
-    if (pathname[0] == '.' && pathname[1] == '\0') {
-        return current_dir->im_inode->inode.i_no;
-    } else if (pathname[0] == '/') {
-        char *p = pathname;
-        p = parse_path(p, filename);
-        if (p[0] == '\0' && filename[0] == '\0') {
-            return root_dir.im_inode->inode.i_no;
-        }
+//     pathname = parse_path(pathname, filename);
+//     while (filename[0] != '\0') {
+//         if (filename[0] == '.' && filename[1] == '\0') {
+//             pathname = parse_path(pathname, filename);
+//             continue;
+//         }
+//         int res = get_dir_entry_by_name(
+//             part, cdir, filename, &dir_entry, io_buffer
+//         );
+//         if (res == FSERR_NOERR) {
+//             // found
+//             ASSERT(strcmp(filename, dir_entry.filename) == 0);
+//             if (pathname[0] == '\0') {
+//                 // found target
+//                 return dir_entry.i_no;
+//             } else {
+//                 // not target
+//                 if (dir_entry.f_type == FT_DIRECTORY) {
+//                     // is dir
+//                     dir_close(cdir);
+//                     cdir = dir_open(part, dir_entry.i_no);
+//                     pathname = parse_path(pathname, filename);
+//                     ASSERT(filename[0] != '\0');
+//                     continue;
+//                 } else {
+//                     // not dir
+//                     return -FSERR_NOTDIR;
+//                 }
+//             }
+//         } else {
+//             // not found
+//             return -FSERR_NONEXIST;
+//         }
+//     }
+// }
+
+int get_pdir(partition_t *part, path_info_t *pi, void *io_buffer, dir_t **pdir) {
+    return NULL;
+}
+
+int sys_open(partition_t *part, const char *pathname, uint32_t flags) {
+    int path_len = strlen(pathname);
+    if (path_len > MAX_PATH_LENGTH) {
+        return -FSERR_PATHTOOLONG;
+    } else if (pathname[path_len - 1] == '/') {
+        return -FSERR_DIRECTORY;
     }
-
-    const dir_t *base_dir = (pathname[0] == '/') ? &root_dir : current_dir;
-    const dir_t *cdir = base_dir;
-    dir_entry_t dir_entry;
-
-    pathname = parse_path(pathname, filename);
-    while (filename[0] != '\0') {
-        if (filename[0] == '.' && filename[1] == '\0') {
-            pathname = parse_path(pathname, filename);
-            continue;
-        }
-        int res = get_dir_entry_by_name(
-            part, cdir, filename, &dir_entry, io_buffer
-        );
-        if (res == FSERR_NOERR) {
-            // found
-            ASSERT(strcmp(filename, dir_entry.filename) == 0);
-            if (pathname[0] == '\0') {
-                // found target
-                return dir_entry.i_no;
-            } else {
-                // not target
-                if (dir_entry.f_type == FT_DIRECTORY) {
-                    // is dir
-                    dir_close(cdir);
-                    cdir = dir_open(part, dir_entry.i_no);
-                    pathname = parse_path(pathname, filename);
-                    ASSERT(filename[0] != '\0');
-                    continue;
-                } else {
-                    // not dir
-                    return -FSERR_NOTDIR;
-                }
-            }
+    int fd = -1;
+    path_info_t *pi = (path_info_t *)kmalloc(sizeof(path_info_t));
+    if (pi == NULL) {
+        return -FSERR_NOMEM;
+    }
+    int err = analyze_path(pathname, pi);
+    if (err != FSERR_NOERR) {
+        kfree(pi);
+        return err;
+    }
+    if (pi->depth == 0) {
+        // if depth is 0, the path is '/' or '.', which are both directories
+        kfree(pi);
+        return -FSERR_DIRECTORY;
+    }
+    if (strcmp(pi->path[pi->depth - 1].filename, "..") == 0) {
+        // if the target is .., it is a directory
+        kfree(pi);
+        return -FSERR_DIRECTORY;
+    }
+    void *io_buffer = kmalloc(BLOCK_SIZE);
+    if (io_buffer == NULL) {
+        kfree(pi);
+        return -FSERR_NOMEM;
+    }
+    dir_t *pdir = NULL;
+    err = get_pdir(part, pi, io_buffer, &pdir);
+    if (err != FSERR_NOERR) {
+        kfree(pi);
+        kfree(io_buffer);
+        return err;
+    }
+    dir_entry_t dir_ent;
+    err = get_dir_entry_by_name(part, pdir, pi->path[pi->depth - 1].filename, &dir_ent, io_buffer);
+    if (flags & O_CREAT) {
+        if (err == FSERR_NOERR) {
+            kfree(pi);
+            kfree(io_buffer);
         } else {
-            // not found
-            return -FSERR_NONEXIST;
+            kfree(pi);
+            kfree(io_buffer);
+            return -FSERR_EXIST;
         }
+    } else {
+        kfree(pi);
+        kfree(io_buffer);
+        return -1;
     }
 }

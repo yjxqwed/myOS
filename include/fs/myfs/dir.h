@@ -6,7 +6,6 @@
 #include <fs/myfs/fs.h>
 #include <fs/myfs/fs_types.h>
 
-#define MAX_FILE_NAME_LENGTH 32
 
 /**
  * dir_t is an in memory structure

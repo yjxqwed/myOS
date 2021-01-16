@@ -19,8 +19,10 @@
 // max path depth is 16
 #define MAX_PATH_DEPTH 16
 
-// max path length is 512
-#define MAX_PATH_LENGTH 512
+// max path length is 1024
+#define MAX_PATH_LENGTH 1024
+
+#define MAX_FILE_NAME_LENGTH 32
 
 #define BOOT_BLOCK_SEC_CNT 1
 #define SUPER_BLOCK_SEC_CNT 1
@@ -51,9 +53,12 @@ typedef enum OFlags {
 enum {
     FSERR_NOERR = 0,
     // no such partition
-    FSERR_NOPART = 1,
-    FSERR_NOMEM = 2,
-    // file not exist
+    FSERR_NOPART,
+    // mem shortage
+    FSERR_NOMEM,
+    // file already exists
+    FSERR_EXIST,
+    // file doesn't exist
     FSERR_NONEXIST,
     // file not a dir
     FSERR_NOTDIR,
@@ -67,6 +72,14 @@ enum {
     FSERR_NOLOCFD,
     // directory is full
     FSERR_DIRFULL,
+    // path too long
+    FSERR_PATHTOOLONG,
+    // path too deep
+    FSERR_PATHTOODEEP,
+    // file name too long
+    FSERR_FILENAMETOOLONG,
+    // if sys_open a dir, return this
+    FSERR_DIRECTORY,
 };
 
 #endif

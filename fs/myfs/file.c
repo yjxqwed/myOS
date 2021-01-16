@@ -4,8 +4,10 @@
 #include <thread/thread.h>
 #include <fs/myfs/fs_types.h>
 #include <fs/myfs/dir.h>
+#include <fs/myfs/utils.h>
 #include <mm/kvmm.h>
 #include <string.h>
+#include <thread/process.h>
 
 static file_t file_table[MAX_FILE_OPEN];
 
@@ -20,52 +22,6 @@ int file_table_get_free_slot() {
 
 void file_table_reclaim(int gfd) {
     file_table[gfd].im_inode = NULL;
-}
-
-int inode_alloc(partition_t *part) {
-    ASSERT(part != NULL);
-    int idx = bitmap_scan(&(part->inode_btmp), 1);
-    if (idx == -1) {
-        return -1;
-    }
-    bitmap_set(&(part->inode_btmp), idx, 1);
-    return idx;
-}
-
-void inode_reclaim(partition_t *part, int i_no) {
-    bitmap_set(&(part->inode_btmp), i_no, 0);
-}
-
-int block_alloc(partition_t *part) {
-    ASSERT(part != NULL);
-    int idx = bitmap_scan(&(part->block_btmp), 1);
-    if (idx == -1) {
-        return -1;
-    }
-    bitmap_set(&(part->block_btmp), idx, 1);
-    return idx;
-}
-
-void block_reclaim(partition_t *part, uint32_t blk_no) {
-    bitmap_set(&(part->block_btmp), blk_no, 0);
-}
-
-void inode_btmp_sync(partition_t *part, int bit_idx) {
-    uint32_t sec_off = bit_idx / SECTOR_SIZE_IN_BIT;
-    uint32_t byte_off = sec_off * SECTOR_SIZE;
-
-    uint32_t lba = part->sb->inode_btmp_start_lba + sec_off;
-    void *data = part->inode_btmp.bits_ + byte_off;
-    dirty_blocks_add(part, lba, data);
-}
-
-void block_btmp_sync(partition_t *part, int bit_idx) {
-    uint32_t sec_off = bit_idx / SECTOR_SIZE_IN_BIT;
-    uint32_t byte_off = sec_off * SECTOR_SIZE;
-
-    uint32_t lba = part->sb->block_btmp_start_lba + sec_off;
-    void *data = part->block_btmp.bits_ + byte_off;
-    dirty_blocks_add(part, lba, data);
 }
 
 int file_create(partition_t *part, dir_t *pdir, const char *filename, uint32_t flags) {
@@ -123,7 +79,7 @@ int file_create(partition_t *part, dir_t *pdir, const char *filename, uint32_t f
     __list_push_front(&(part->open_inodes), file_im_ino, i_tag);
 
     kfree(io_buf);
-    return FSERR_NOERR;
+    return install_global_fd(file_gfd);
 
 __fail__:
     ASSERT(err != FSERR_NOERR);
