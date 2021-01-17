@@ -24,17 +24,34 @@ void file_table_reclaim(int gfd) {
     file_table[gfd].im_inode = NULL;
 }
 
-int file_create(partition_t *part, dir_t *pdir, const char *filename, uint32_t flags) {
+/**
+ * @brief install the global fd into task's own fd_table
+ * @return private fd
+ */
+int install_global_fd(int gfd) {
+    task_t *task = get_current_thread();
+    ASSERT(task->fd_table != NULL);
+    for (int i = 3; i < NR_OPEN; i++) {
+        if (task->fd_table[i] == -1) {
+            task->fd_table[i] = gfd;
+            return i;
+        }
+    }
+    return -1;
+}
+
+int file_create(
+    partition_t *part, dir_t *pdir, const char *filename, uint32_t flags,
+    void *io_buf
+) {
 
     ASSERT(strlen(filename) <= MAX_FILE_NAME_LENGTH);
 
     int rollback = -1, err = FSERR_NOERR;
-    // alloc io buffer
-    void *io_buf = kmalloc(BLOCK_SIZE);
     // alloc in memory inode struct
     im_inode_t *file_im_ino = kmalloc(sizeof(im_inode_t));
 
-    if (io_buf == NULL || file_im_ino == NULL) {
+    if (file_im_ino == NULL) {
         err = -FSERR_NOMEM;
         rollback = 0;
         goto __fail__;
@@ -51,7 +68,7 @@ int file_create(partition_t *part, dir_t *pdir, const char *filename, uint32_t f
 
     // alloc a global fd
     int file_gfd = file_table_get_free_slot();
-    if (file_gfd = -1) {
+    if (file_gfd == -1) {
         err = -FSERR_NOGLOFD;
         rollback = 1;
         goto __fail__;
@@ -69,6 +86,14 @@ int file_create(partition_t *part, dir_t *pdir, const char *filename, uint32_t f
         goto __fail__;
     }
 
+    int file_lfd = install_global_fd(file_gfd);
+    if (file_lfd == -1) {
+        err = -FSERR_NOLOCFD;
+        rollback = 2;
+        goto __fail__;
+    }
+
+
     // sync inode bitmap
     inode_btmp_sync(part, file_ino);
     // sync parent inode
@@ -78,8 +103,7 @@ int file_create(partition_t *part, dir_t *pdir, const char *filename, uint32_t f
     // add file inode to cache
     __list_push_front(&(part->open_inodes), file_im_ino, i_tag);
 
-    kfree(io_buf);
-    return install_global_fd(file_gfd);
+    return file_lfd;
 
 __fail__:
     ASSERT(err != FSERR_NOERR);
@@ -90,7 +114,6 @@ __fail__:
         case 1:
             inode_reclaim(part, file_ino);
         case 0:
-            kfree(io_buf);
             kfree(file_im_ino);
     }
     return err;

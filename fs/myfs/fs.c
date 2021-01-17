@@ -1,6 +1,7 @@
 #include <fs/myfs/fs.h>
 #include <fs/myfs/fs_types.h>
 #include <fs/myfs/superblock.h>
+#include <fs/myfs/file.h>
 #include <fs/myfs/inode.h>
 #include <fs/myfs/dir.h>
 #include <fs/myfs/utils.h>
@@ -180,18 +181,18 @@ static int mount_partition(const char *part_name) {
             // read superblock of this partition
             super_block_t *sb = (super_block_t *)kmalloc(sizeof(super_block_t));
             if (sb == NULL) {
-                return -ERR_MEMORY_SHORTAGE;
+                return -FSERR_NOMEM;
             }
             ata_read(
                 part->my_disk, __super_block_lba(part->start_lba),
                 sb, SUPER_BLOCK_SEC_CNT
             );
-
+            kprintf(KPL_DEBUG, "sb->root_inode = %d\n", sb->root_inode_no);
             // read inode bitmap of this partition
             part->inode_btmp.bits_ = (uint8_t *)kmalloc(sb->inode_btmp_sec_cnt * SECTOR_SIZE);
             if (part->inode_btmp.bits_ == NULL) {
                 kfree(sb);
-                return -ERR_MEMORY_SHORTAGE;
+                return -FSERR_NOMEM;
             }
             ata_read(
                 part->my_disk, sb->inode_btmp_start_lba,
@@ -204,7 +205,7 @@ static int mount_partition(const char *part_name) {
             if (part->block_btmp.bits_ == NULL) {
                 kfree(sb);
                 kfree(part->inode_btmp.bits_);
-                return -ERR_MEMORY_SHORTAGE;
+                return -FSERR_NOMEM;
             }
             ata_read(
                 part->my_disk, sb->block_btmp_start_lba,
@@ -223,11 +224,14 @@ static int mount_partition(const char *part_name) {
             kprintf(KPL_NOTICE, "%s mounted!\n", curr_part->part_name);
             print_btmp(&(curr_part->block_btmp));
             print_btmp(&(curr_part->inode_btmp));
+            open_root_dir(part);
             return FSERR_NOERR;
         }
     }
     return -FSERR_NOPART;
 }
+
+extern dir_t root_dir;
 
 void fs_init() {
     list_node_t *p;
@@ -251,6 +255,7 @@ void fs_init() {
     if (mount_partition("sdc1") != FSERR_NOERR) {
         PANIC("failed to mount sdc1");
     }
+    kprintf(KPL_NOTICE, "root dir (%d) opened.\n", root_dir.im_inode->inode.i_no);
     kfree(sb);
     // MAGICBP;
 }
@@ -314,9 +319,6 @@ void fs_init() {
 //     dir_t *pdir;
 // } search_result_t;
 
-
-extern dir_t root_dir;
-
 /**
  * 找文件, 如果找到, 返回该文件 inode no, 父目录 dir,
  * 如果找不到, 返回第一个不存在文件的父目录 dir, 到第一个不存在文件的路径.
@@ -369,17 +371,43 @@ extern dir_t root_dir;
 //     }
 // }
 
-int get_pdir(partition_t *part, path_info_t *pi, void *io_buffer, dir_t **pdir) {
-    return NULL;
+/**
+ * @brief get the parent dir of a path
+ * @example ./a/b/c will get b
+ */
+int get_pdir(
+    partition_t *part, path_info_t *pi, void *io_buffer, dir_t **pdir
+) {
+    dir_t *cdir = pi->abs ? &root_dir : get_current_thread()->cwd_dir;
+    ASSERT(cdir != NULL);
+    ASSERT(pi->depth != 0);
+    dir_entry_t dentry;
+    int err = FSERR_NOERR;
+    for (int i = 0; i < pi->depth - 1; i++) {
+        err = get_dir_entry_by_name(part, cdir, pi->path[i], &dentry, io_buffer);
+        if (err != FSERR_NOERR) {
+            return err;
+        }
+        if (dentry.f_type != FT_DIRECTORY) {
+            return -FSERR_NOTDIR;
+        }
+        dir_close(cdir);
+        cdir = dir_open(part, dentry.i_no);
+    }
+    *pdir = cdir;
+    return FSERR_NOERR;
 }
 
-int sys_open(partition_t *part, const char *pathname, uint32_t flags) {
+int sys_open(const char *pathname, uint32_t flags) {
     int path_len = strlen(pathname);
     if (path_len > MAX_PATH_LENGTH) {
         return -FSERR_PATHTOOLONG;
-    } else if (pathname[path_len - 1] == '/') {
+    }
+    if (pathname[path_len - 1] == '/') {
+        // path for sys_open must not have trailing '/'
         return -FSERR_DIRECTORY;
     }
+
     int fd = -1;
     path_info_t *pi = (path_info_t *)kmalloc(sizeof(path_info_t));
     if (pi == NULL) {
@@ -395,7 +423,8 @@ int sys_open(partition_t *part, const char *pathname, uint32_t flags) {
         kfree(pi);
         return -FSERR_DIRECTORY;
     }
-    if (strcmp(pi->path[pi->depth - 1].filename, "..") == 0) {
+    char *target_file = pi->path[pi->depth - 1];
+    if (strcmp(target_file, "..") == 0) {
         // if the target is .., it is a directory
         kfree(pi);
         return -FSERR_DIRECTORY;
@@ -406,22 +435,26 @@ int sys_open(partition_t *part, const char *pathname, uint32_t flags) {
         return -FSERR_NOMEM;
     }
     dir_t *pdir = NULL;
-    err = get_pdir(part, pi, io_buffer, &pdir);
+    err = get_pdir(curr_part, pi, io_buffer, &pdir);
     if (err != FSERR_NOERR) {
         kfree(pi);
         kfree(io_buffer);
         return err;
     }
     dir_entry_t dir_ent;
-    err = get_dir_entry_by_name(part, pdir, pi->path[pi->depth - 1].filename, &dir_ent, io_buffer);
+    err = get_dir_entry_by_name(
+        curr_part, pdir, target_file, &dir_ent, io_buffer
+    );
     if (flags & O_CREAT) {
         if (err == FSERR_NOERR) {
             kfree(pi);
             kfree(io_buffer);
+            return -FSERR_EXIST;
         } else {
             kfree(pi);
+            fd = file_create(curr_part, pdir, target_file, flags, io_buffer);
             kfree(io_buffer);
-            return -FSERR_EXIST;
+            return fd;
         }
     } else {
         kfree(pi);

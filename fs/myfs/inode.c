@@ -7,6 +7,8 @@
 #include <string.h>
 #include <mm/kvmm.h>
 
+#include <kprintf.h>
+
 
 /**
  * @brief locate inode on disk; results will be stored in lba and offset
@@ -16,11 +18,11 @@ static void inode_locate(
     uint32_t *lba, uint32_t *offset
 ) {
     ASSERT(i_no < MAX_FILE_CNT_PER_PART);
-    uint32_t num_inode_per_sector = SECTOR_SIZE / sizeof(inode_t);
-    uint32_t lba_offset = i_no / num_inode_per_sector;
+    uint32_t num_inode_per_block = BLOCK_SIZE / sizeof(inode_t);
+    uint32_t lba_offset = i_no / num_inode_per_block;
     ASSERT(lba_offset < part->sb->inode_table_sec_cnt);
     *lba = part->sb->inode_table_start_lba + lba_offset;
-    *offset = lba_offset % num_inode_per_sector;
+    *offset = i_no % num_inode_per_block;
 }
 
 void inode_sync(partition_t *part, im_inode_t *im_inode, void *buffer) {
@@ -47,6 +49,7 @@ im_inode_t *inode_open(partition_t *part, uint32_t i_no) {
     uint32_t lba, offset;
     inode_locate(part, i_no, &lba, &offset);
 
+    kprintf(KPL_DEBUG, "inodeopen: lba = %d, offset = %d\n", lba, offset);
     void *buffer = kmalloc(SECTOR_SIZE);
     if (buffer == NULL) {
         return NULL;
@@ -57,7 +60,9 @@ im_inode_t *inode_open(partition_t *part, uint32_t i_no) {
         kfree(buffer);
         return NULL;
     }
-    memcpy((inode_t *)buffer + offset, &(im_inode->inode), sizeof(inode_t));
+    memcpy(((inode_t *)buffer + offset), &(im_inode->inode), sizeof(inode_t));
+
+    kprintf(KPL_DEBUG, "inodeopen: i_no = %d\n", im_inode->inode.i_no);
     kfree(buffer);
     im_inode->i_open_times = 1;
     im_inode->write_deny = False;

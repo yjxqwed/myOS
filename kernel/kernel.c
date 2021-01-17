@@ -10,6 +10,8 @@
 #include <device/tty.h>
 #include <device/console.h>
 
+#include <fs/myfs/fs.h>
+#include <fs/myfs/fs_types.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -545,7 +547,7 @@ static void print_myOS(void) {
 
 void kernelMain() {
     // kprintf(KPL_DUMP, "Hello Wolrd! --- This is myOS by Justing Yang\n");
-    print_myOS();
+    // print_myOS();
     // test_thread();
     // pmem_print();
     // pmem_print();
@@ -589,12 +591,29 @@ void kernelMain() {
     // kfree(b2);
     // pmem_print();
     // vmm_print();
-    process_execute(proc1, "proc1", 1);
-    process_execute(proc2, "proc2", 1);
-    while (1) {
-        thread_msleep(5 * 1000);
-        kprintf(KPL_DEBUG, "kernel still works\n");
+    // process_execute(proc1, "proc1", 1);
+    // process_execute(proc2, "proc2", 1);
+
+    task_t *ktask = get_current_thread();
+    ktask->fd_table = kmalloc(NR_OPEN * sizeof(int));
+    ktask->fd_table[0] = 0;
+    ktask->fd_table[1] = 1;
+    ktask->fd_table[2] = 2;
+    for (int i = 3; i < NR_OPEN; i++) {
+        ktask->fd_table[i] = -1;
     }
+
+    int fd = sys_open("/a.txt", O_CREAT);
+    kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    fd = sys_open("/a.txt/", O_CREAT);
+    kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    fd = sys_open("/b/a.txt", O_CREAT);
+    kprintf(KPL_DEBUG, "fd = %d\n", fd);
+
+    // while (1) {
+    //     thread_msleep(5 * 1000);
+    //     kprintf(KPL_DEBUG, "kernel still works\n");
+    // }
     // thread_msleep(10000);
     // while(1) {
     //     // thread_msleep(1000);

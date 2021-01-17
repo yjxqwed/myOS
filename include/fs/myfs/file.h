@@ -25,11 +25,12 @@ typedef struct File {
 
 
 /**
- * @brief create a file under pdir
- * @return fd
+ * @brief create a file under pdir for calling process
+ * @return process local fd; errno (less than 0) if failed
  */
 int file_create(
-    partition_t *part, dir_t *pdir, const char *filename, uint32_t flags
+    partition_t *part, dir_t *pdir, const char *filename, uint32_t flags,
+    void *io_buf
 );
 
 #endif

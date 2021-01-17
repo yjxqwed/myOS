@@ -81,15 +81,3 @@ rb:
             return NULL;
     }
 }
-
-int install_global_fd(int gfd) {
-    task_t *task = get_current_thread();
-    ASSERT(task->fd_table != NULL);
-    for (int i = 3; i < NR_OPEN; i++) {
-        if (task->fd_table[i] == -1) {
-            task->fd_table[i] = gfd;
-            return i;
-        }
-    }
-    return -1;
-}

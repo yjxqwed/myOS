@@ -11,11 +11,4 @@
  */
 task_t *process_execute(char *filename, char *name, int tty_no);
 
-
-/**
- * @brief install the global fd into task's own fd_table
- * @return private fd
- */
-int install_global_fd(int gfd);
-
 #endif

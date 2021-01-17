@@ -55,7 +55,7 @@ int get_dir_entry_by_name(
 }
 
 void dir_close(dir_t *dir) {
-    if (dir == &root_dir) {
+    if (dir == &root_dir || dir == get_current_thread()->cwd_dir) {
         return;
     }
     inode_close(dir->im_inode);
@@ -75,7 +75,7 @@ int write_dir_entry(
     partition_t *part, dir_t *dir, dir_entry_t *dir_entry, void *buf
 ) {
     // make sure dir is in part
-    ASSERT(list_find(part->open_inodes, dir->im_inode->i_tag));
+    ASSERT(list_find(&(part->open_inodes), &(dir->im_inode->i_tag)));
 
     uint32_t dir_entry_size = part->sb->dir_entry_size;
     uint32_t nr_de_per_block = __nr_des_per_block(dir_entry_size);

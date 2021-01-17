@@ -13,13 +13,8 @@ typedef struct {
     bool_t abs;
     // depth of path
     int depth;
-    // valid depth (to determine invalid filenames)
-    int valid_depth;
     // filenames on path
-    struct {
-        char filename[MAX_FILE_NAME_LENGTH + 1];
-        file_type_e ft;
-    } path[MAX_PATH_DEPTH];
+    char path[MAX_PATH_DEPTH][MAX_FILE_NAME_LENGTH + 1];
 } path_info_t;
 
 /**

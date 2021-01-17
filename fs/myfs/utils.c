@@ -11,10 +11,8 @@ int analyze_path(const char *pathname, path_info_t *pi) {
     // init path info
     pi->abs = False;
     pi->depth = 0;
-    pi->valid_depth = 0;
     for (int i = 0; i < MAX_PATH_DEPTH; i++) {
-        pi->path[i].filename[0] = '\0';
-        pi->path[i].ft = FT_NONE;
+        pi->path[i][0] = '\0';
     }
 
     int i = 0;
@@ -52,7 +50,7 @@ int analyze_path(const char *pathname, path_info_t *pi) {
     }
 
     if (filename[0] != '\0') {
-        strcpy(filename, pi->path[pi->depth].filename);
+        strcpy(filename, pi->path[pi->depth]);
         (pi->depth)++;
         filename[0] = '\0';
     }
@@ -78,7 +76,7 @@ int analyze_path(const char *pathname, path_info_t *pi) {
         if (!strcmp(filename, ".")) {
             continue;
         }
-        strcpy(filename, pi->path[pi->depth].filename);
+        strcpy(filename, pi->path[pi->depth]);
         (pi->depth)++;
         if (pi->depth > MAX_PATH_DEPTH) {
             return -FSERR_PATHTOODEEP;

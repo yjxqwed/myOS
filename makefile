@@ -27,7 +27,8 @@ lib_objs = lib/debug.elf32 lib/utils.elf32 \
 
 mm_objs = mm/kvmm.elf32 mm/pmem.elf32 mm/vmm.elf32
 
-fs_objs = fs/myfs/fs.elf32 fs/myfs/file.elf32
+fs_objs = fs/myfs/fs.elf32 fs/myfs/file.elf32 fs/myfs/dir.elf32 \
+          fs/myfs/inode.elf32 fs/myfs/utils.elf32
 
 usr_objs = usr/src/unistd.elf32 usr/src/stdio.elf32
 

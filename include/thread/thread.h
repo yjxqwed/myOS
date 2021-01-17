@@ -7,6 +7,7 @@ typedef struct Task task_t;
 #include <list.h>
 #include <arch/x86.h>
 #include <mm/vmm.h>
+#include <fs/myfs/fs_types.h>
 
 #define MAX_TASKS 256
 // a task can open at most 8 files
@@ -73,6 +74,9 @@ struct Task {
     // file discriptor table
     // int fd_table[NR_OPEN];
     int *fd_table;
+
+    int cwd_inode;
+    dir_t *cwd_dir;
 
     // a magic number to guard this struct
     uint32_t stack_guard;
