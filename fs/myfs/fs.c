@@ -445,20 +445,26 @@ int sys_open(const char *pathname, uint32_t flags) {
     err = get_dir_entry_by_name(
         curr_part, pdir, target_file, &dir_ent, io_buffer
     );
+
+    kprintf(
+        KPL_DEBUG,
+        "dir_ent: i_no = %d, ft = %d, filename = %s\n",
+        dir_ent.i_no, dir_ent.f_type, dir_ent.filename
+    );
+
     if (flags & O_CREAT) {
         if (err == FSERR_NOERR) {
-            kfree(pi);
-            kfree(io_buffer);
-            return -FSERR_EXIST;
+            err = -FSERR_EXIST;
         } else {
-            kfree(pi);
+            err = FSERR_NOERR;
             fd = file_create(curr_part, pdir, target_file, flags, io_buffer);
-            kfree(io_buffer);
-            return fd;
         }
-    } else {
-        kfree(pi);
-        kfree(io_buffer);
-        return -1;
+    } else if (err == FSERR_NOERR) {
+        // file exists, not create
+        fd = file_open(curr_part, dir_ent.i_no, flags);
     }
+
+    kfree(pi);
+    kfree(io_buffer);
+    return err == FSERR_NOERR ? fd : err;
 }

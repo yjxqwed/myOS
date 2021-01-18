@@ -603,12 +603,19 @@ void kernelMain() {
         ktask->fd_table[i] = -1;
     }
 
-    int fd = sys_open("/a.txt", O_CREAT);
+    int fd = sys_open("/file1", O_CREAT);
     kprintf(KPL_DEBUG, "fd = %d\n", fd);
-    fd = sys_open("/a.txt/", O_CREAT);
+    fd = sys_open("/file2", O_CREAT);
     kprintf(KPL_DEBUG, "fd = %d\n", fd);
-    fd = sys_open("/b/a.txt", O_CREAT);
-    kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // fd = sys_open("/a.txt/b", O_CREAT);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // fd = sys_open("/b/a.txt", O_CREAT);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+
+    // int fd = sys_open("/a.txt", O_RDWR);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // fd = sys_open("/a.txt", O_RDWR);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
 
     // while (1) {
     //     thread_msleep(5 * 1000);

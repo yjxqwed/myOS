@@ -83,6 +83,8 @@ enum {
     FSERR_FILENAMETOOLONG,
     // if sys_open a dir, return this
     FSERR_DIRECTORY,
+    // exclusive write
+    FSERR_EXCWRITE,
 };
 
 /**

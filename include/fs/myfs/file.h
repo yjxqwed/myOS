@@ -29,8 +29,14 @@ typedef struct File {
  * @return process local fd; errno (less than 0) if failed
  */
 int file_create(
-    partition_t *part, dir_t *pdir, const char *filename, uint32_t flags,
-    void *io_buf
+    partition_t *part, dir_t *pdir, const char *filename,
+    uint32_t flags, void *io_buf
 );
+
+/**
+ * @brief open a file by its inode number
+ * @return fd if success; negative errno if failure
+ */
+int file_open(partition_t *part, int i_no, uint32_t flags);
 
 #endif
