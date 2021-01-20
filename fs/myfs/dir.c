@@ -45,7 +45,7 @@ int get_dir_entry_by_name(
         for (int j = 0; j < nr_de_per_block; j++) {
             // a valid dir entry should have a valid inode number
             if (des[j].i_no != 0 && strcmp(name, des[j].filename) == 0) {
-                dir_entry = &(des[j]);
+                // dir_entry = &(des[j]);
                 memcpy(&(des[j]), dir_entry, part->sb->dir_entry_size);
                 return FSERR_NOERR;
             }

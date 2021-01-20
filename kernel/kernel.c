@@ -11,6 +11,7 @@
 #include <device/console.h>
 
 #include <fs/myfs/fs.h>
+#include <fs/myfs/file.h>
 #include <fs/myfs/fs_types.h>
 
 #include <stdio.h>
@@ -603,16 +604,48 @@ void kernelMain() {
         ktask->fd_table[i] = -1;
     }
 
-    int fd = sys_open("/file1", O_CREAT);
-    kprintf(KPL_DEBUG, "fd = %d\n", fd);
-    fd = sys_open("/file2", O_CREAT);
-    kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // int fd = sys_open("/file1", O_CREAT);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // fd = sys_open("/file2", O_CREAT);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // fd = sys_open("/file2/file3", O_CREAT);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // fd = sys_open("/dir3/", O_CREAT);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // fd = sys_open(".", O_CREAT);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // fd = sys_open("..", O_CREAT);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // fd = sys_open("/file3", O_CREAT);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
     // fd = sys_open("/a.txt/b", O_CREAT);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
     // fd = sys_open("/b/a.txt", O_CREAT);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
 
-    // int fd = sys_open("/a.txt", O_RDWR);
+    int fd1 = sys_open("/file1", O_RDONLY);
+    kprintf(KPL_DEBUG, "fd1 = %d\n", fd1);
+    int fd2 = sys_open("/file1", O_RDONLY);
+    kprintf(KPL_DEBUG, "fd2 = %d\n", fd2);
+    print_fd_table();
+    print_open_inodes();
+    print_file_table();
+
+    int ret = sys_close(fd1);
+    kprintf(KPL_DEBUG, "close(%d) = %d\n", fd1, ret);
+    print_fd_table();
+    print_open_inodes();
+    print_file_table();
+    sys_close(fd2);
+    kprintf(KPL_DEBUG, "close(%d) = %d\n", fd2, ret);
+    print_fd_table();
+    print_open_inodes();
+    print_file_table();
+
+
+    // fd = sys_open("/file1", O_RDWR);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // fd = sys_open("/file4", O_RDWR);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
     // fd = sys_open("/a.txt", O_RDWR);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);

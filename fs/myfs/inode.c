@@ -74,6 +74,7 @@ im_inode_t *inode_open(partition_t *part, uint32_t i_no) {
 
 
 void inode_close(im_inode_t *im_inode) {
+    ASSERT(im_inode != NULL);
     // TO figure out: the book turned off interrupt here
     (im_inode->i_open_times)--;
     if ((im_inode->i_open_times) == 0) {

@@ -8,6 +8,7 @@
 #include <mm/kvmm.h>
 #include <string.h>
 #include <thread/process.h>
+#include <kprintf.h>
 
 static file_t file_table[MAX_FILE_OPEN];
 
@@ -149,17 +150,63 @@ int file_open(partition_t *part, int i_no, uint32_t flags) {
 
     // if write, check write_deny flag
     if (flags & O_WRONLY || flags & O_RDWR) {
-        INT_STATUS old_status = disable_int();
+        // INT_STATUS old_status = disable_int();
         if (file_im->write_deny) {
-            set_int_status(old_status);
+            // set_int_status(old_status);
             inode_close(file_im);
             file_table_reclaim(file_gfd);
             task_reclaim_fd(fd);
             return -FSERR_EXCWRITE;
         } else {
             file_im->write_deny = True;
-            set_int_status(old_status);
+            // set_int_status(old_status);
         }
     }
     return fd;
+}
+
+int file_close(int local_fd) {
+    if (local_fd < 0 || local_fd >= NR_OPEN) {
+        return -FSERR_BADLOCFD;
+    }
+    int *fd_table = get_current_thread()->fd_table;
+    ASSERT(fd_table != NULL);
+    int gfd = fd_table[local_fd];
+    // reclaim local_fd
+    fd_table[local_fd] = -1;
+
+    if (gfd == -1) {
+        return -FSERR_BADLOCFD;
+    }
+
+    ASSERT(gfd >= 0 && gfd < MAX_FILE_OPEN);
+
+    file_t *file = &(file_table[gfd]);
+    if (file->im_inode != NULL) {
+        inode_close(file->im_inode);
+        file->im_inode = NULL;
+    }
+    return FSERR_NOERR;
+}
+
+
+/************* some debug utilities *************/
+
+void print_file_table() {
+    INT_STATUS old_status = disable_int();
+    kprintf(KPL_DEBUG, "\nfile_table: [");
+    for (int i = 0; i < MAX_FILE_OPEN; i++) {
+        file_t *file = &(file_table[i]);
+        if (file->im_inode == NULL) {
+            continue;
+        }
+        kprintf(
+            KPL_DEBUG,
+            "{(%d)inode={ino=%d,iop=%d},pos=%d,flags=%x}",
+            i, file->im_inode->inode.i_no, file->im_inode->i_open_times,
+            file->file_pos, file->file_flags
+        );
+    }
+    kprintf(KPL_DEBUG, "]\n");
+    set_int_status(old_status);
 }

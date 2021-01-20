@@ -39,4 +39,12 @@ int file_create(
  */
 int file_open(partition_t *part, int i_no, uint32_t flags);
 
+/**
+ * @brief close a file by its fd
+ */
+int file_close(int local_fd);
+
+
+void print_file_table();
+
 #endif

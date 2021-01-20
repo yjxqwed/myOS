@@ -385,13 +385,13 @@ int get_pdir(
     int err = FSERR_NOERR;
     for (int i = 0; i < pi->depth - 1; i++) {
         err = get_dir_entry_by_name(part, cdir, pi->path[i], &dentry, io_buffer);
+        dir_close(cdir);
         if (err != FSERR_NOERR) {
             return err;
         }
         if (dentry.f_type != FT_DIRECTORY) {
             return -FSERR_NOTDIR;
         }
-        dir_close(cdir);
         cdir = dir_open(part, dentry.i_no);
     }
     *pdir = cdir;
@@ -441,7 +441,11 @@ int sys_open(const char *pathname, uint32_t flags) {
         kfree(io_buffer);
         return err;
     }
+
+    ASSERT(pdir == &root_dir);
+
     dir_entry_t dir_ent;
+    kprintf(KPL_DEBUG, "target_file: %s\n", target_file);
     err = get_dir_entry_by_name(
         curr_part, pdir, target_file, &dir_ent, io_buffer
     );
@@ -456,8 +460,8 @@ int sys_open(const char *pathname, uint32_t flags) {
         if (err == FSERR_NOERR) {
             err = -FSERR_EXIST;
         } else {
-            err = FSERR_NOERR;
             fd = file_create(curr_part, pdir, target_file, flags, io_buffer);
+            err = FSERR_NOERR;
         }
     } else if (err == FSERR_NOERR) {
         // file exists, not create
@@ -467,4 +471,39 @@ int sys_open(const char *pathname, uint32_t flags) {
     kfree(pi);
     kfree(io_buffer);
     return err == FSERR_NOERR ? fd : err;
+}
+
+int sys_close(int fd) {
+    return file_close(fd);
+}
+
+
+/************* some debug utilities *************/
+
+void print_fd_table() {
+    task_t *task = get_current_thread();
+    INT_STATUS old_status = disable_int();
+    int *fd_table = task->fd_table;
+    ASSERT(fd_table != NULL);
+    kprintf(KPL_DEBUG, "\nfd_table: [%d", fd_table[0]);
+    for (int i = 1; i < NR_OPEN; i++) {
+        kprintf(KPL_DEBUG, ",%d", fd_table[i]);
+    }
+    kprintf(KPL_DEBUG, "]\n");
+    set_int_status(old_status);
+}
+
+void print_open_inodes() {
+    INT_STATUS old_status = disable_int();
+    list_node_t *p;
+    kprintf(KPL_DEBUG, "\n%s open_inodes: [", curr_part->part_name);
+    __list_for_each((&(curr_part->open_inodes)), p) {
+        im_inode_t *im = __container_of(im_inode_t, i_tag, p);
+        kprintf(
+            KPL_DEBUG, "{ino=%d, iop=%d}",
+            im->inode.i_no, im->i_open_times
+        );
+    }
+    kprintf(KPL_DEBUG, "]\n");
+    set_int_status(old_status);
 }

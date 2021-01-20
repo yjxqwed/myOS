@@ -83,8 +83,11 @@ enum {
     FSERR_FILENAMETOOLONG,
     // if sys_open a dir, return this
     FSERR_DIRECTORY,
-    // exclusive write
+    // exclusive write (a file can only be
+    //   written by at most one process at any moment)
     FSERR_EXCWRITE,
+
+    FSERR_BADLOCFD,
 };
 
 /**
@@ -117,7 +120,7 @@ typedef struct INode {
 
 
 // the in memory wrapper of inode
-typedef struct InMemoryInode {
+typedef struct InMemoryINode {
     // on disk inode
     inode_t inode;
     // number of times of this file being opened
