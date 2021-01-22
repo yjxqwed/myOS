@@ -18,9 +18,10 @@ typedef struct DirectoryEntry {
 
 /**
  * @brief get dir entry by name
+ * @return FSERR_NOERR if found; -FSERR_NONEXIST otherwise
  */
 int get_dir_entry_by_name(
-    const partition_t *part, const dir_t *dir, const char *name,
+    const partition_t *part, const im_inode_t *dir, const char *name,
     dir_entry_t *dir_entry, void *io_buffer
 );
 
@@ -28,18 +29,18 @@ int get_dir_entry_by_name(
  * @brief write dir entry to disk
  */
 int write_dir_entry(
-    partition_t *part, dir_t *dir, dir_entry_t *dir_entry, void *buf
+    partition_t *part, im_inode_t *dir, dir_entry_t *dir_entry, void *buf
 );
 
 /**
  * @brief open a directory
  */
-dir_t *dir_open(partition_t *part, uint32_t i_no);
+im_inode_t *dir_open(partition_t *part, uint32_t i_no);
 
 /**
  * @brief close a directory
  */
-void dir_close(dir_t *dir);
+void dir_close(im_inode_t *dir);
 
 /**
  * @brief init dir entry

@@ -18,6 +18,8 @@ typedef struct File {
     uint32_t file_pos;
     // flags
     uint32_t file_flags;
+    // file type
+    file_type_e file_tp;
 } file_t;
 
 // myfs supports at most 32 open files at any moment
@@ -29,7 +31,7 @@ typedef struct File {
  * @return process local fd; errno (less than 0) if failed
  */
 int file_create(
-    partition_t *part, dir_t *pdir, const char *filename,
+    partition_t *part, im_inode_t *pdir, const char *filename,
     uint32_t flags, void *io_buf
 );
 
@@ -37,7 +39,7 @@ int file_create(
  * @brief open a file by its inode number
  * @return fd if success; negative errno if failure
  */
-int file_open(partition_t *part, int i_no, uint32_t flags);
+int file_open(partition_t *part, int i_no, uint32_t flags, file_type_e ft);
 
 /**
  * @brief close a file by its fd

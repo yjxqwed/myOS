@@ -9,34 +9,43 @@
 #include <common/debug.h>
 #include <common/types.h>
 
-dir_t root_dir;
+// dir_t root_dir;
+
+im_inode_t *root_imnode = NULL;
 
 void open_root_dir(partition_t *part) {
-    root_dir.im_inode = inode_open(part, part->sb->root_inode_no);
-    root_dir.dir_pos = 0;
+    // root_dir.im_inode = inode_open(part, part->sb->root_inode_no);
+    root_imnode = inode_open(part, part->sb->root_inode_no);
+    // root_dir.dir_pos = 0;
 }
 
-dir_t *dir_open(partition_t *part, uint32_t i_no) {
-    dir_t *dir = kmalloc(sizeof(dir_t));
-    if (dir == NULL) {
-        return NULL;
-    }
-    dir->dir_pos = 0;
-    dir->im_inode = inode_open(part, i_no);
-    return dir;
+// dir_t *dir_open(partition_t *part, uint32_t i_no) {
+//     dir_t *dir = kmalloc(sizeof(dir_t));
+//     if (dir == NULL) {
+//         return NULL;
+//     }
+//     dir->dir_pos = 0;
+//     dir->im_inode = inode_open(part, i_no);
+//     return dir;
+// }
+
+im_inode_t *dir_open(partition_t *part, uint32_t i_no) {
+    return inode_open(part, i_no);
 }
 
 // num of dir entries per block
 #define __nr_des_per_block(de_size) (BLOCK_SIZE / de_size)
 
 int get_dir_entry_by_name(
-    const partition_t *part, const dir_t *dir, const char *name,
-    dir_entry_t *dir_entry, void *io_buffer
+    const partition_t *part, const im_inode_t *dir,
+    // const dir_t *dir, 
+    const char *name, dir_entry_t *dir_entry, void *io_buffer
 ) {
     uint32_t nr_de_per_block = __nr_des_per_block(part->sb->dir_entry_size);
     // handle direct blocks only for now
     for (int i = 0; i < 12; i++) {
-        uint32_t lba = dir->im_inode->inode.i_blocks[i];
+        // uint32_t lba = dir->im_inode->inode.i_blocks[i];
+        uint32_t lba = dir->inode.i_blocks[i];
         if (lba == 0) {
             continue;
         }
@@ -54,12 +63,19 @@ int get_dir_entry_by_name(
     return -FSERR_NONEXIST;
 }
 
-void dir_close(dir_t *dir) {
-    if (dir == &root_dir || dir == get_current_thread()->cwd_dir) {
+// void dir_close(dir_t *dir) {
+//     if (dir == &root_dir || dir == get_current_thread()->cwd_dir) {
+//         return;
+//     }
+//     inode_close(dir->im_inode);
+//     kfree(dir);
+// }
+
+void dir_close(im_inode_t *dir) {
+    if (dir == root_imnode) {
         return;
     }
-    inode_close(dir->im_inode);
-    kfree(dir);
+    inode_close(dir);
 }
 
 void create_dir_entry(
@@ -72,18 +88,22 @@ void create_dir_entry(
 }
 
 int write_dir_entry(
-    partition_t *part, dir_t *dir, dir_entry_t *dir_entry, void *buf
+    partition_t *part, /* dir_t *dir, */ im_inode_t *dir,
+    dir_entry_t *dir_entry, void *buf
 ) {
     // make sure dir is in part
-    ASSERT(list_find(&(part->open_inodes), &(dir->im_inode->i_tag)));
+    // ASSERT(list_find(&(part->open_inodes), &(dir->im_inode->i_tag)));
+    ASSERT(list_find(&(part->open_inodes), &(dir->i_tag)));
 
     uint32_t dir_entry_size = part->sb->dir_entry_size;
     uint32_t nr_de_per_block = __nr_des_per_block(dir_entry_size);
-    ASSERT(dir->im_inode->inode.i_size % nr_de_per_block == 0);
+    // ASSERT(dir->im_inode->inode.i_size % nr_de_per_block == 0);
+    ASSERT(dir->inode.i_size % nr_de_per_block == 0);
 
     // only use direct blocks for now
     for (int i = 0; i < 12; i++) {
-        uint32_t lba = dir->im_inode->inode.i_blocks[i];
+        // uint32_t lba = dir->im_inode->inode.i_blocks[i];
+        uint32_t lba = dir->inode.i_blocks[i];
         if (lba == 0) {
             // no data block, allocate one
             int block_idx = block_alloc(part);
@@ -98,7 +118,8 @@ int write_dir_entry(
             memset(buf, 0, BLOCK_SIZE);
             memcpy(dir_entry, buf, dir_entry_size);
             ata_write(part->my_disk, block_lba, buf, 1);
-            dir->im_inode->inode.i_blocks[i] = block_lba;
+            // dir->im_inode->inode.i_blocks[i] = block_lba;
+            dir->inode.i_blocks[i] = block_lba;
             goto __success__;
         } else {
             // if there is a data block, find a free slot in it
@@ -117,7 +138,8 @@ int write_dir_entry(
     return -FSERR_DIRFULL;
 
 __success__:
-    dir->im_inode->inode.i_size += dir_entry_size;
-    dir->im_inode->dirty = True;
+    // dir->im_inode->inode.i_size += dir_entry_size;
+    // dir->im_inode->dirty = True;
+    dir->inode.i_size += dir_entry_size;
     return FSERR_NOERR;
 }

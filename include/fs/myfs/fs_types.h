@@ -50,7 +50,9 @@ typedef enum OFlags {
     // read & write
     O_RDWR   = 2,
     // create
-    O_CREAT  = 4
+    O_CREAT  = 4,
+    // open a dir only
+    O_DIRECTORY = 8
 } oflags_e;
 
 enum {
@@ -86,7 +88,7 @@ enum {
     // exclusive write (a file can only be
     //   written by at most one process at any moment)
     FSERR_EXCWRITE,
-
+    // if close failed
     FSERR_BADLOCFD,
 };
 
@@ -135,11 +137,11 @@ typedef struct InMemoryINode {
 /**
  * dir_t is an in memory structure
  */
-typedef struct Directory {
-    // pointer to my inode
-    im_inode_t *im_inode;
-    uint32_t dir_pos;
-    uint8_t dir_buf[512];
-} dir_t;
+// typedef struct Directory {
+//     // pointer to my inode
+//     im_inode_t *im_inode;
+//     uint32_t dir_pos;
+//     uint8_t dir_buf[512];
+// } dir_t;
 
 #endif

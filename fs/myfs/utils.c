@@ -4,10 +4,10 @@
 
 
 int analyze_path(const char *pathname, path_info_t *pi) {
-    // int path_len = strlen(pathname);
-    // if (path_len > MAX_PATH_LENGTH) {
-    //     return -FSERR_PATHTOOLONG;
-    // }
+    int path_len = strlen(pathname);
+    if (path_len > MAX_PATH_LENGTH) {
+        return -FSERR_PATHTOOLONG;
+    }
     // init path info
     pi->abs = False;
     pi->depth = 0;
@@ -81,6 +81,16 @@ int analyze_path(const char *pathname, path_info_t *pi) {
         if (pi->depth > MAX_PATH_DEPTH) {
             return -FSERR_PATHTOODEEP;
         }
+    }
+
+    if (pathname[path_len - 1] == '/') {
+        pi->isdir = True;
+    } else if (strcmp(pi->path[pi->depth - 1], "..") == 0) {
+        pi->isdir = True;
+    } else if (pi->depth == 0) {
+        pi->isdir = True;
+    } else {
+        pi->isdir = False;
     }
 
     return FSERR_NOERR;

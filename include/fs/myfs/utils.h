@@ -11,6 +11,8 @@
 typedef struct {
     // whether path is an absolute path (from root)
     bool_t abs;
+    // isdir => path is a dir; !isdir => not sure
+    bool_t isdir;
     // depth of path
     int depth;
     // filenames on path

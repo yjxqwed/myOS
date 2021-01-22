@@ -48,7 +48,8 @@ void task_reclaim_fd(int lfd) {
 }
 
 int file_create(
-    partition_t *part, dir_t *pdir, const char *filename, uint32_t flags,
+    partition_t *part, /* dir_t *pdir, */ im_inode_t *pdir,
+    const char *filename, uint32_t flags,
     void *io_buf
 ) {
 
@@ -104,7 +105,8 @@ int file_create(
     // sync inode bitmap
     inode_btmp_sync(part, file_ino);
     // sync parent inode
-    inode_sync(part, pdir->im_inode, io_buf);
+    // inode_sync(part, pdir->im_inode, io_buf);
+    inode_sync(part, pdir, io_buf);
     // sync file inode
     inode_sync(part, file_im_ino, io_buf);
     // add file inode to cache
@@ -126,7 +128,7 @@ __fail__:
     return err;
 }
 
-int file_open(partition_t *part, int i_no, uint32_t flags) {
+int file_open(partition_t *part, int i_no, uint32_t flags, file_type_e ft) {
     int file_gfd = file_table_get_free_slot();
     if (file_gfd == -1) {
         return -FSERR_NOGLOFD;
@@ -147,6 +149,7 @@ int file_open(partition_t *part, int i_no, uint32_t flags) {
     file_table[file_gfd].file_flags = flags;
     file_table[file_gfd].file_pos = 0;
     file_table[file_gfd].im_inode = file_im;
+    file_table[file_gfd].file_tp = ft;
 
     // if write, check write_deny flag
     if (flags & O_WRONLY || flags & O_RDWR) {

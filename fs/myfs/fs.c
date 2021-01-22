@@ -21,6 +21,7 @@
 extern ata_channel_t channels[2];
 extern list_t partition_list;
 
+
 static int format_partition(partition_t *part) {
     ASSERT(part != NULL);
     kprintf(KPL_NOTICE, "Started to format partition %s\n", part->part_name);
@@ -171,7 +172,9 @@ static int format_partition(partition_t *part) {
     return ERR_NO_ERR;
 }
 
+
 static partition_t *curr_part = NULL;
+
 
 static int mount_partition(const char *part_name) {
     list_node_t *p;
@@ -231,7 +234,9 @@ static int mount_partition(const char *part_name) {
     return -FSERR_NOPART;
 }
 
-extern dir_t root_dir;
+
+extern im_inode_t *root_imnode;
+
 
 void fs_init() {
     list_node_t *p;
@@ -255,136 +260,35 @@ void fs_init() {
     if (mount_partition("sdc1") != FSERR_NOERR) {
         PANIC("failed to mount sdc1");
     }
-    kprintf(KPL_NOTICE, "root dir (%d) opened.\n", root_dir.im_inode->inode.i_no);
+    // kprintf(KPL_NOTICE, "root dir (%d) opened.\n", root_dir.im_inode->inode.i_no);
+    kprintf(KPL_NOTICE, "root dir (%d) opened.\n", root_imnode->inode.i_no);
     kfree(sb);
     // MAGICBP;
 }
 
-// static char *parse_path(
-//     char *pathname, char name_store[MAX_FILE_NAME_LENGTH + 1]
-// ) {
-//     // ASSERT(pathname != NULL);
-//     ASSERT(__valid_kva(pathname));
-//     ASSERT(__valid_kva(name_store));
-
-//     if (pathname[0] == '\0') {
-//         return NULL;
-//     }
-
-//     // skip / s
-//     while (*pathname == '/') {
-//         pathname++;
-//     }
-
-//     while (*pathname != '/' && *pathname != '\0') {
-//         *name_store = *pathname;
-//         name_store++;
-//         pathname++;
-//     }
-//     *name_store = '\0';
-
-//     while (*pathname == '/') {
-//         pathname++;
-//     }
-
-//     return pathname;
-// }
-
-
-// /**
-//  * @brief depth of a path; "/a/b/c"'s depth is 3
-//  */
-// uint32_t path_depth(char* pathname) {
-//     ASSERT(__valid_kva(pathname));
-//     char name[MAX_FILE_NAME_LENGTH + 1];
-//     uint32_t depth = 0;
-
-//     pathname = parse_path(pathname, name);
-//     while (pathname) {
-//         depth++;
-//         pathname = parse_path(pathname, name);
-//     }
-
-//     return depth;
-// }
-
-/**
- * search result
- */
-// typedef struct {
-//     // info about the last found file
-//     char filename[MAX_FILE_NAME_LENGTH + 1];
-//     file_type_e ftype;
-//     // parent dir of the last found file
-//     dir_t *pdir;
-// } search_result_t;
-
-/**
- * 找文件, 如果找到, 返回该文件 inode no, 父目录 dir,
- * 如果找不到, 返回第一个不存在文件的父目录 dir, 到第一个不存在文件的路径.
- */
-// static int search_file(
-//     const partition_t *part, const dir_t *current_dir,
-//     path_info_t *pi, void *io_buffer
-// ) {
-
-//     const dir_t *cdir = pi->abs ? &root_dir : current_dir;
-//     if (pi->depth == 0) {
-//         pi->valid_depth = 0;
-//         return cdir->im_inode->inode.i_no;
-//     }
-//     dir_entry_t dir_entry;
-
-//     pathname = parse_path(pathname, filename);
-//     while (filename[0] != '\0') {
-//         if (filename[0] == '.' && filename[1] == '\0') {
-//             pathname = parse_path(pathname, filename);
-//             continue;
-//         }
-//         int res = get_dir_entry_by_name(
-//             part, cdir, filename, &dir_entry, io_buffer
-//         );
-//         if (res == FSERR_NOERR) {
-//             // found
-//             ASSERT(strcmp(filename, dir_entry.filename) == 0);
-//             if (pathname[0] == '\0') {
-//                 // found target
-//                 return dir_entry.i_no;
-//             } else {
-//                 // not target
-//                 if (dir_entry.f_type == FT_DIRECTORY) {
-//                     // is dir
-//                     dir_close(cdir);
-//                     cdir = dir_open(part, dir_entry.i_no);
-//                     pathname = parse_path(pathname, filename);
-//                     ASSERT(filename[0] != '\0');
-//                     continue;
-//                 } else {
-//                     // not dir
-//                     return -FSERR_NOTDIR;
-//                 }
-//             }
-//         } else {
-//             // not found
-//             return -FSERR_NONEXIST;
-//         }
-//     }
-// }
 
 /**
  * @brief get the parent dir of a path
  * @example ./a/b/c will get b
  */
 int get_pdir(
-    partition_t *part, path_info_t *pi, void *io_buffer, dir_t **pdir
+    partition_t *part, path_info_t *pi, void *io_buffer,
+    // dir_t **pdir
+    im_inode_t **pdir
 ) {
-    dir_t *cdir = pi->abs ? &root_dir : get_current_thread()->cwd_dir;
+    // dir_t *cdir = pi->abs ? &root_dir : get_current_thread()->cwd_dir;
+    im_inode_t *cdir = root_imnode;
+    if (!(pi->abs)) {
+        cdir = dir_open(part, get_current_thread()->cwd_inode_no);
+    }
     ASSERT(cdir != NULL);
     ASSERT(pi->depth != 0);
     dir_entry_t dentry;
     int err = FSERR_NOERR;
     for (int i = 0; i < pi->depth - 1; i++) {
-        err = get_dir_entry_by_name(part, cdir, pi->path[i], &dentry, io_buffer);
+        err = get_dir_entry_by_name(
+            part, cdir, pi->path[i], &dentry, io_buffer
+        );
         dir_close(cdir);
         if (err != FSERR_NOERR) {
             return err;
@@ -398,16 +302,8 @@ int get_pdir(
     return FSERR_NOERR;
 }
 
-int sys_open(const char *pathname, uint32_t flags) {
-    int path_len = strlen(pathname);
-    if (path_len > MAX_PATH_LENGTH) {
-        return -FSERR_PATHTOOLONG;
-    }
-    if (pathname[path_len - 1] == '/') {
-        // path for sys_open must not have trailing '/'
-        return -FSERR_DIRECTORY;
-    }
 
+int sys_open(const char *pathname, uint32_t flags) {
     int fd = -1;
     path_info_t *pi = (path_info_t *)kmalloc(sizeof(path_info_t));
     if (pi == NULL) {
@@ -418,23 +314,38 @@ int sys_open(const char *pathname, uint32_t flags) {
         kfree(pi);
         return err;
     }
+
+    if (pi->isdir && flags != O_RDONLY) {
+        // dir can only be read
+        kfree(pi);
+        return -FSERR_DIRECTORY;
+    }
+
     if (pi->depth == 0) {
-        // if depth is 0, the path is '/' or '.', which are both directories
-        kfree(pi);
-        return -FSERR_DIRECTORY;
+        if (pi->abs) {
+            // '/' -> root dir
+            fd = file_open(
+                curr_part, curr_part->sb->root_inode_no,
+                flags, FT_DIRECTORY
+            );
+        } else {
+            // '.' -> this dir
+            fd = file_open(
+                curr_part, get_current_thread()->cwd_inode_no,
+                flags, FT_DIRECTORY
+            );
+        }
+        err = FSERR_NOERR;
+        goto __success__;
     }
-    char *target_file = pi->path[pi->depth - 1];
-    if (strcmp(target_file, "..") == 0) {
-        // if the target is .., it is a directory
-        kfree(pi);
-        return -FSERR_DIRECTORY;
-    }
+
     void *io_buffer = kmalloc(BLOCK_SIZE);
     if (io_buffer == NULL) {
         kfree(pi);
         return -FSERR_NOMEM;
     }
-    dir_t *pdir = NULL;
+
+    im_inode_t *pdir = NULL;
     err = get_pdir(curr_part, pi, io_buffer, &pdir);
     if (err != FSERR_NOERR) {
         kfree(pi);
@@ -442,9 +353,10 @@ int sys_open(const char *pathname, uint32_t flags) {
         return err;
     }
 
-    ASSERT(pdir == &root_dir);
+    kprintf(KPL_DEBUG, "pdir.inode = %d\n", pdir->inode.i_no);
 
     dir_entry_t dir_ent;
+    char *target_file = pi->path[pi->depth - 1];
     kprintf(KPL_DEBUG, "target_file: %s\n", target_file);
     err = get_dir_entry_by_name(
         curr_part, pdir, target_file, &dir_ent, io_buffer
@@ -456,22 +368,54 @@ int sys_open(const char *pathname, uint32_t flags) {
         dir_ent.i_no, dir_ent.f_type, dir_ent.filename
     );
 
-    if (flags & O_CREAT) {
-        if (err == FSERR_NOERR) {
-            err = -FSERR_EXIST;
-        } else {
-            fd = file_create(curr_part, pdir, target_file, flags, io_buffer);
-            err = FSERR_NOERR;
+    if (err == FSERR_NOERR) {
+        // found an dentry
+        if (pi->isdir && dir_ent.f_type != FT_DIRECTORY) {
+            // looking for a dir but found a not dir
+            err = -FSERR_NOTDIR;
+            goto __success__;
         }
-    } else if (err == FSERR_NOERR) {
-        // file exists, not create
-        fd = file_open(curr_part, dir_ent.i_no, flags);
+
+        pi->isdir == (dir_ent.f_type == FT_DIRECTORY);
+
+        if (pi->isdir) {
+            if (flags == O_RDONLY) {
+                err = FSERR_NOERR;
+                fd = file_open(curr_part, dir_ent.i_no, flags, dir_ent.f_type);
+                goto __success__;
+            } else {
+                err = -FSERR_DIRECTORY;
+                goto __success__;
+            }
+        } else {
+            if (flags & O_CREAT) {
+                err = -FSERR_EXIST;
+                goto __success__;
+            } else {
+                err = FSERR_NOERR;
+                fd = file_open(curr_part, dir_ent.i_no, flags, dir_ent.f_type);
+                goto __success__;
+            }
+        }
+    } else {
+        // not found (err == -FSERR_NONEXIST)
+        if (flags & O_CREAT) {
+            ASSERT(!pi->isdir);
+            err = FSERR_NOERR;
+            fd = file_create(curr_part, pdir, target_file, flags, io_buffer);
+            goto __success__;
+        } else {
+            err = -FSERR_NONEXIST;
+            goto __success__;
+        }
     }
 
+__success__:
     kfree(pi);
     kfree(io_buffer);
-    return err == FSERR_NOERR ? fd : err;
+    return (err == FSERR_NOERR) ? fd : err;
 }
+
 
 int sys_close(int fd) {
     return file_close(fd);
