@@ -88,8 +88,9 @@ enum {
     // exclusive write (a file can only be
     //   written by at most one process at any moment)
     FSERR_EXCWRITE,
-    // if close failed
-    FSERR_BADLOCFD,
+
+    // process provides a bad fd
+    FSERR_BADFD,
 };
 
 /**

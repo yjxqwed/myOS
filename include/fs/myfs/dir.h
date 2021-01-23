@@ -3,10 +3,12 @@
 
 #include <fs/myfs/inode.h>
 #include <common/types.h>
-#include <fs/myfs/fs.h>
 #include <fs/myfs/fs_types.h>
 
 
+/**
+ * the dentries on disk should always be continuous
+ */
 typedef struct DirectoryEntry {
     // + 1 is for '\0'
     char filename[MAX_FILE_NAME_LENGTH + 1];

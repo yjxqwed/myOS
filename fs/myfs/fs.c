@@ -422,6 +422,20 @@ int sys_close(int fd) {
 }
 
 
+int sys_getdents(int fd, void *buffer, size_t count) {
+    file_t *file = lfd2file(fd);
+    if (file == NULL || file->file_tp != FT_DIRECTORY) {
+        return -FSERR_BADFD;
+    }
+    return read_dirent(curr_part, file, buffer, count);
+}
+
+
+int sys_read(int fd, void *buffer, size_t count) {
+
+}
+
+
 /************* some debug utilities *************/
 
 void print_fd_table() {

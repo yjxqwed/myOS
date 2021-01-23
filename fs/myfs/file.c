@@ -9,6 +9,7 @@
 #include <string.h>
 #include <thread/process.h>
 #include <kprintf.h>
+#include <common/utils.h>
 
 static file_t file_table[MAX_FILE_OPEN];
 
@@ -168,28 +169,117 @@ int file_open(partition_t *part, int i_no, uint32_t flags, file_type_e ft) {
     return fd;
 }
 
-int file_close(int local_fd) {
+
+file_t *lfd2file(int local_fd) {
     if (local_fd < 0 || local_fd >= NR_OPEN) {
-        return -FSERR_BADLOCFD;
+        return NULL;
     }
     int *fd_table = get_current_thread()->fd_table;
     ASSERT(fd_table != NULL);
     int gfd = fd_table[local_fd];
-    // reclaim local_fd
-    fd_table[local_fd] = -1;
 
     if (gfd == -1) {
-        return -FSERR_BADLOCFD;
+        return NULL;
     }
 
     ASSERT(gfd >= 0 && gfd < MAX_FILE_OPEN);
 
     file_t *file = &(file_table[gfd]);
-    if (file->im_inode != NULL) {
-        inode_close(file->im_inode);
-        file->im_inode = NULL;
+    ASSERT(file->im_inode != NULL);
+    return file;
+}
+
+
+int file_close(int local_fd) {
+    // if (local_fd < 0 || local_fd >= NR_OPEN) {
+    //     return -FSERR_BADFD;
+    // }
+    // int *fd_table = get_current_thread()->fd_table;
+    // ASSERT(fd_table != NULL);
+    // int gfd = fd_table[local_fd];
+    // // reclaim local_fd
+    // fd_table[local_fd] = -1;
+
+    // if (gfd == -1) {
+    //     return -FSERR_BADFD;
+    // }
+
+    // ASSERT(gfd >= 0 && gfd < MAX_FILE_OPEN);
+
+    // file_t *file = &(file_table[gfd]);
+    // ASSERT(file->im_inode != NULL);
+    file_t *file = lfd2file(local_fd);
+    if (file == NULL) {
+        return -FSERR_BADFD;
     }
+    // after passing check of lfd2file, the following line is safe
+    get_current_thread()->fd_table[local_fd] = -1;
+
+    inode_close(file->im_inode);
+    file->im_inode = NULL;
     return FSERR_NOERR;
+}
+
+
+int file_read(partition_t *part, int local_fd, void *buffer, size_t count) {
+
+    file_t *file = lfd2file(local_fd);
+    if (file == NULL) {
+        return -FSERR_BADFD;
+    }
+
+    if (count == 0 || file->file_pos >= file->im_inode->inode.i_size) {
+        return 0;
+    }
+
+    void *io_buf = kmalloc(BLOCK_SIZE);
+    if (io_buf == NULL) {
+        return -FSERR_NOMEM;
+    }
+
+    int blk_size = BLOCK_SIZE;
+    int dentry_size = part->sb->dir_entry_size;
+
+    if (file->file_tp == FT_DIRECTORY) {
+        // for dir file, each block may not be fully used
+        blk_size -= BLOCK_SIZE % dentry_size;
+    }
+
+    int bytes_read = 0;
+    int bytes_read_per_blk = 0;
+
+    int *blocks = file->im_inode->inode.i_blocks;
+    // number of dentries per block
+    int ndpb = BLOCK_SIZE / dentry_size;
+
+    int start_blk_no = file->file_pos / blk_size;
+    int start_blk_off = file->file_pos % blk_size;
+
+    // count is the number of bytes of dentries to be read
+    count = MIN(count, file->im_inode->inode.i_size - file->file_pos);
+    count -= count % dentry_size;
+
+    int num_blks = ROUND_UP_DIV(count + start_blk_off * dentry_size, blk_size);
+
+    // only consider the first 12 direct blocks
+    ASSERT(start_blk_no + num_blks <= 12);
+
+    kfree(io_buf);
+}
+
+
+int dir_file_read(
+    partition_t *part, file_t *dfile, void *buffer, size_t count
+) {
+    if (count == 0 || dfile->file_pos >= dfile->im_inode->inode.i_size) {
+        return 0;
+    }
+    dir_entry_t *dentries_buf = (dir_entry_t *)buffer;
+    int dent_size = part->sb->dir_entry_size;
+    int nr_dents = count / dent_size;
+    // the buffer can hold at most nr_dents entries
+
+    return -1;
 }
 
 
@@ -205,9 +295,9 @@ void print_file_table() {
         }
         kprintf(
             KPL_DEBUG,
-            "{(%d)inode={ino=%d,iop=%d},pos=%d,flags=%x}",
+            "{(%d)inode={ino=%d,iop=%d},pos=%d,flags=%x,ft=%d}",
             i, file->im_inode->inode.i_no, file->im_inode->i_open_times,
-            file->file_pos, file->file_flags
+            file->file_pos, file->file_flags, file->file_tp
         );
     }
     kprintf(KPL_DEBUG, "]\n");

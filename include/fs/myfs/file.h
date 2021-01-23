@@ -47,6 +47,20 @@ int file_open(partition_t *part, int i_no, uint32_t flags, file_type_e ft);
 int file_close(int local_fd);
 
 
+/**
+ * @brief read dir entries
+ */
+int read_dirent(
+    partition_t *part, file_t *dfile, void *buffer, size_t count
+);
+
+
+/**
+ * @brief local fd to file_t
+ */
+file_t *lfd2file(int local_fd);
+
+
 void print_file_table();
 
 #endif

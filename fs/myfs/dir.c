@@ -143,3 +143,4 @@ __success__:
     dir->inode.i_size += dir_entry_size;
     return FSERR_NOERR;
 }
+

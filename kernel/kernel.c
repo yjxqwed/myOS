@@ -623,21 +623,27 @@ void kernelMain() {
     // fd = sys_open("/b/a.txt", O_CREAT);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
 
-    int fd1 = sys_open("/file1", O_RDONLY);
-    kprintf(KPL_DEBUG, "fd1 = %d\n", fd1);
-    int fd2 = sys_open("/file1", O_RDONLY);
-    kprintf(KPL_DEBUG, "fd2 = %d\n", fd2);
-    print_fd_table();
-    print_open_inodes();
-    print_file_table();
+    // int fd1 = sys_open("/file1", O_RDONLY);
+    // kprintf(KPL_DEBUG, "fd1 = %d\n", fd1);
+    // int fd2 = sys_open("/file1", O_RDONLY);
+    // kprintf(KPL_DEBUG, "fd2 = %d\n", fd2);
+    // print_fd_table();
+    // print_open_inodes();
+    // print_file_table();
 
-    int ret = sys_close(fd1);
-    kprintf(KPL_DEBUG, "close(%d) = %d\n", fd1, ret);
-    print_fd_table();
-    print_open_inodes();
-    print_file_table();
-    sys_close(fd2);
-    kprintf(KPL_DEBUG, "close(%d) = %d\n", fd2, ret);
+    // int ret = sys_close(fd1);
+    // kprintf(KPL_DEBUG, "close(%d) = %d\n", fd1, ret);
+    // print_fd_table();
+    // print_open_inodes();
+    // print_file_table();
+    // sys_close(fd2);
+    // kprintf(KPL_DEBUG, "close(%d) = %d\n", fd2, ret);
+    // print_fd_table();
+    // print_open_inodes();
+    // print_file_table();
+
+    int fd = sys_open("/", O_RDWR);
+    kprintf(KPL_DEBUG, "fd = %d\n", fd);
     print_fd_table();
     print_open_inodes();
     print_file_table();
