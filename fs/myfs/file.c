@@ -268,18 +268,64 @@ int file_read(partition_t *part, int local_fd, void *buffer, size_t count) {
 }
 
 
-int dir_file_read(
+int read_dirent(
     partition_t *part, file_t *dfile, void *buffer, size_t count
 ) {
+    ASSERT(dfile->file_tp == FT_DIRECTORY);
     if (count == 0 || dfile->file_pos >= dfile->im_inode->inode.i_size) {
         return 0;
     }
-    dir_entry_t *dentries_buf = (dir_entry_t *)buffer;
-    int dent_size = part->sb->dir_entry_size;
-    int nr_dents = count / dent_size;
-    // the buffer can hold at most nr_dents entries
 
-    return -1;
+    int dent_size = part->sb->dir_entry_size;
+
+    int blk_size = BLOCK_SIZE - BLOCK_SIZE % dent_size;
+
+    ASSERT((dfile->im_inode->inode.i_size - dfile->file_pos) % dent_size == 0);
+
+    count = MIN(
+        count - count % dent_size, 
+        dfile->im_inode->inode.i_size - dfile->file_pos
+    );
+
+    ASSERT(count % dent_size == 0);
+
+    kprintf(KPL_DEBUG, "dir_file_read: count = %d\n", count);
+
+    if (count == 0) {
+        return 0;
+    }
+
+    // we need to read count bytes starting form file_pos
+    // and store them in the buffer
+
+    void *io_buf = kmalloc(BLOCK_SIZE);
+    if (io_buf == NULL) {
+        return -FSERR_NOMEM;
+    }
+
+    int *blks = dfile->im_inode->inode.i_blocks;
+
+    uint32_t pos = dfile->file_pos;
+
+    int bytes_read = 0;
+    while (bytes_read < count) {
+        int blk_no = pos / blk_size;
+        // only consider the first 12 direct data blks for now
+        ASSERT(blk_no < 12 && blks[blk_no] != 0);
+        int blk_off = pos % blk_size;
+        int num_bytes = blk_size - blk_off;
+        num_bytes = MIN(num_bytes, count - bytes_read);
+        ata_read(part->my_disk, blks[blk_no], io_buf, 1);
+        memcpy(io_buf + blk_off, buffer + bytes_read, num_bytes);
+        bytes_read += num_bytes;
+        pos += bytes_read;
+    }
+
+    kfree(io_buf);
+    dfile->file_pos += count;
+    ASSERT(pos == dfile->file_pos);
+    ASSERT(dfile->file_flags <= dfile->im_inode->inode.i_size);
+    return count;
 }
 
 

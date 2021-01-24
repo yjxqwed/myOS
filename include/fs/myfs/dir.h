@@ -56,4 +56,7 @@ void open_root_dir(partition_t *part);
 
 #define NR_DIR_ENTRY_PER_BLOCK (BLOCK_SIZE / sizeof(dir_entry_t))
 
+
+void print_dentry(const dir_entry_t *dent);
+
 #endif

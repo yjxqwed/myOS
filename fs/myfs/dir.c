@@ -8,6 +8,7 @@
 #include <string.h>
 #include <common/debug.h>
 #include <common/types.h>
+#include <kprintf.h>
 
 // dir_t root_dir;
 
@@ -53,7 +54,7 @@ int get_dir_entry_by_name(
         dir_entry_t *des = (dir_entry_t *)io_buffer;
         for (int j = 0; j < nr_de_per_block; j++) {
             // a valid dir entry should have a valid inode number
-            if (des[j].i_no != 0 && strcmp(name, des[j].filename) == 0) {
+            if (des[j].f_type != FT_NONE && !strcmp(name, des[j].filename)) {
                 // dir_entry = &(des[j]);
                 memcpy(&(des[j]), dir_entry, part->sb->dir_entry_size);
                 return FSERR_NOERR;
@@ -126,7 +127,7 @@ int write_dir_entry(
             ata_read(part->my_disk, lba, buf, 1);
             dir_entry_t *des = (dir_entry_t *)buf;
             for (int j = 0; j < nr_de_per_block; j++) {
-                if (des[j].i_no == 0) {
+                if (des[j].f_type == FT_NONE) {
                     memcpy(dir_entry, &(des[j]), dir_entry_size);
                     ata_write(part->my_disk, lba, buf, 1);
                     goto __success__;
@@ -144,3 +145,10 @@ __success__:
     return FSERR_NOERR;
 }
 
+void print_dentry(const dir_entry_t *dent) {
+    kprintf(
+        KPL_DEBUG, "{filename=%s, ino=%d, ft=%s}\n",
+        dent->filename, dent->i_no,
+        dent->f_type == FT_DIRECTORY ? "dir" : "reg"
+    );
+}

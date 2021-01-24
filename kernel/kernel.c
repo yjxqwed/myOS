@@ -13,6 +13,7 @@
 #include <fs/myfs/fs.h>
 #include <fs/myfs/file.h>
 #include <fs/myfs/fs_types.h>
+#include <fs/myfs/dir.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -604,9 +605,11 @@ void kernelMain() {
         ktask->fd_table[i] = -1;
     }
 
-    // int fd = sys_open("/file1", O_CREAT);
+    int fd = sys_open("/file1", O_CREAT);
+    sys_close(fd);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
-    // fd = sys_open("/file2", O_CREAT);
+    fd = sys_open("/file2", O_CREAT);
+    sys_close(fd);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
     // fd = sys_open("/file2/file3", O_CREAT);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
@@ -616,7 +619,8 @@ void kernelMain() {
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
     // fd = sys_open("..", O_CREAT);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
-    // fd = sys_open("/file3", O_CREAT);
+    fd = sys_open("/file3", O_CREAT);
+    sys_close(fd);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
     // fd = sys_open("/a.txt/b", O_CREAT);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
@@ -642,11 +646,29 @@ void kernelMain() {
     // print_open_inodes();
     // print_file_table();
 
-    int fd = sys_open("/", O_RDWR);
+    fd = sys_open("/", O_RDONLY);
     kprintf(KPL_DEBUG, "fd = %d\n", fd);
     print_fd_table();
     print_open_inodes();
     print_file_table();
+    char buffer[128];
+    int a = 0;
+    while ((a = sys_getdents(fd, buffer, 128)) > 0) {
+        for (int i = 0; i < a; i += sizeof(dir_entry_t)) {
+            print_dentry(buffer + i);
+        }
+    }
+    sys_close(fd);
+    print_fd_table();
+    print_open_inodes();
+    print_file_table();
+    // int a = sys_getdents(fd, buffer, 90);
+    // kprintf(KPL_DEBUG, "a = %d\n", a);
+    // print_file_table();
+    // a = sys_getdents(fd, buffer, 70);
+    // kprintf(KPL_DEBUG, "a = %d\n", a);
+    // print_file_table();
+
 
 
     // fd = sys_open("/file1", O_RDWR);
