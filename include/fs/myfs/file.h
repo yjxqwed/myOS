@@ -56,6 +56,13 @@ int read_dirent(
 
 
 /**
+ * @brief write a file
+ */
+int file_write(
+    partition_t *part, file_t *file, void *buffer, size_t count
+);
+
+/**
  * @brief local fd to file_t
  */
 file_t *lfd2file(int local_fd);

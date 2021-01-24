@@ -23,6 +23,12 @@ int sys_close(int fd);
 int sys_getdents(int fd, void *buffer, size_t count);
 
 
+/**
+ * @brief write to fd
+ * @return number of bytes written
+ */
+int sys_write(int fd, void *buffer, size_t count);
+
 void print_fd_table();
 void print_open_inodes();
 

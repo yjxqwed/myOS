@@ -272,6 +272,7 @@ int read_dirent(
     partition_t *part, file_t *dfile, void *buffer, size_t count
 ) {
     ASSERT(dfile->file_tp == FT_DIRECTORY);
+    ASSERT(dfile->file_flags == O_RDONLY);
     if (count == 0 || dfile->file_pos >= dfile->im_inode->inode.i_size) {
         return 0;
     }
@@ -326,6 +327,83 @@ int read_dirent(
     ASSERT(pos == dfile->file_pos);
     ASSERT(dfile->file_flags <= dfile->im_inode->inode.i_size);
     return count;
+}
+
+
+int file_write(
+    partition_t *part, file_t *file, void *buffer, size_t count
+) {
+    ASSERT(file->im_inode != NULL && file->file_tp == FT_REGULAR);
+    ASSERT(file->file_flags & (O_WRONLY | O_RDWR));
+    // there are still <free_bytes> free space of this file
+    int free_bytes = 12 * BLOCK_SIZE - file->file_pos;
+    int err = FSERR_NOERR;
+    if (count == 0 || free_bytes == 0) {
+        return 0;
+    }
+
+    void *io_buf = kmalloc(BLOCK_SIZE);
+    if (io_buf == NULL) {
+        err = -FSERR_NOMEM;
+        return -FSERR_NOMEM;
+    }
+
+    int *blks = file->im_inode->inode.i_blocks;
+    int bytes_written = 0;
+    
+    while (bytes_written < count && free_bytes > 0) {
+        int blk_no = file->file_pos / BLOCK_SIZE;
+        int blk_off = file->file_pos % BLOCK_SIZE;
+        // zero-out the io_buffer
+        memset(io_buf, 0, BLOCK_SIZE);
+        bool_t new_blk = False;
+        if (blks[blk_no] == 0) {
+            ASSERT(blk_off == 0);
+            int blk_idx = block_alloc(part);
+            if (blk_idx == -1) {
+                err = -FSERR_NOBLOCK;
+                break;
+            }
+            new_blk = True;
+            block_btmp_sync(part, blk_idx);
+            blks[blk_no] = part->start_lba + blk_idx;
+            file->im_inode->dirty = True;
+        }
+        uint32_t lba = blks[blk_no];
+        ASSERT(lba != 0);
+        int bytes_to_write = MIN(count - bytes_written, BLOCK_SIZE - blk_off);
+        ASSERT(free_bytes >= bytes_to_write);
+        if (new_blk) {
+            memcpy(buffer, io_buf, bytes_to_write);
+        } else {
+            ata_read(part->my_disk, lba, io_buf, 1);
+            memcpy(buffer, io_buf + blk_off, bytes_to_write);
+        }
+        ata_write(part->my_disk, lba, io_buf, 1);
+        free_bytes -= bytes_to_write;
+        bytes_written += bytes_to_write;
+        file->file_pos += bytes_to_write;
+    }
+    ASSERT(bytes_written <= count);
+    ASSERT(free_bytes >= 0);
+    ASSERT(file->file_pos <= 12 * BLOCK_SIZE);
+    // update file's inode i_size if necessary
+    if (file->file_pos > file->im_inode->inode.i_size) {
+        file->im_inode->inode.i_size = file->file_pos;
+        file->im_inode->dirty = True;
+    }
+    // sync file inode if necessary
+    if (file->im_inode->dirty) {
+        inode_sync(part, file->im_inode, io_buf);
+        file->im_inode->dirty = False;
+    }
+    kfree(io_buf);
+    return bytes_written;
+}
+
+
+int file_truncate(file_t *file, size_t length) {
+    ASSERT(file->im_inode != NULL && file->file_tp == FT_REGULAR);
 }
 
 

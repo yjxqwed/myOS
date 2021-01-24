@@ -436,6 +436,15 @@ int sys_read(int fd, void *buffer, size_t count) {
 }
 
 
+int sys_write(int fd, void *buffer, size_t count) {
+    file_t *file = lfd2file(fd);
+    if (!(file->file_flags & (O_WRONLY | O_RDWR))) {
+        return -FSERR_BADFD;
+    }
+    return file_write(curr_part, file, buffer, count);
+}
+
+
 /************* some debug utilities *************/
 
 void print_fd_table() {
