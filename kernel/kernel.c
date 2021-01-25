@@ -503,7 +503,7 @@ static void proc2() {
     // c = *(int *)p;
     printf("proc2 c=0x%X\n", c);
     printf("proc2 p1=0x%X\n", p1);
-    write("hello proc2\n");
+    // write("hello proc2\n");
     while (1) {
         sleep(1000);
         printf("hello, proc2\n");
@@ -522,7 +522,7 @@ void *console_thread(void *args) {
                 (ki & KIF_SHIFT) ? True : False
             );
             if (c != '\0') {
-                tty_putc(tty_no, c, CONS_BLACK, CONS_GRAY);
+                // tty_putc(tty_no, c, CONS_BLACK, CONS_GRAY);
             }
         }
     }
@@ -593,17 +593,18 @@ void kernelMain() {
     // kfree(b2);
     // pmem_print();
     // vmm_print();
-    // process_execute(proc1, "proc1", 1);
-    // process_execute(proc2, "proc2", 1);
+    process_execute(proc1, "proc1", 1);
+    process_execute(proc2, "proc2", 1);
 
-    task_t *ktask = get_current_thread();
-    ktask->fd_table = kmalloc(NR_OPEN * sizeof(int));
-    ktask->fd_table[0] = 0;
-    ktask->fd_table[1] = 1;
-    ktask->fd_table[2] = 2;
-    for (int i = 3; i < NR_OPEN; i++) {
-        ktask->fd_table[i] = -1;
-    }
+    // task_t *ktask = get_current_thread();
+    // ktask->fd_table = kmalloc(NR_OPEN * sizeof(int));
+    // ktask->fd_table[0] = 0;
+    // ktask->fd_table[1] = 1;
+    // ktask->fd_table[2] = 2;
+    // for (int i = 3; i < NR_OPEN; i++) {
+    //     ktask->fd_table[i] = -1;
+    // }
+    // ktask->tty_no = 1;
 
     // int fd = sys_open("/file1", O_CREAT);
     // sys_close(fd);
@@ -663,29 +664,32 @@ void kernelMain() {
     // print_open_inodes();
     // print_file_table();
 
-    char buffer[64];
+    // char buffer[64];
 
-    int fd = sys_open("/file1", O_RDWR);
-    while (1) {
-        int a = sys_read(fd, buffer, 63);
-        buffer[MIN(a, 63)] = '\0';
-        kprintf(KPL_DEBUG, "read %d: %s\n", a, buffer);
-        if (a <= 0) {
-            break;
-        }
-    }
-    sys_write(fd, "this is the new contents.", 25);
-    sys_lseek(fd, 0, SEEK_SET);
-    print_file_table();
-    while (1) {
-        int a = sys_read(fd, buffer, 63);
-        buffer[MIN(a, 63)] = '\0';
-        kprintf(KPL_DEBUG, "read %d: %s\n", a, buffer);
-        if (a <= 0) {
-            break;
-        }
-    }
-    sys_close(fd);
+    // int fd = sys_open("/file1", O_RDWR);
+    // while (1) {
+    //     int a = sys_read(fd, buffer, 63);
+    //     buffer[MIN(a, 63)] = '\0';
+    //     kprintf(KPL_DEBUG, "read %d: %s\n", a, buffer);
+    //     if (a <= 0) {
+    //         break;
+    //     }
+    // }
+    // // sys_write(fd, "this is the new contents.", 25);
+    // sys_lseek(fd, 0, SEEK_SET);
+    // print_file_table();
+    // while (1) {
+    //     int a = sys_read(fd, buffer, 63);
+    //     buffer[MIN(a, 63)] = '\0';
+    //     kprintf(KPL_DEBUG, "read %d: %s\n", a, buffer);
+    //     if (a <= 0) {
+    //         break;
+    //     }
+    // }
+    // sys_close(fd);
+
+    // int a = sys_write(FD_STDOUT, "hello world\n", 12);
+    // kprintf(KPL_DEBUG, "a = %d\n", a);
 
     // int a = sys_getdents(fd, buffer, 90);
     // kprintf(KPL_DEBUG, "a = %d\n", a);
@@ -703,10 +707,10 @@ void kernelMain() {
     // fd = sys_open("/a.txt", O_RDWR);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
 
-    // while (1) {
-    //     thread_msleep(5 * 1000);
-    //     kprintf(KPL_DEBUG, "kernel still works\n");
-    // }
+    while (1) {
+        thread_msleep(5 * 1000);
+        kprintf(KPL_DEBUG, "kernel still works\n");
+    }
     // thread_msleep(10000);
     // while(1) {
     //     // thread_msleep(1000);

@@ -74,6 +74,9 @@ static void parse_double(double number) {
 static void parse_float(float number) {
 }
 
+/**
+ * @return length of the formatted string
+ */
 static int __vsprintf(char *out, const char *fmt, args_list args) {
     if (out == NULL || fmt == NULL) {
         return -1;
@@ -145,7 +148,7 @@ int printf(const char *fmt, ...) {
     if (ret == -1) {
         return -1;
     }
-    ret = write(buf);
+    ret = write(STDOUT_FILENO, buf, ret);
     if (ret == -1) {
         return -1;
     }

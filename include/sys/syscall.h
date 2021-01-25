@@ -12,14 +12,16 @@ enum {
 
     SYSCALL_ARG1,
 
-    SYSCALL_WRITE,
+
     SYSCALL_BRK,
     // SYSCALL_SBRK,
     SYSCALL_SLEEP,
 
     SYSCALL_ARG2,
 
-    SYSCALL_ARG3
+    SYSCALL_ARG3,
+    SYSCALL_READ,
+    SYSCALL_WRITE,
 };
 
 void syscall_init();

@@ -190,22 +190,26 @@ static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
     }
 }
 
-void console_putc(console_t *cons, char c, color_e bg, color_e fg) {
-    ASSERT(cons != NULL);
-    mutex_lock(&(cons->cons_mutex));
-    __putc(cons, c, bg, fg);
-    __set_cursor(cons);
-    mutex_unlock(&(cons->cons_mutex));
-}
+// int console_putc(console_t *cons, char c, color_e bg, color_e fg) {
+//     ASSERT(cons != NULL);
+//     mutex_lock(&(cons->cons_mutex));
+//     __putc(cons, c, bg, fg);
+//     __set_cursor(cons);
+//     mutex_unlock(&(cons->cons_mutex));
+//     return c;
+// }
 
-void console_puts(console_t *cons, const char *str, color_e bg, color_e fg) {
+int console_puts(
+    console_t *cons, const char *str, size_t count, color_e bg, color_e fg
+) {
     ASSERT(cons != NULL);
     mutex_lock(&(cons->cons_mutex));
-    for (int i = 0; str[i] != '\0'; i++) {
+    for (int i = 0; i < count; i++) {
         __putc(cons, str[i], bg, fg);
     }
     __set_cursor(cons);
     mutex_unlock(&(cons->cons_mutex));
+    return count;
 }
 
 int get_curr_console_tty() {
@@ -221,6 +225,7 @@ void set_video_start_row(uint32_t row) {
 }
 
 void select_console(int console) {
+    ASSERT(0 <= console && console < NR_TTY);
     if (current_console == console) {
         return;
     }

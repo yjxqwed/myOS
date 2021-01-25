@@ -67,6 +67,7 @@ key_info_t tty_getkey(int tty_no) {
     return ki;
 }
 
+
 void tty_init() {
     for (int i = 0; i < NR_TTY; i++) {
         ttys[i].tty_no = i;
@@ -79,10 +80,12 @@ void tty_init() {
     kb_init();
 }
 
-void tty_putc(int tty_no, char c, color_e bg, color_e fg) {
-    console_putc(ttys[tty_no].my_console, c, bg, fg);
-}
 
-void tty_puts(int tty_no, const char *str, color_e bg, color_e fg) {
-    console_puts(ttys[tty_no].my_console, str, bg, fg);
+int tty_puts(
+    int tty_no, const char *str, size_t count, color_e bg, color_e fg
+) {
+    if (tty_no < 0 || tty_no >= NR_TTY) {
+        return 0;
+    }
+    return console_puts(ttys[tty_no].my_console, str, count, bg, fg);
 }

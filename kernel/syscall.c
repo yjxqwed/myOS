@@ -8,8 +8,9 @@
 #include <common/utils.h>
 #include <thread/thread.h>
 #include <mm/pmem.h>
+#include <fs/myfs/fs.h>
 
-static int sys_write(const char *str);
+// static int sys_write(const char *str);
 // static void *sys_sbrk(intptr_t __delta);
 static void *sys_brk(uintptr_t __addr);
 static void *sys_sleep(uint32_t ms);
@@ -27,9 +28,9 @@ static void *syscall_handler(isrp_t *p) {
     } else if (p->eax < SYSCALL_ARG2) {
         return ((syscall_handler1_t)(handlers[p->eax]))(p->ebx);
     } else if (p->eax < SYSCALL_ARG3) {
-        return ((syscall_handler2_t)(handlers[p->eax]))(p->ebp, p->ecx);
+        return ((syscall_handler2_t)(handlers[p->eax]))(p->ebx, p->ecx);
     } else {
-        return ((syscall_handler3_t)(handlers[p->eax]))(p->ebp, p->ecx, p->edx);
+        return ((syscall_handler3_t)(handlers[p->eax]))(p->ebx, p->ecx, p->edx);
     }
 }
 
@@ -41,10 +42,10 @@ void syscall_init() {
     register_handler(0x80, syscall_handler);
 }
 
-static int sys_write(const char *str) {
-    tty_puts(get_current_thread()->tty_no, str, CONS_BLACK, CONS_GRAY);
-    return 0;
-}
+// static int sys_write(const char *str) {
+//     tty_puts(get_current_thread()->tty_no, str, CONS_BLACK, CONS_GRAY);
+//     return 0;
+// }
 
 static void *sys_brk(uintptr_t __addr) {
     vmm_t *vmm = get_current_thread()->vmm;

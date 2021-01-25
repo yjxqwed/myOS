@@ -7,10 +7,15 @@
 
 #include <common/types.h>
 
+
+#define	STDIN_FILENO    0  /* Standard input.  */
+#define	STDOUT_FILENO   1  /* Standard output.  */
+#define	STDERR_FILENO   2  /* Standard error output.  */
+
 /**
- * @brief write str
+ * @brief write to fd
  */
-int write(const char *str);
+int write(int fd, void *buffer, size_t count);
 
 /**
  * @brief set program brk to __addr

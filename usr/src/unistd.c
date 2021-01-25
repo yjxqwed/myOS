@@ -25,12 +25,23 @@
     retval; \
 })
 
+#define _syscall3(no, arg1, arg2, arg3) ({ \
+    int32_t retval; \
+    __asm_volatile( \
+        "int 0x80" \
+        : "=a"(retval) \
+        : "a"(no), "b"(arg1), "c"(arg2), "d"(arg3) \
+        : "memory" \
+    ); \
+    retval; \
+})
+
 // int getpid() {
 //     return _syscall0(SYSCALL_GETPID);
 // }
 
-int write(const char* str) {
-    return _syscall1(SYSCALL_WRITE, str);
+int write(int fd, void *buffer, size_t count) {
+    return _syscall3(SYSCALL_WRITE, fd, buffer, count);
 }
 
 void *brk(uintptr_t __addr) {

@@ -20,9 +20,14 @@ void tty_flush_key_buffer(int tty_no);
 key_info_t tty_getkey(int tty_no);
 key_info_t tty_getkey_curr();
 
-
-void tty_putc(int tty_no, char c, color_e bg, color_e fg);
-void tty_puts(int tty_no, const char *str, color_e bg, color_e fg);
+/**
+ * @brief print str to the console; this function
+ *        should be called by sys_write only
+ */
+int tty_puts(
+    int tty_no, const char *str, size_t count,
+    color_e bg, color_e fg
+);
 
 
 void tty_init();

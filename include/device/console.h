@@ -16,8 +16,15 @@ typedef enum Color {
 
 // put a char with foreground color = fg and
 // background color = bg
-void console_putc(console_t *cons, char c, color_e bg, color_e fg);
-void console_puts(console_t *cons, const char *str, color_e bg, color_e fg);
+// int console_putc(console_t *cons, char c, color_e bg, color_e fg);
+
+/**
+ * @brief puts to console
+ * @param count number of characters to put
+ */
+int console_puts(
+    console_t *cons, const char *str, size_t count, color_e bg, color_e fg
+);
 
 // get the tty_no of the current console
 int get_curr_console_tty();

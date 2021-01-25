@@ -14,6 +14,7 @@
 #include <kprintf.h>
 #include <list.h>
 #include <string.h>
+#include <device/tty.h>
 
 #define __super_block_lba(part_start_lba) \
     (part_start_lba + BOOT_BLOCK_SEC_CNT)
@@ -425,6 +426,7 @@ int sys_close(int fd) {
 int sys_getdents(int fd, void *buffer, size_t count) {
     file_t *file = lfd2file(fd);
     if (
+        file == NULL ||
         file->file_tp != FT_DIRECTORY ||
         file->file_flags != O_RDONLY
     ) {
@@ -437,6 +439,7 @@ int sys_getdents(int fd, void *buffer, size_t count) {
 int sys_read(int fd, void *buffer, size_t count) {
     file_t *file = lfd2file(fd);
     if (
+        file == NULL ||
         file->file_tp != FT_REGULAR ||
         file->file_flags & O_WRONLY
     ) {
@@ -447,8 +450,18 @@ int sys_read(int fd, void *buffer, size_t count) {
 
 
 int sys_write(int fd, void *buffer, size_t count) {
+    if (fd == FD_STDOUT) {
+        return tty_puts(
+            get_current_thread()->tty_no, buffer, count, CONS_BLACK, CONS_GRAY
+        );
+    } else if (fd == FD_STDERR) {
+        return tty_puts(
+            get_current_thread()->tty_no, buffer, count, CONS_BLACK, CONS_GRAY
+        );
+    }
     file_t *file = lfd2file(fd);
     if (
+        file == NULL ||
         file->file_tp != FT_REGULAR ||
         !(file->file_flags & (O_WRONLY | O_RDWR))
     ) {
@@ -460,7 +473,7 @@ int sys_write(int fd, void *buffer, size_t count) {
 
 off_t sys_lseek(int fd, off_t offset, int whence) {
     file_t *file = lfd2file(fd);
-    if (file->file_tp != FT_REGULAR) {
+    if (file == NULL || file->file_tp != FT_REGULAR) {
         return -FSERR_BADFD;
     }
 
