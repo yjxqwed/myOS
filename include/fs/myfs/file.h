@@ -62,6 +62,15 @@ int file_write(
     partition_t *part, file_t *file, void *buffer, size_t count
 );
 
+
+/**
+ * @brief read a file
+ */
+int file_read(
+    partition_t *part, file_t *file, void *buffer, size_t count
+);
+
+
 /**
  * @brief local fd to file_t
  */

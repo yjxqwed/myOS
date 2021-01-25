@@ -663,12 +663,28 @@ void kernelMain() {
     // print_open_inodes();
     // print_file_table();
 
-    int fd = sys_open("/file1", O_WRONLY);
-    kprintf(KPL_DEBUG, "fd = %d\n", fd);
-    int a = sys_write(fd, "A", 1);
-    kprintf(KPL_DEBUG, "a = %d\n", a);
-    a = sys_write(fd, "B", 1);
-    kprintf(KPL_DEBUG, "a = %d\n", a);
+    char buffer[64];
+
+    int fd = sys_open("/file1", O_RDWR);
+    while (1) {
+        int a = sys_read(fd, buffer, 63);
+        buffer[MIN(a, 63)] = '\0';
+        kprintf(KPL_DEBUG, "read %d: %s\n", a, buffer);
+        if (a <= 0) {
+            break;
+        }
+    }
+    sys_write(fd, "this is the new contents.", 25);
+    sys_lseek(fd, 0, SEEK_SET);
+    print_file_table();
+    while (1) {
+        int a = sys_read(fd, buffer, 63);
+        buffer[MIN(a, 63)] = '\0';
+        kprintf(KPL_DEBUG, "read %d: %s\n", a, buffer);
+        if (a <= 0) {
+            break;
+        }
+    }
     sys_close(fd);
 
     // int a = sys_getdents(fd, buffer, 90);

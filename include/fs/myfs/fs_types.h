@@ -55,6 +55,14 @@ typedef enum OFlags {
     O_DIRECTORY = 8
 } oflags_e;
 
+
+typedef enum SeekWhence {
+    SEEK_SET = 0,
+    SEEK_CUR = 1,
+    SEEK_END = 2
+} seek_wence_e;
+
+
 enum {
     FSERR_NOERR = 0,
     // no such partition
@@ -91,6 +99,11 @@ enum {
 
     // process provides a bad fd
     FSERR_BADFD,
+
+    // lseek bad offset
+    FSERR_BADOFF,
+    // lseek bad whence
+    FSERR_BADWHENCE
 };
 
 /**
@@ -144,5 +157,7 @@ typedef struct InMemoryINode {
 //     uint32_t dir_pos;
 //     uint8_t dir_buf[512];
 // } dir_t;
+
+typedef int off_t;
 
 #endif

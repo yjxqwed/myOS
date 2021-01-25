@@ -221,12 +221,12 @@ int file_close(int local_fd) {
 }
 
 
-int file_read(partition_t *part, int local_fd, void *buffer, size_t count) {
-
-    file_t *file = lfd2file(local_fd);
-    if (file == NULL) {
-        return -FSERR_BADFD;
-    }
+int file_read(
+    partition_t *part, file_t *file, void *buffer, size_t count
+) {
+    // file must be FT_REGULAR and flags must not contain O_WRONLY
+    ASSERT(file->im_inode != NULL && file->file_tp == FT_REGULAR);
+    ASSERT(!(file->file_flags & O_WRONLY));
 
     if (count == 0 || file->file_pos >= file->im_inode->inode.i_size) {
         return 0;
@@ -237,34 +237,29 @@ int file_read(partition_t *part, int local_fd, void *buffer, size_t count) {
         return -FSERR_NOMEM;
     }
 
-    int blk_size = BLOCK_SIZE;
-    int dentry_size = part->sb->dir_entry_size;
+    count = MIN(count, file->im_inode->inode.i_size - file->file_pos);
+    ASSERT(count > 0);
+    // we need to read count bytes starting form file_pos
+    // and store them in the buffer
 
-    if (file->file_tp == FT_DIRECTORY) {
-        // for dir file, each block may not be fully used
-        blk_size -= BLOCK_SIZE % dentry_size;
-    }
+    int *blks = file->im_inode->inode.i_blocks;
 
     int bytes_read = 0;
-    int bytes_read_per_blk = 0;
-
-    int *blocks = file->im_inode->inode.i_blocks;
-    // number of dentries per block
-    int ndpb = BLOCK_SIZE / dentry_size;
-
-    int start_blk_no = file->file_pos / blk_size;
-    int start_blk_off = file->file_pos % blk_size;
-
-    // count is the number of bytes of dentries to be read
-    count = MIN(count, file->im_inode->inode.i_size - file->file_pos);
-    count -= count % dentry_size;
-
-    int num_blks = ROUND_UP_DIV(count + start_blk_off * dentry_size, blk_size);
-
-    // only consider the first 12 direct blocks
-    ASSERT(start_blk_no + num_blks <= 12);
-
+    while (bytes_read < count) {
+        int blk_no = file->file_pos / BLOCK_SIZE;
+        ASSERT(blk_no < 12 && blks[blk_no] != 0);
+        int blk_off = file->file_pos % BLOCK_SIZE;
+        int num_bytes = BLOCK_SIZE - blk_off;
+        num_bytes = MIN(num_bytes, count - bytes_read);
+        ata_read(part->my_disk, blks[blk_no], io_buf, 1);
+        memcpy(io_buf + blk_off, buffer + bytes_read, num_bytes);
+        bytes_read += num_bytes;
+        file->file_pos += num_bytes;
+    }
+    ASSERT(bytes_read == count);
     kfree(io_buf);
+    ASSERT(file->file_flags <= file->im_inode->inode.i_size);
+    return count;
 }
 
 
@@ -321,6 +316,7 @@ int read_dirent(
         bytes_read += num_bytes;
         pos += bytes_read;
     }
+    ASSERT(bytes_read == count);
 
     kfree(io_buf);
     dfile->file_pos += count;
@@ -419,8 +415,9 @@ void print_file_table() {
         }
         kprintf(
             KPL_DEBUG,
-            "{(%d)inode={ino=%d,iop=%d},pos=%d,flags=%x,ft=%d}",
+            "{(%d)inode={ino=%d,iop=%d,isz=%d},pos=%d,flags=%x,ft=%d}",
             i, file->im_inode->inode.i_no, file->im_inode->i_open_times,
+            file->im_inode->inode.i_size,
             file->file_pos, file->file_flags, file->file_tp
         );
     }

@@ -424,7 +424,10 @@ int sys_close(int fd) {
 
 int sys_getdents(int fd, void *buffer, size_t count) {
     file_t *file = lfd2file(fd);
-    if (file == NULL || file->file_tp != FT_DIRECTORY) {
+    if (
+        file->file_tp != FT_DIRECTORY ||
+        file->file_flags != O_RDONLY
+    ) {
         return -FSERR_BADFD;
     }
     return read_dirent(curr_part, file, buffer, count);
@@ -432,16 +435,52 @@ int sys_getdents(int fd, void *buffer, size_t count) {
 
 
 int sys_read(int fd, void *buffer, size_t count) {
-
+    file_t *file = lfd2file(fd);
+    if (
+        file->file_tp != FT_REGULAR ||
+        file->file_flags & O_WRONLY
+    ) {
+        return -FSERR_BADFD;
+    }
+    return file_read(curr_part, file, buffer, count);
 }
 
 
 int sys_write(int fd, void *buffer, size_t count) {
     file_t *file = lfd2file(fd);
-    if (!(file->file_flags & (O_WRONLY | O_RDWR))) {
+    if (
+        file->file_tp != FT_REGULAR ||
+        !(file->file_flags & (O_WRONLY | O_RDWR))
+    ) {
         return -FSERR_BADFD;
     }
     return file_write(curr_part, file, buffer, count);
+}
+
+
+off_t sys_lseek(int fd, off_t offset, int whence) {
+    file_t *file = lfd2file(fd);
+    if (file->file_tp != FT_REGULAR) {
+        return -FSERR_BADFD;
+    }
+
+    int pos = -1, file_sz = file->im_inode->inode.i_size;
+    if (whence == SEEK_SET) {
+        pos = offset;
+    } else if (whence == SEEK_CUR) {
+        pos = file->file_pos + offset;
+    } else if (whence == SEEK_END) {
+        pos = file_sz + offset;
+    } else {
+        return -FSERR_BADWHENCE;
+    }
+
+    if (pos >= 0 && pos < file_sz) {
+        file->file_pos = pos;
+        return pos;
+    } else {
+        return -FSERR_BADOFF;
+    }
 }
 
 
