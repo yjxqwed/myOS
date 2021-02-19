@@ -552,6 +552,16 @@ int sys_mkdir(const char *pathname) {
 }
 
 
+int sys_getcwd(char *buf, size_t size) {
+    return 0;
+}
+
+
+int sys_chdir(const char *path) {
+    return 0;
+}
+
+
 /************* some debug utilities *************/
 
 void print_fd_table() {

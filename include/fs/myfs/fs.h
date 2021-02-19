@@ -58,6 +58,22 @@ int sys_rewinddir(int fd);
 int sys_mkdir(const char *pathname);
 
 
+/**
+ * @brief get current working directory;
+ *        if size < needed length, will fail
+ * @return 0 or -errno
+ */
+int sys_getcwd(char *buf, size_t size);
+
+
+/**
+ * @brief change working directory
+ * @return 0 or -errno
+ */
+int sys_chdir(const char *path);
+
+
+/*** debug utilities ***/
 void print_fd_table();
 void print_open_inodes();
 

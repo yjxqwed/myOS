@@ -47,6 +47,8 @@ static void start_process(void *filename) {
 
 task_t *process_execute(char *filename, char *name, int tty_no) {
     task_t *t = task_create(name, 31, start_process, filename);
+    // cwd is root(/) by default for now
+    t->cwd_inode_no = 0;
     int rollback = 0;
     if (t == NULL) {
         goto rb;

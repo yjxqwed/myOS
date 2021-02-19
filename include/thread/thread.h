@@ -77,7 +77,6 @@ struct Task {
 
     // current work dir inode number
     int cwd_inode_no;
-    // dir_t *cwd_dir;
 
     // a magic number to guard this struct
     uint32_t stack_guard;
