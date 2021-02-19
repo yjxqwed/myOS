@@ -106,7 +106,6 @@ int file_create(
     // sync inode bitmap
     inode_btmp_sync(part, file_ino);
     // sync parent inode
-    // inode_sync(part, pdir->im_inode, io_buf);
     inode_sync(part, pdir, io_buf);
     // sync file inode
     inode_sync(part, file_im_ino, io_buf);

@@ -20,16 +20,6 @@ void open_root_dir(partition_t *part) {
     // root_dir.dir_pos = 0;
 }
 
-// dir_t *dir_open(partition_t *part, uint32_t i_no) {
-//     dir_t *dir = kmalloc(sizeof(dir_t));
-//     if (dir == NULL) {
-//         return NULL;
-//     }
-//     dir->dir_pos = 0;
-//     dir->im_inode = inode_open(part, i_no);
-//     return dir;
-// }
-
 im_inode_t *dir_open(partition_t *part, uint32_t i_no) {
     return inode_open(part, i_no);
 }
@@ -63,14 +53,6 @@ int get_dir_entry_by_name(
     }
     return -FSERR_NONEXIST;
 }
-
-// void dir_close(dir_t *dir) {
-//     if (dir == &root_dir || dir == get_current_thread()->cwd_dir) {
-//         return;
-//     }
-//     inode_close(dir->im_inode);
-//     kfree(dir);
-// }
 
 void dir_close(im_inode_t *dir) {
     if (dir == root_imnode) {
@@ -144,6 +126,69 @@ __success__:
     dir->inode.i_size += dir_entry_size;
     return FSERR_NOERR;
 }
+
+
+int dir_create(
+    partition_t *part, im_inode_t *pdir, const char *dirname,
+    void *io_buf
+) {
+    ASSERT(strlen(dirname) <= MAX_FILE_NAME_LENGTH);
+
+    // alloc an inode no
+    int dir_ino = inode_alloc(part);
+    if (dir_ino == -1) {
+        return -FSERR_NOINODE;
+    }
+
+    // alloc a data block since an empty dir has 2 entries.
+    int blk_idx = block_alloc(part);
+    if (blk_idx == -1) {
+        inode_reclaim(part, dir_ino);
+        return -FSERR_NOBLOCK;
+    }
+
+    // write dir entry under pdir
+    dir_entry_t dentry;
+    create_dir_entry(dirname, dir_ino, FT_DIRECTORY, &dentry);
+    int err = write_dir_entry(part, pdir, &dentry, io_buf);
+    if (err != FSERR_NOERR) {
+        inode_reclaim(part, dir_ino);
+        block_reclaim(part, blk_idx);
+        return err;
+    }
+
+    // init the data block
+    int data_lba = part->start_lba + blk_idx;
+    memset(io_buf, 0, BLOCK_SIZE);
+    dir_entry_t *de = (dir_entry_t *)io_buf;
+    // init .
+    strcpy(".", de[0].filename);
+    de[0].i_no = dir_ino;
+    de[0].f_type = FT_DIRECTORY;
+    // init ..
+    strcpy("..", de[1].filename);
+    de[1].i_no = pdir->inode.i_no;
+    de[1].f_type = FT_DIRECTORY;
+    ata_write(part->my_disk, data_lba, de, 1);
+
+    // inode struct for dir
+    im_inode_t dir_im_ino;
+    im_inode_init(&dir_im_ino, dir_ino);
+    dir_im_ino.inode.i_blocks[0] = data_lba;
+    dir_im_ino.inode.i_size = sizeof(dir_entry_t) * 2;
+
+    // sync the block btmp for blk_idx being used
+    block_btmp_sync(part, blk_idx);
+    // sync inode btmp for dir_ino being used
+    inode_btmp_sync(part, dir_ino);
+    // sync dir inode
+    inode_sync(part, &dir_im_ino, io_buf);
+    // sync pdir inode (size changed in write_dir_entry)
+    inode_sync(part, pdir, io_buf);
+
+    return FSERR_NOERR;
+}
+
 
 void print_dentry(const dir_entry_t *dent) {
     kprintf(

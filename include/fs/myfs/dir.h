@@ -52,6 +52,14 @@ void create_dir_entry(
     file_type_e ft, dir_entry_t *de
 );
 
+/**
+ * @brief create a dir in part under pdir with dirname
+ */
+int dir_create(
+    partition_t *part, im_inode_t *pdir, const char *dirname,
+    void *io_buf
+);
+
 void open_root_dir(partition_t *part);
 
 #define NR_DIR_ENTRY_PER_BLOCK (BLOCK_SIZE / sizeof(dir_entry_t))

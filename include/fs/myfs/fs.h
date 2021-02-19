@@ -44,6 +44,20 @@ int sys_read(int fd, void *buffer, size_t count);
  */
 off_t sys_lseek(int fd, off_t offset, int whence);
 
+
+/**
+ * @brief rewind dir by its fd
+ */
+int sys_rewinddir(int fd);
+
+
+/**
+ * @brief make a dir according to pathname
+ * @return 0 or -errno
+ */
+int sys_mkdir(const char *pathname);
+
+
 void print_fd_table();
 void print_open_inodes();
 

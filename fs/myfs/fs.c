@@ -496,6 +496,61 @@ off_t sys_lseek(int fd, off_t offset, int whence) {
     }
 }
 
+int sys_rewinddir(int fd) {
+    file_t *file = lfd2file(fd);
+    if (file == NULL || file->file_tp != FT_DIRECTORY) {
+        return -FSERR_BADFD;
+    }
+    file->file_pos = 0;
+    return 0;
+}
+
+
+int sys_mkdir(const char *pathname) {
+    path_info_t *pi = (path_info_t *)kmalloc(sizeof(path_info_t));
+    if (pi == NULL) {
+        return -FSERR_NOMEM;
+    }
+    int err = analyze_path(pathname, pi);
+    if (err != FSERR_NOERR) {
+        kfree(pi);
+        return err;
+    }
+    if (pi->depth == 0) {
+        kfree(pi);
+        // depth = 0 is . or /, must exist
+        return -FSERR_EXIST;
+    }
+    void *io_buffer = kmalloc(BLOCK_SIZE);
+    if (io_buffer == NULL) {
+        kfree(pi);
+        return -FSERR_NOMEM;
+    }
+
+    im_inode_t *pdir = NULL;
+    err = get_pdir(curr_part, pi, io_buffer, &pdir);
+    if (err != FSERR_NOERR) {
+        kfree(pi);
+        kfree(io_buffer);
+        return err;
+    }
+
+    dir_entry_t dentry;
+    char *dir_name = pi->path[pi->depth - 1];
+    err = get_dir_entry_by_name(curr_part, pdir, dir_name, &dentry, io_buffer);
+    if (err == FSERR_NOERR) {
+        // file already exists
+        kfree(pi);
+        kfree(io_buffer);
+        return -FSERR_EXIST;
+    }
+
+    err = dir_create(curr_part, pdir, dir_name, io_buffer);
+    kfree(pi);
+    kfree(io_buffer);
+    return err;
+}
+
 
 /************* some debug utilities *************/
 

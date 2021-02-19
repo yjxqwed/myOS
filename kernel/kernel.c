@@ -596,15 +596,15 @@ void kernelMain() {
     process_execute(proc1, "proc1", 1);
     process_execute(proc2, "proc2", 1);
 
-    // task_t *ktask = get_current_thread();
-    // ktask->fd_table = kmalloc(NR_OPEN * sizeof(int));
-    // ktask->fd_table[0] = 0;
-    // ktask->fd_table[1] = 1;
-    // ktask->fd_table[2] = 2;
-    // for (int i = 3; i < NR_OPEN; i++) {
-    //     ktask->fd_table[i] = -1;
-    // }
-    // ktask->tty_no = 1;
+    task_t *ktask = get_current_thread();
+    ktask->fd_table = kmalloc(NR_OPEN * sizeof(int));
+    ktask->fd_table[0] = 0;
+    ktask->fd_table[1] = 1;
+    ktask->fd_table[2] = 2;
+    for (int i = 3; i < NR_OPEN; i++) {
+        ktask->fd_table[i] = -1;
+    }
+    ktask->tty_no = 1;
 
     // int fd = sys_open("/file1", O_CREAT);
     // sys_close(fd);
@@ -647,22 +647,32 @@ void kernelMain() {
     // print_open_inodes();
     // print_file_table();
 
-    // fd = sys_open("/", O_RDONLY);
-    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
-    // print_fd_table();
-    // print_open_inodes();
-    // print_file_table();
-    // char buffer[128];
-    // int a = 0;
-    // while ((a = sys_getdents(fd, buffer, 128)) > 0) {
-    //     for (int i = 0; i < a; i += sizeof(dir_entry_t)) {
-    //         print_dentry(buffer + i);
-    //     }
-    // }
-    // sys_close(fd);
-    // print_fd_table();
-    // print_open_inodes();
-    // print_file_table();
+    int fd = sys_open("/", O_RDONLY);
+    kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    print_fd_table();
+    print_open_inodes();
+    print_file_table();
+    char buffer[128];
+    int a = 0;
+    while ((a = sys_getdents(fd, buffer, 128)) > 0) {
+        for (int i = 0; i < a; i += sizeof(dir_entry_t)) {
+            print_dentry(buffer + i);
+        }
+    }
+    sys_close(fd);
+    print_fd_table();
+    print_open_inodes();
+    print_file_table();
+
+    fd = sys_open("/abc", O_RDONLY);
+    kprintf(KPL_DEBUG, "\"/abc\", fd = %d\n", fd);
+    while ((a = sys_getdents(fd, buffer, 128)) > 0) {
+        for (int i = 0; i < a; i += sizeof(dir_entry_t)) {
+            print_dentry(buffer + i);
+        }
+    }
+    sys_close(fd);
+
 
     // char buffer[64];
 
