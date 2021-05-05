@@ -551,8 +551,41 @@ int sys_mkdir(const char *pathname) {
     return err;
 }
 
+/**
+ * @brief get parent dir's (..) inode number
+ */
+int get_pdir_inode_nr(partition_t *part, int inode_nr) {
+    return 0
+}
 
 int sys_getcwd(char *buf, size_t size) {
+    task_t *t = get_current_thread();
+    int cwd_inode_no = t->cwd_inode_no;
+    kprintf(KPL_DEBUG, "cwd: %d\n", cwd_inode_no);
+    if (cwd_inode_no == 0) {
+        if (size >= 2) {
+            strcpy("/", buf);
+            return FSERR_NOERR;
+        } else {
+            return -FSERR_RANGE;
+        }
+    }
+
+    char *path = (char *)kmalloc(MAX_PATH_LENGTH);
+    void *io_buf = kmalloc(BLOCK_SIZE);
+    if (!path || !io_buf) {
+        // unable to allocate temp memory
+        kfree(path);
+        kfree(io_buf);
+        return -FSERR_NOMEM;
+    }
+
+    // iterate to find root
+    while (cwd_inode_no != 0) {
+        // im_inode_t *pdir = dir_open(curr_part, )
+    }
+
+    kfree(path);
     return 0;
 }
 

@@ -74,6 +74,8 @@ static void thread_run_func(thread_func_t func, void *args) {
 static void task_init(
     task_t *task, const char *name, uint16_t prio
 ) {
+    // all tasks have cwd = root (/)
+    task->cwd_inode_no = 0;
     task->priority = prio;
     task->ticks = prio;
     strcpy(name, task->task_name);

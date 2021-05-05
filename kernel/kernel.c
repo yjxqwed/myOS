@@ -606,6 +606,8 @@ void kernelMain() {
     }
     ktask->tty_no = 1;
 
+    sys_getcwd(NULL, 0);
+
     // int fd = sys_open("/file1", O_CREAT);
     // sys_close(fd);
     // kprintf(KPL_DEBUG, "fd = %d\n", fd);
@@ -647,31 +649,31 @@ void kernelMain() {
     // print_open_inodes();
     // print_file_table();
 
-    int fd = sys_open("/", O_RDONLY);
-    kprintf(KPL_DEBUG, "fd = %d\n", fd);
-    print_fd_table();
-    print_open_inodes();
-    print_file_table();
-    char buffer[128];
-    int a = 0;
-    while ((a = sys_getdents(fd, buffer, 128)) > 0) {
-        for (int i = 0; i < a; i += sizeof(dir_entry_t)) {
-            print_dentry(buffer + i);
-        }
-    }
-    sys_close(fd);
-    print_fd_table();
-    print_open_inodes();
-    print_file_table();
+    // int fd = sys_open("/", O_RDONLY);
+    // kprintf(KPL_DEBUG, "fd = %d\n", fd);
+    // print_fd_table();
+    // print_open_inodes();
+    // print_file_table();
+    // char buffer[128];
+    // int a = 0;
+    // while ((a = sys_getdents(fd, buffer, 128)) > 0) {
+    //     for (int i = 0; i < a; i += sizeof(dir_entry_t)) {
+    //         print_dentry(buffer + i);
+    //     }
+    // }
+    // sys_close(fd);
+    // print_fd_table();
+    // print_open_inodes();
+    // print_file_table();
 
-    fd = sys_open("/abc", O_RDONLY);
-    kprintf(KPL_DEBUG, "\"/abc\", fd = %d\n", fd);
-    while ((a = sys_getdents(fd, buffer, 128)) > 0) {
-        for (int i = 0; i < a; i += sizeof(dir_entry_t)) {
-            print_dentry(buffer + i);
-        }
-    }
-    sys_close(fd);
+    // fd = sys_open("/abc", O_RDONLY);
+    // kprintf(KPL_DEBUG, "\"/abc\", fd = %d\n", fd);
+    // while ((a = sys_getdents(fd, buffer, 128)) > 0) {
+    //     for (int i = 0; i < a; i += sizeof(dir_entry_t)) {
+    //         print_dentry(buffer + i);
+    //     }
+    // }
+    // sys_close(fd);
 
 
     // char buffer[64];

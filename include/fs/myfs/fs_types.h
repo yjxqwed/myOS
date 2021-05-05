@@ -19,8 +19,8 @@
 // each partition can have at most 4096 files
 #define MAX_FILE_CNT_PER_PART 4096
 
-// max path depth is 16
-#define MAX_PATH_DEPTH 16
+// max path depth is 10
+#define MAX_PATH_DEPTH 10
 
 // max path length is 512
 #define MAX_PATH_LENGTH 512
@@ -103,7 +103,10 @@ enum {
     // lseek bad offset
     FSERR_BADOFF,
     // lseek bad whence
-    FSERR_BADWHENCE
+    FSERR_BADWHENCE,
+
+    // out of range
+    FSERR_RANGE
 };
 
 /**
