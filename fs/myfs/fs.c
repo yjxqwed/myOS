@@ -437,6 +437,20 @@ int sys_getdents(int fd, void *buffer, size_t count) {
 
 
 int sys_read(int fd, void *buffer, size_t count) {
+    kprintf(KPL_DEBUG, "sys_read: fd=%d\n", fd);
+    if (fd == FD_STDIN) {
+        int idx = 0;
+        char *buff = (char *)buffer;
+        while (idx < count) {
+            // sys_read will only get printable chars, \n and \b
+            char c = get_printable_char(tty_getkey_curr());
+            if (c == '\0') {
+                continue;
+            }
+            buff[idx++] = c;
+        }
+        return idx;
+    }
     file_t *file = lfd2file(fd);
     if (
         file == NULL ||
@@ -555,7 +569,7 @@ int sys_mkdir(const char *pathname) {
  * @brief get parent dir's (..) inode number
  */
 int get_pdir_inode_nr(partition_t *part, int inode_nr) {
-    return 0
+    return 0;
 }
 
 int sys_getcwd(char *buf, size_t size) {

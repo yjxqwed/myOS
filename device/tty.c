@@ -67,6 +67,10 @@ key_info_t tty_getkey(int tty_no) {
     return ki;
 }
 
+key_info_t tty_getkey_curr() {
+    tty_getkey(get_current_thread()->tty_no);
+}
+
 
 void tty_init() {
     for (int i = 0; i < NR_TTY; i++) {

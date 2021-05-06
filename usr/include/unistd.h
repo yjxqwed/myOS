@@ -15,7 +15,12 @@
 /**
  * @brief write to fd
  */
-int write(int fd, void *buffer, size_t count);
+int write(int fd, const void *buffer, size_t count);
+
+/**
+ * @brief read from fd
+ */
+int read(int fd, void *buffer, size_t count);
 
 /**
  * @brief set program brk to __addr

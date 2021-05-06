@@ -154,3 +154,13 @@ int printf(const char *fmt, ...) {
     }
     return ret;
 }
+
+int getchar() {
+    char c;
+    read(STDIN_FILENO, &c, 1);
+    return c;
+}
+
+int putchar(int c) {
+    return write(STDOUT_FILENO, &c, 1);
+}

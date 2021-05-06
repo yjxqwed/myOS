@@ -170,6 +170,7 @@ int file_open(partition_t *part, int i_no, uint32_t flags, file_type_e ft) {
 
 
 file_t *lfd2file(int local_fd) {
+    kprintf(KPL_DEBUG, "lfd2file: fd=%d\n", local_fd);
     if (local_fd < 0 || local_fd >= NR_OPEN) {
         return NULL;
     }

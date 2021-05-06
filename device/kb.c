@@ -204,7 +204,16 @@ static char keycode2char [][2] = {
     [KEYCODE_RIGHTBRACKET] = {']', '}'}
 };
 
-char get_printable_char(key_code_e keycode, bool_t caps, bool_t shift) {
+char get_printable_char(key_info_t ki) {
+    key_code_e keycode = __keycode(ki);
+    bool_t caps = (ki & KIF_CAPS) ? True : False;
+    bool_t shift = (ki & KIF_SHIFT) ? True : False;
+    if (keycode == KEYCODE_ENTER) {
+        return '\n';
+    }
+    if (keycode == KEYCODE_BACKSPACE) {
+        return '\b';
+    }
     if (keycode == KEYCODE_NONE || keycode > KEYCODE_RIGHTBRACKET) {
         return '\0';
     }

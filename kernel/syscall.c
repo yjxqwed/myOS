@@ -36,6 +36,7 @@ static void *syscall_handler(isrp_t *p) {
 
 void syscall_init() {
     handlers[SYSCALL_WRITE] = sys_write;
+    handlers[SYSCALL_READ] = sys_read;
     handlers[SYSCALL_BRK] = sys_brk;
     // handlers[SYSCALL_SBRK] = sys_sbrk;
     handlers[SYSCALL_SLEEP] = sys_sleep;

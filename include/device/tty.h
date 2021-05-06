@@ -17,6 +17,8 @@ typedef struct TTY tty_t;
 void tty_putkey(key_info_t ki);
 
 void tty_flush_key_buffer(int tty_no);
+
+// get a keyinfo from tty
 key_info_t tty_getkey(int tty_no);
 key_info_t tty_getkey_curr();
 

@@ -40,8 +40,12 @@
 //     return _syscall0(SYSCALL_GETPID);
 // }
 
-int write(int fd, void *buffer, size_t count) {
+int write(int fd, const void *buffer, size_t count) {
     return _syscall3(SYSCALL_WRITE, fd, buffer, count);
+}
+
+int read(int fd, void *buffer, size_t count) {
+    return _syscall3(SYSCALL_READ, fd, buffer, count);
 }
 
 void *brk(uintptr_t __addr) {

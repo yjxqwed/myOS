@@ -114,11 +114,9 @@ typedef uint32_t key_info_t;
 
 /**
  * @brief get the printable char
- * @param keycode keycode
- * @param caps capslocked or not
- * @param shift shifted or not
+ * @param ki keyinfo
  */
-char get_printable_char(key_code_e keycode, bool_t caps, bool_t shift);
+char get_printable_char(key_info_t ki);
 
 
 // for debug only

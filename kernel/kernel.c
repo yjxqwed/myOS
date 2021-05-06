@@ -511,22 +511,22 @@ static void proc2() {
 }
 
 
-void *console_thread(void *args) {
-    int tty_no = (int)args;
-    while(1) {
-        key_info_t ki = tty_getkey(tty_no);
-        if ((ki & (KIF_ALT | KIF_CTRL)) == 0) {
-            char c = get_printable_char(
-                __keycode(ki),
-                (ki & KIF_CAPS) ? True : False,
-                (ki & KIF_SHIFT) ? True : False
-            );
-            if (c != '\0') {
-                // tty_putc(tty_no, c, CONS_BLACK, CONS_GRAY);
-            }
-        }
-    }
-}
+// void *console_thread(void *args) {
+//     int tty_no = (int)args;
+//     while(1) {
+//         key_info_t ki = tty_getkey(tty_no);
+//         if ((ki & (KIF_ALT | KIF_CTRL)) == 0) {
+//             char c = get_printable_char(
+//                 __keycode(ki),
+//                 (ki & KIF_CAPS) ? True : False,
+//                 (ki & KIF_SHIFT) ? True : False
+//             );
+//             if (c != '\0') {
+//                 // tty_putc(tty_no, c, CONS_BLACK, CONS_GRAY);
+//             }
+//         }
+//     }
+// }
 
 static void print_myOS(void) {
     kprintf(
@@ -593,20 +593,22 @@ void kernelMain() {
     // kfree(b2);
     // pmem_print();
     // vmm_print();
-    process_execute(proc1, "proc1", 1);
-    process_execute(proc2, "proc2", 1);
+    // process_execute(proc1, "proc1", 1);
+    // process_execute(proc2, "proc2", 1);
 
-    task_t *ktask = get_current_thread();
-    ktask->fd_table = kmalloc(NR_OPEN * sizeof(int));
-    ktask->fd_table[0] = 0;
-    ktask->fd_table[1] = 1;
-    ktask->fd_table[2] = 2;
-    for (int i = 3; i < NR_OPEN; i++) {
-        ktask->fd_table[i] = -1;
-    }
-    ktask->tty_no = 1;
+    // task_t *ktask = get_current_thread();
+    // ktask->fd_table = kmalloc(NR_OPEN * sizeof(int));
+    // ktask->fd_table[0] = 0;
+    // ktask->fd_table[1] = 1;
+    // ktask->fd_table[2] = 2;
+    // for (int i = 3; i < NR_OPEN; i++) {
+    //     ktask->fd_table[i] = -1;
+    // }
+    // ktask->tty_no = 1;
 
-    sys_getcwd(NULL, 0);
+    // sys_getcwd(NULL, 0);
+    extern lvsh();
+    process_execute(lvsh, "lvsh", 1);
 
     // int fd = sys_open("/file1", O_CREAT);
     // sys_close(fd);
