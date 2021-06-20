@@ -567,8 +567,12 @@ int sys_mkdir(const char *pathname) {
 
 /**
  * @brief get parent dir's (..) inode number
+ * @param part current partition
+ * @param inode_nr inode number of me
+ * @return >= 0 if success; < 0 if failure
  */
-int get_pdir_inode_nr(partition_t *part, int inode_nr) {
+static int get_pdir_inode_nr(partition_t *part, int inode_nr) {
+
     return 0;
 }
 
@@ -585,15 +589,19 @@ int sys_getcwd(char *buf, size_t size) {
         }
     }
 
-    char *path = (char *)kmalloc(MAX_PATH_LENGTH);
-    void *io_buf = kmalloc(BLOCK_SIZE);
-    if (!path || !io_buf) {
+    typedef char file_name_t[MAX_FILE_NAME_LENGTH];
+    file_name_t *path = (file_name_t *)kmalloc(MAX_PATH_DEPTH);
+    if (!path) {
         // unable to allocate temp memory
-        kfree(path);
-        kfree(io_buf);
         return -FSERR_NOMEM;
     }
-
+    void *io_buf = kmalloc(BLOCK_SIZE);
+    if (!io_buf) {
+        // unable to allocate temp memory
+        kfree(path);
+        return -FSERR_NOMEM;
+    }
+    int depth = 0;
     // iterate to find root
     while (cwd_inode_no != 0) {
         // im_inode_t *pdir = dir_open(curr_part, )
