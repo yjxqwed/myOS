@@ -94,20 +94,20 @@ typedef enum KeyCode {
 } key_code_e;
 
 /**
- *  |  flags  |keycode|
- *  +---------+-------+
- *  |31      8|7     0|
+ *  |  flags  | keycode |
+ *  +---------+---------+
+ *  |31     16|15      0|
  */
 typedef uint32_t key_info_t;
 
 // Key Info Flags
-#define KIF_CTRL  (1 << 8)
-#define KIF_ALT   (1 << 9)
-#define KIF_SHIFT (1 << 10)
-#define KIF_CAPS  (1 << 11)
+#define KIF_CTRL  (1 << 16)
+#define KIF_ALT   (1 << 17)
+#define KIF_SHIFT (1 << 18)
+#define KIF_CAPS  (1 << 19)
 
-#define __keycode(key_info)  ((key_info) & 0xff)
-#define __keyflags(key_info) ((key_info) & 0xffffff00)
+#define __keycode(key_info)  ((key_info) & 0xffff)
+#define __keyflags(key_info) ((key_info) & 0xffff0000)
 
 // get a key stroke
 // key_info_t getkey();

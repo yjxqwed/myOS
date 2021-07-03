@@ -26,6 +26,11 @@ int console_puts(
     console_t *cons, const char *str, size_t count, color_e bg, color_e fg
 );
 
+/**
+ * @brief erase the previous char if exists. only for tty_echo use
+ */
+void console_erase_char(console_t *cons);
+
 // get the tty_no of the current console
 int get_curr_console_tty();
 

@@ -132,11 +132,13 @@ void scrn_putc(char c, COLOR bg, COLOR fg) {
         scroll(cursor_row - MAXROW + 1);
         cursor_row = MAXROW - 1;
     }
-    __set_cursor(cursor_row, cursor_col);
+    // __set_cursor(cursor_row, cursor_col);
 }
 
 void scrn_puts(const char *str, COLOR bg, COLOR fg) {
+    INT_STATUS old_status = disable_int();
     for (int i = 0; str[i] != '\0'; i++) {
         scrn_putc(str[i], bg, fg);
     }
+    set_int_status(old_status);
 }

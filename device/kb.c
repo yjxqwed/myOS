@@ -19,7 +19,7 @@
 
 #define EXT_CODE 0xE0
 
-key_code_e keycodes[][2] = {
+static key_code_e keycodes[][2] = {
 /* scan_code               {keycode for scan_code, keycode for E0 scan code} */
 /* ==========================================================================*/
 /* 0x00 - none       */    {KEYCODE_NONE,            KEYCODE_NONE},
@@ -294,7 +294,7 @@ static void *kb_handler(isrp_t *p) {
 
     if (scan_code == EXT_CODE) {
         ext_code = True;
-        return;
+        return NULL;
     }
 
     key_code_e keycode;
@@ -306,7 +306,7 @@ static void *kb_handler(isrp_t *p) {
     }
 
     if (keycode == KEYCODE_NONE) {
-        return;
+        return NULL;
     }
 
     if (scan_code & KB_BREAK) {

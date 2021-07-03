@@ -1,9 +1,9 @@
 #include <device/tty.h>
-#include <device/console.h>
 #include <device/kb.h>
 #include <thread/sync.h>
 #include <arch/x86.h>
 #include <common/debug.h>
+#include <lib/kprintf.h>
 
 #define KB_BUFFER_SIZE 64
 
@@ -21,10 +21,21 @@ struct TTY {
 
 static tty_t ttys[NR_TTY];
 
+// echo the input char
+void tty_echo_char(console_t *con, key_info_t ki) {
+    key_code_e kcode = __keycode(ki);
+    uint32_t kf = __keyflags(ki);
+    if (KEYCODE_BACKSPACE == kcode) {
+        console_erase_char(con);
+    } else {
+        console_puts(con, "<HELLO>", 8, CONS_BLACK, CONS_GRAY);
+    }
+}
 
 void tty_putkey(key_info_t ki) {
     ASSERT(get_int_status() == INTERRUPT_OFF);
-    if (__keyflags(ki) == KIF_ALT) {
+    // kprintf(KPL_DEBUG, "{ki:%X}", ki);
+    if (__keyflags(ki) == (KIF_ALT)) {
         key_code_e keycode = __keycode(ki);
         if (keycode >= KEYCODE_F1 && keycode <= KEYCODE_F5) {
             select_console(keycode - KEYCODE_F1);
@@ -43,6 +54,7 @@ void tty_putkey(key_info_t ki) {
     tty->kb_in_buffer[buf_tail] = ki;
     (tty->kb_inbuf_num)++;
     sem_up(&(tty->kb_sem));
+    tty_echo_char(tty->my_console, ki);
 }
 
 void tty_flush_key_buffer(int tty_no) {

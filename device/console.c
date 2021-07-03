@@ -127,6 +127,20 @@ void console_set_cursor(console_t *cons, int row, int col) {
     mutex_unlock(&(cons->cons_mutex));
 }
 
+void console_erase_char(console_t *cons) {
+    ASSERT(cons != NULL);
+    mutex_lock(&(cons->cons_mutex));
+    if (cons->cursor_col > 0) {
+        cons->cursor_col--;
+        uint16_t *p = &(cons->video_mem[
+            CONSOLE_CHAR_OFFSET(cons->cursor_row, cons->cursor_col)
+        ]);
+        *p = __disp_char(' ', CONS_BLACK, CONS_GRAY);
+        __set_cursor(cons);
+    }
+    mutex_unlock(&(cons->cons_mutex));
+}
+
 static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
     if (c == '\0') {
         return;
@@ -138,22 +152,24 @@ static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
         case '\a': {
             break;
         } case '\b': {
-            if (cons->cursor_col == 0) {
-                if (cons->cursor_row != 0) {
-                    cons->cursor_row--;
-                    cons->cursor_col = CONSOLE_MAXCOL - 1;
-                    p = cons->video_mem[
-                        CONSOLE_CHAR_OFFSET(cons->cursor_row, cons->cursor_col)
-                    ];
-                    *p = __disp_char(' ', bg, fg);
-                }
-            } else {
-                cons->cursor_col--;
-                p = cons->video_mem[
-                    CONSOLE_CHAR_OFFSET(cons->cursor_row, cons->cursor_col)
-                ];
-                *p = __disp_char(' ', bg, fg);
-            }
+            /* \b is really special, should only treat it as a control character */
+
+            // if (cons->cursor_col == 0) {
+            //     if (cons->cursor_row != 0) {
+            //         cons->cursor_row--;
+            //         cons->cursor_col = CONSOLE_MAXCOL - 1;
+            //         p = cons->video_mem[
+            //             CONSOLE_CHAR_OFFSET(cons->cursor_row, cons->cursor_col)
+            //         ];
+            //         *p = __disp_char(' ', bg, fg);
+            //     }
+            // } else {
+            //     cons->cursor_col--;
+            //     p = cons->video_mem[
+            //         CONSOLE_CHAR_OFFSET(cons->cursor_row, cons->cursor_col)
+            //     ];
+            //     *p = __disp_char(' ', bg, fg);
+            // }
             break;
         } case '\t': {
             break;
@@ -203,6 +219,9 @@ int console_puts(
     console_t *cons, const char *str, size_t count, color_e bg, color_e fg
 ) {
     ASSERT(cons != NULL);
+    if (cons == &(consoles[0])) {
+        return 0;
+    }
     mutex_lock(&(cons->cons_mutex));
     for (int i = 0; i < count; i++) {
         __putc(cons, str[i], bg, fg);
