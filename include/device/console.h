@@ -21,9 +21,11 @@ typedef enum Color {
 /**
  * @brief puts to console
  * @param count number of characters to put
+ * @param set_write_out_col for console_erase_char not to erase the output chars
  */
 int console_puts(
-    console_t *cons, const char *str, size_t count, color_e bg, color_e fg
+    console_t *cons, const char *str, size_t count, color_e bg, color_e fg,
+    bool_t set_write_out_col
 );
 
 /**

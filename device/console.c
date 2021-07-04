@@ -43,6 +43,8 @@ struct Console {
     uint16_t cursor_row_base;
     uint16_t cursor_row;
     uint16_t cursor_col;
+    // record the col for write
+    uint16_t write_cursor_col;
     // output mutex of this console
     mutex_t cons_mutex;
     int tty_no;
@@ -129,8 +131,8 @@ void console_set_cursor(console_t *cons, int row, int col) {
 
 void console_erase_char(console_t *cons) {
     ASSERT(cons != NULL);
-    mutex_lock(&(cons->cons_mutex));
-    if (cons->cursor_col > 0) {
+    ASSERT(get_int_status() == INTERRUPT_OFF);
+    if (cons->cursor_col > cons->write_cursor_col) {
         cons->cursor_col--;
         uint16_t *p = &(cons->video_mem[
             CONSOLE_CHAR_OFFSET(cons->cursor_row, cons->cursor_col)
@@ -138,7 +140,6 @@ void console_erase_char(console_t *cons) {
         *p = __disp_char(' ', CONS_BLACK, CONS_GRAY);
         __set_cursor(cons);
     }
-    mutex_unlock(&(cons->cons_mutex));
 }
 
 static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
@@ -180,6 +181,7 @@ static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
                 cons->cursor_col++;
             }
             cons->cursor_col = 0;
+            cons->write_cursor_col = 0;
             (cons->cursor_row)++;
             break;
         } case '\v': {
@@ -197,6 +199,7 @@ static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
     }
     if (cons->cursor_col >= CONSOLE_MAXCOL) {
         cons->cursor_col = 0;
+        cons->write_cursor_col = 0;
         (cons->cursor_row)++;
     }
     if (cons->cursor_row >= CONSOLE_MAXROW) {
@@ -216,7 +219,8 @@ static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
 // }
 
 int console_puts(
-    console_t *cons, const char *str, size_t count, color_e bg, color_e fg
+    console_t *cons, const char *str, size_t count, color_e bg, color_e fg,
+    bool_t set_write_out_col
 ) {
     ASSERT(cons != NULL);
     if (cons == &(consoles[0])) {
@@ -227,6 +231,9 @@ int console_puts(
         __putc(cons, str[i], bg, fg);
     }
     __set_cursor(cons);
+    if (set_write_out_col) {
+        cons->write_cursor_col =  cons->cursor_col;
+    }
     mutex_unlock(&(cons->cons_mutex));
     return count;
 }

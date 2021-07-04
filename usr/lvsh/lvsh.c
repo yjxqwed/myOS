@@ -16,7 +16,7 @@ void lvsh() {
             // if (idx >= 511) {
             //     continue;
             // }
-            putchar(c);
+            // putchar(c);
             // if (c == '\n')
             // cmd[idx++] = c;
         }

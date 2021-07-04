@@ -27,8 +27,10 @@ void tty_echo_char(console_t *con, key_info_t ki) {
     uint32_t kf = __keyflags(ki);
     if (KEYCODE_BACKSPACE == kcode) {
         console_erase_char(con);
+    } else if (KEYCODE_ENTER == kcode) {
+        console_puts(con, "\n", 1, CONS_BLACK, CONS_GRAY, False);
     } else {
-        console_puts(con, "<HELLO>", 8, CONS_BLACK, CONS_GRAY);
+        console_puts(con, "<HELLO>", 8, CONS_BLACK, CONS_GRAY, False);
     }
 }
 
@@ -103,5 +105,5 @@ int tty_puts(
     if (tty_no < 0 || tty_no >= NR_TTY) {
         return 0;
     }
-    return console_puts(ttys[tty_no].my_console, str, count, bg, fg);
+    return console_puts(ttys[tty_no].my_console, str, count, bg, fg, True);
 }
