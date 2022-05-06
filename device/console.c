@@ -53,7 +53,7 @@ struct Console {
 static console_t consoles[NR_TTY];
 static int current_console = -1;
 
-console_t *get_console(int tty_no) {
+console_t *init_console(int tty_no) {
     ASSERT(tty_no >= 0 && tty_no < NR_TTY);
     console_t *cons = &(consoles[tty_no]);
     cons->video_mem = (uint16_t *)(CONSOLE_VIDEO_MEM + tty_no * CONSOLE_PAGE_RAM);
@@ -76,16 +76,6 @@ static inline void clear_screen(console_t *cons) {
         clear_row(cons, i);
     }
 }
-
-// static void scroll(console_t *cons, int num_row) {
-//     char *dest = (char *)(video_mem);
-//     char *src = (char *)(video_mem + CONSOLE_CHAR_OFFSET(num_row, 0));
-//     uint32_t size = (CONSOLE_MAXROW - num_row) * CONSOLE_ROW_RAM;
-//     strncpy(src, dest, size);
-//     for (int i = 1; i <= num_row; i++) {
-//         clear_row(CONSOLE_MAXROW - i);
-//     }
-// }
 
 // scroll up by one line
 static void scrollup(console_t *cons) {
@@ -153,26 +143,11 @@ static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
         case '\a': {
             break;
         } case '\b': {
-            /* \b is really special, should only treat it as a control character */
-
-            // if (cons->cursor_col == 0) {
-            //     if (cons->cursor_row != 0) {
-            //         cons->cursor_row--;
-            //         cons->cursor_col = CONSOLE_MAXCOL - 1;
-            //         p = cons->video_mem[
-            //             CONSOLE_CHAR_OFFSET(cons->cursor_row, cons->cursor_col)
-            //         ];
-            //         *p = __disp_char(' ', bg, fg);
-            //     }
-            // } else {
-            //     cons->cursor_col--;
-            //     p = cons->video_mem[
-            //         CONSOLE_CHAR_OFFSET(cons->cursor_row, cons->cursor_col)
-            //     ];
-            //     *p = __disp_char(' ', bg, fg);
-            // }
+            // \b is really special, should only treat it as a control character
+            // Don't output \b
             break;
         } case '\t': {
+            // omit Tab for now
             break;
         } case '\n': {
             while (cons->cursor_col < CONSOLE_MAXCOL) {
@@ -203,20 +178,30 @@ static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
         (cons->cursor_row)++;
     }
     if (cons->cursor_row >= CONSOLE_MAXROW) {
-        // scroll(cursor_row - CONSOLE_MAXROW + 1);
         cons->cursor_row = CONSOLE_MAXROW - 1;
         scrollup(cons);
     }
 }
 
-// int console_putc(console_t *cons, char c, color_e bg, color_e fg) {
-//     ASSERT(cons != NULL);
-//     mutex_lock(&(cons->cons_mutex));
-//     __putc(cons, c, bg, fg);
-//     __set_cursor(cons);
-//     mutex_unlock(&(cons->cons_mutex));
-//     return c;
-// }
+int console_puts_nolock(
+    console_t *cons, const char *str, size_t count, color_e bg, color_e fg,
+    bool_t set_write_out_col
+) {
+    ASSERT(cons != NULL);
+    INT_STATUS old_status = disable_int();
+    if (cons == &(consoles[0])) {
+        return 0;
+    }
+    for (int i = 0; i < count; i++) {
+        __putc(cons, str[i], bg, fg);
+    }
+    __set_cursor(cons);
+    if (set_write_out_col) {
+        cons->write_cursor_col = cons->cursor_col;
+    }
+    set_int_status(old_status);
+    return count;
+}
 
 int console_puts(
     console_t *cons, const char *str, size_t count, color_e bg, color_e fg,
@@ -232,7 +217,7 @@ int console_puts(
     }
     __set_cursor(cons);
     if (set_write_out_col) {
-        cons->write_cursor_col =  cons->cursor_col;
+        cons->write_cursor_col = cons->cursor_col;
     }
     mutex_unlock(&(cons->cons_mutex));
     return count;

@@ -1,8 +1,6 @@
 #ifndef __KPRINTF_H__
 #define __KPRINTF_H__
 
-#include <device/screen.h>
-
 typedef enum KP_LEVEL {
     KPL_DUMP,   // black bg, white fg
     KPL_NOTICE, // blue bg, white fg
@@ -20,6 +18,9 @@ typedef enum KP_LEVEL {
 // %X -> unsigned hex uint32 full 8 bits
 // %c -> char
 int kprintf(KP_LEVEL kpl, const char *fmt, ...);
+
+int console_kprintf(KP_LEVEL kpl, const char *fmt, ...);
+
 // @brief kernel sprintf, string format
 int ksprintf(char *out, const char *fmt, ...);
 

@@ -206,17 +206,20 @@ static char keycode2char [][2] = {
 
 char get_printable_char(key_info_t ki) {
     key_code_e keycode = __keycode(ki);
-    bool_t caps = (ki & KIF_CAPS) ? True : False;
-    bool_t shift = (ki & KIF_SHIFT) ? True : False;
     if (keycode == KEYCODE_ENTER) {
         return '\n';
     }
     if (keycode == KEYCODE_BACKSPACE) {
         return '\b';
     }
+    if (keycode == KEYCODE_TAB) {
+        return '\t';
+    }
     if (keycode == KEYCODE_NONE || keycode > KEYCODE_RIGHTBRACKET) {
         return '\0';
     }
+    bool_t caps = (ki & KIF_CAPS) ? True : False;
+    bool_t shift = (ki & KIF_SHIFT) ? True : False;
     if (keycode <= KEYCODE_Z) {
         return keycode2char[keycode][(caps != shift) ? 1 : 0];
     } else {
@@ -249,35 +252,6 @@ void print_key_info(key_info_t ki) {
         kprintf(KPL_NOTICE, "[HELLO WORLD! This myOS by Jiaxing Yang!]");
     }
 }
-
-// #define KB_BUFFER_SIZE 64
-// // the kb driver will buffer at most 64 key strokes
-// static key_info_t kb_in_buffer[KB_BUFFER_SIZE];
-// static uint32_t kb_inbuf_head;
-// static size_t kb_inbuf_num;
-// static sem_t kb_sem;
-
-// static void putkey(key_info_t ki) {
-//     ASSERT(get_int_status() == INTERRUPT_OFF);
-//     if (kb_inbuf_num == KB_BUFFER_SIZE) {
-//         return;
-//     }
-//     kb_in_buffer[(kb_inbuf_head + kb_inbuf_num) % KB_BUFFER_SIZE] = ki;
-//     kb_inbuf_num++;
-//     sem_up(&kb_sem);
-// }
-
-// key_info_t getkey() {
-//     sem_down(&kb_sem);
-//     INT_STATUS old_status = disable_int();
-//     ASSERT(kb_inbuf_num > 0);
-//     ASSERT(kb_inbuf_num == kb_sem.val + 1);
-//     key_info_t ki = kb_in_buffer[kb_inbuf_head];
-//     kb_inbuf_head = (kb_inbuf_head + 1) % KB_BUFFER_SIZE;
-//     kb_inbuf_num--;
-//     set_int_status(old_status);
-//     return ki;
-// }
 
 static void *kb_handler(isrp_t *p) {
     static bool_t ctrl_down = False;
@@ -360,8 +334,6 @@ static void *kb_handler(isrp_t *p) {
                     ki |= KIF_CAPS;
                 }
                 ki |= keycode;
-                // print_key_info(ki);
-                // putkey(ki);
                 tty_putkey(ki);
                 break;
             }
@@ -372,7 +344,5 @@ static void *kb_handler(isrp_t *p) {
 }
 
 void kb_init() {
-    // sem_init(&kb_sem, 0);
-    // kb_inbuf_head = kb_inbuf_num = 0;
     register_handler(INT_KB, kb_handler);
 }

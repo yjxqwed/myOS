@@ -61,14 +61,14 @@ static void timer_install(uint32_t hz) {
 #define CLOCKSZ 25
 
 static void clock() {
-    static uint32_t sec = 0;
-    sec++;
-    int row, col;
-    get_cursor(&row, &col);
-    // set_cursor(MAXROW - 1, 0);
-    set_cursor(0, MAXCOL - CLOCKSZ);
-    kprintf(KPL_DEBUG, "clock: %d sec passed", sec);
-    set_cursor(row, col);
+    // static uint32_t sec = 0;
+    // sec++;
+    // int row, col;
+    // get_cursor(&row, &col);
+    // // set_cursor(MAXROW - 1, 0);
+    // set_cursor(0, MAXCOL - CLOCKSZ);
+    // kprintf(KPL_DEBUG, "clock: %d sec passed", sec);
+    // set_cursor(row, col);
 }
 
 static void every_msec() {

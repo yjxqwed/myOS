@@ -23,31 +23,43 @@ static tty_t ttys[NR_TTY];
 
 // echo the input char
 void tty_echo_char(console_t *con, key_info_t ki) {
+    ASSERT(get_int_status() == INTERRUPT_OFF);
     key_code_e kcode = __keycode(ki);
     uint32_t kf = __keyflags(ki);
+    // console_kprintf(KPL_DEBUG, "{%X}", ki);
     if (KEYCODE_BACKSPACE == kcode) {
         console_erase_char(con);
     } else if (KEYCODE_ENTER == kcode) {
-        console_puts(con, "\n", 1, CONS_BLACK, CONS_GRAY, False);
+        console_puts_nolock(con, "\n", 1, CONS_BLACK, CONS_GRAY, False);
+    } else if (kcode >= KEYCODE_A && kcode <= KEYCODE_RIGHTBRACKET) {
+        char c[1];
+        c[0] = get_printable_char(ki);
+        if (c[0] != '\0') {
+            console_puts_nolock(con, c, 1, CONS_BLACK, CONS_GRAY, False);
+        }
     } else {
-        console_puts(con, "<HELLO>", 8, CONS_BLACK, CONS_GRAY, False);
+        console_puts_nolock(con, "<HELLO>", 8, CONS_BLACK, CONS_GRAY, False);
     }
 }
 
 void tty_putkey(key_info_t ki) {
     ASSERT(get_int_status() == INTERRUPT_OFF);
     // kprintf(KPL_DEBUG, "{ki:%X}", ki);
+
+    // ALT-[1-6] is used to change TTY
     if (__keyflags(ki) == (KIF_ALT)) {
         key_code_e keycode = __keycode(ki);
-        if (keycode >= KEYCODE_F1 && keycode <= KEYCODE_F5) {
-            select_console(keycode - KEYCODE_F1);
+        if (keycode >= KEYCODE_ALPHA1 && keycode <= KEYCODE_ALPHA6) {
+            select_console(keycode - KEYCODE_ALPHA1);
             return;
         }
     }
+
     int tty_no = get_curr_console_tty();
     if (tty_no == -1) {
         return;
     }
+
     tty_t *tty = &(ttys[tty_no]);
     if (tty->kb_inbuf_num == KB_BUFFER_SIZE) {
         return;
@@ -92,7 +104,7 @@ void tty_init() {
         ttys[i].kb_inbuf_head = 0;
         ttys[i].kb_inbuf_num = 0;
         sem_init(&(ttys[i].kb_sem), 0);
-        ttys[i].my_console = get_console(i);
+        ttys[i].my_console = init_console(i);
     }
     select_console(0);
     kb_init();
@@ -106,4 +118,11 @@ int tty_puts(
         return 0;
     }
     return console_puts(ttys[tty_no].my_console, str, count, bg, fg, True);
+}
+
+int tty_puts_curr(
+    const char *str, size_t count,
+    color_e bg, color_e fg
+) {
+    return console_puts(ttys[get_curr_console_tty()].my_console, str, count, bg, fg, True);
 }

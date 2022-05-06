@@ -5,6 +5,7 @@
 #include <kprintf.h>
 #include <common/debug.h>
 #include <sys/gdt.h>
+#include <myos.h>
 
 
 static void start_process(void *filename) {

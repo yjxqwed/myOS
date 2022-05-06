@@ -6,6 +6,7 @@
 #include <list.h>
 #include <common/utils.h>
 #include <thread/sync.h>
+#include <myos.h>
 
 void *k_get_free_pages(uint32_t pgcnt, uint32_t gfp_flags) {
     ppage_t *fp = pages_alloc(pgcnt, gfp_flags);

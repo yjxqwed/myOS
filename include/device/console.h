@@ -28,6 +28,12 @@ int console_puts(
     bool_t set_write_out_col
 );
 
+// same as console puts but no lock, only used by kernel to print something.
+int console_puts_nolock(
+    console_t *cons, const char *str, size_t count, color_e bg, color_e fg,
+    bool_t set_write_out_col
+);
+
 /**
  * @brief erase the previous char if exists. only for tty_echo use
  */
@@ -37,7 +43,7 @@ void console_erase_char(console_t *cons);
 int get_curr_console_tty();
 
 void select_console(int console);
-console_t *get_console(int tty_no);
+console_t *init_console(int tty_no);
 
 /**
  *   a word (16 B) for a char

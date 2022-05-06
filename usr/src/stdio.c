@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <common/stdarg.h>
+#include <common/types.h>
 
 static char hex_char[16] = "0123456789ABCDEF";
 
@@ -155,12 +156,32 @@ int printf(const char *fmt, ...) {
     return ret;
 }
 
-int getchar() {
+char getchar() {
     char c;
     read(STDIN_FILENO, &c, 1);
     return c;
 }
 
-int putchar(int c) {
+int putchar(char c) {
     return write(STDOUT_FILENO, &c, 1);
 }
+
+// int getline(char **lineptr, size_t *n) {
+//     return getdelim(lineptr, n, '\n');
+// }
+
+// int getdelim(char **lineptr, size_t *n, char delim) {
+//     if (lineptr == NULL || n == NULL) {
+//         return -1;
+//     }
+//     char *line = *lineptr;  // TODO: this function should allocate the buffer.
+//     char c = 0;
+//     size_t id = 0;
+//     do {
+//         c = getchar();
+//         line[id++] = c;
+//     } while (c != delim);
+//     line[id] = 0;
+//     *n = id;
+//     return id;
+// }

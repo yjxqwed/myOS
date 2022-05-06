@@ -1,6 +1,8 @@
 #ifndef __USR_STDIO_H__
 #define __USR_STDIO_H__
 
+#include <common/types.h>
+
 /**
  * %c: char;
  * %s: string;
@@ -23,7 +25,12 @@ int sprintf(char *buf, const char *fmt, ...);
 
 /**
  * @brief getchar
+ *        no io buffering
  */
-int getchar();
+char getchar();
+int putchar(char c);
+
+// int getline(char **lineptr, size_t *n);
+// int getdelim(char **lineptr, size_t *n, char delim);
 
 #endif
