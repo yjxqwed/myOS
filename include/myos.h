@@ -13,14 +13,13 @@
 // myOS kernel uses high 2G virtual address space
 #define KERNEL_BASE 0x80000000
 
-
 #define USER_STACK_BOTTOM (KERNEL_BASE - 4 * PAGE_SIZE)
-// user stack size limit 8MiB
-#define USER_STACK_LIMIT 0x00800000
+// user stack size limit 16KiB
+#define USER_STACK_LIMIT 0x00004000
 
 #define USER_HEAP_BOTTOM 0x02000000
-// user heap size limit 512MiB
-#define USER_HEAP_LIMIT 0x20000000
+// user heap size limit 16MiB
+#define USER_HEAP_LIMIT 0x01000000
 
 // kernel space physical address
 #define __pa(x) (uintptr_t)((uintptr_t)(x) - KERNEL_BASE)

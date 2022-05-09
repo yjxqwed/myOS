@@ -27,6 +27,7 @@ static uint32_t total_mem_mb = 0;
 // total physical pages
 static uint32_t nppages = 0;
 
+// the static all-zero physical page
 static ppage_t *zpage = NULL;
 
 
@@ -54,7 +55,7 @@ static ppage_t *pmap = NULL;
 // the bitmap used for page allocating
 static btmp_t pmem_btmp;
 
-#define CHECK_FLAG(flags,bit) ((flags) & (1 << (bit)))
+#define CHECK_FLAG(flags, bit) ((flags) & (1 << (bit)))
 static void analyze_mem_map(multiboot_info_t *mbi) {
     kprintf(KPL_NOTICE, "================ Memory Info ================\n");
     kprintf(KPL_NOTICE, "Flags = 0x%x\n", (uint32_t)mbi->flags);
@@ -152,13 +153,14 @@ void detect_memory(multiboot_info_t *mbi) {
     }
 }
 
-// The allocator is only for allocating pages for initializing
-// mm structures
-// On success, return the kernel virtual address; NULL otherwise.
-// @param n number of bytes required
-// @param page_alligned whether the block should be page alligned
+/**
+ * @brief The allocator is only for allocating pages for initializing mm structures
+ * 
+ * @param n number of bytes required
+ * @param page_alligned whether the block should be page alligned
+ * @return void* kernel virtual address; NULL if failed.
+ */
 static void *boot_alloc(uint32_t n, bool_t page_alligned) {
-
     static uintptr_t next_free_byte = NULL;
 
     // init at the very first call
@@ -219,7 +221,7 @@ void print_page(ppage_t *p) {
     mutex_unlock(&(p->page_lock));
 }
 
-// init the pmem management structures
+
 void pmem_init() {
     mutex_init(&pmem_lock);
     // initialize pmap
@@ -358,21 +360,26 @@ __PAGE_ALLIGNED pde_t boot_pg_dir[NRPDE];
 __PAGE_ALLIGNED pte_t boot_pg_tab[NRPTE];
 
 void install_boot_pg(void) {
-    pte_t *ppg = (pte_t *)__pa(boot_pg_tab);
-    for (int i = 0; i < NRPTE; i++) {
-        ppg[i] = (pte_t)__pg_entry(i * PAGE_SIZE, PTE_PRESENT | PTE_WRITABLE);
-    }
-    memset(boot_pg_dir, 0, PAGE_SIZE);
-    pde_t pde = (pde_t)__pg_entry(
-        __pa(boot_pg_tab), PTE_PRESENT | PTE_WRITABLE
-    );
     pde_t *ppd = (pde_t *)__pa(boot_pg_dir);
+    pte_t *ppt = (pte_t *)__pa(boot_pg_tab);
+    memset(ppd, 0, PAGE_SIZE);
+    memset(ppt, 0, PAGE_SIZE);
+
+    // initialize the page table
+    for (int i = 0; i < NRPTE; i++) {
+        ppt[i] = (pte_t)__pg_entry(i * PAGE_SIZE, PTE_PRESENT | PTE_WRITABLE);
+    }
+
+    // initialize the first page directory entry
+    pde_t pde = (pde_t)__pg_entry(__pa(boot_pg_tab), PTE_PRESENT | PTE_WRITABLE);
+
+    // map the memory space [0, 1M) and [2G, 2G+1M) to the same physical memory [0, 1M)
     ppd[0] = pde;
     ppd[__pde_idx(KERNEL_BASE)] = pde;
 
     // load the address of boot pg_dir to cr3
     lcr3(__pa(boot_pg_dir));
-    // enable paging
+    // enable paging (set the highest bit of cr0 to 1)
     uint32_t cr0 = scr0();
     cr0 |= CR0_PG;
     lcr0(cr0);

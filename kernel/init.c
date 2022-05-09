@@ -27,7 +27,7 @@ static void test_magic_number(uint32_t magic_number) {
 }
 
 // test magic number and check the size of physical memory installed
-// install the pre-mapped for temp use
+// install the pre-mapped PDs and PTs for temp use
 // initialize boot_alloc for setup kernel's real physical page allocator
 void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
     test_magic_number(magic_number);

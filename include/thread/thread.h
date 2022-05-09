@@ -16,7 +16,7 @@ typedef struct Task task_t;
 typedef uint16_t thread_id_t;
 
 // thread_func_t is a function pointer to a function
-// accepts void * and returns void *
+// that accepts void * and returns void *
 typedef void *(* thread_func_t)(void *);
 
 typedef enum TaskStatus {
@@ -62,7 +62,7 @@ struct Task {
     // process has its own address space
     vmm_t *vmm;
 
-    // list of threads join this thread
+    // list of threads that join this thread
     list_t join_list;
 
     // msec left to sleep

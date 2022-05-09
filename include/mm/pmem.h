@@ -17,23 +17,18 @@
 typedef struct PhysicalPageInfo ppage_t;
 
 struct PhysicalPageInfo {
-    // ppage_t *next_free;
-    // ppage_t *prev_free;
-
-    // doubly linked list in the free pages list
-    // list_node_t free_list_tag;
     // num of references to this ppage
     // if num_ref == 0, I'm free
     uint32_t num_ref;
+
     // bool_t free;
-    // every operation of this page struct should
-    // acquire this lock
+    // every operation of this page struct should acquire this lock
     mutex_t page_lock;
 };
 
 // detect physical memory information
 void detect_memory(multiboot_info_t *mbi);
-
+// init the pmem management structures
 void pmem_init();
 
 // Get Free Page flags
@@ -46,19 +41,31 @@ void pmem_init();
  *  no free.
  */
 
-
-// get pg_cnt number of continuous free pages
-// return the first page of the pg_cnt pages
+/**
+ * @brief get pg_cnt number of continuous free physical pages
+ * 
+ * @param pg_cnt number of free physical pages needed
+ * @param gfp_flags get_free_page flags
+ * @return ppage_t* pointer to the first allocated page;
+ *         NULL if failed to allocate
+ */
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags);
 
-// @brief increase the reference to p;
-// panic if p is free
+/**
+ * @brief Increase the reference to p; panic if p is free
+ * 
+ * @param p the physical page to incref
+ */
 void page_incref(ppage_t *p);
-// @brief decrease the reference to p, free it if no referrence;
-// panic if p is free
+
+/**
+ * @brief Decrease the reference to p, free p if no referrence;
+ *        panic if p is free
+ * 
+ * @param p the physical page to decref
+ */
 void page_decref(ppage_t *p);
 
-void print_page(ppage_t *p);
 
 // get the static zero-out-ed page
 ppage_t *get_zpage();
@@ -71,13 +78,13 @@ ppage_t *kva2page(void *kva);
 // physical address to page
 ppage_t *pa2page(void *pa);
 
-void pmem_print();
 
 /**
  *    Paging Management
  */
 
-// install the pre-mapped pd and pt for bootstrap
+// install the pre-mapped pd and pt for bootstrap;
+// enable paging
 void install_boot_pg(void);
 
 // init the kernel's static mappings
@@ -105,4 +112,14 @@ void page_dir_init(pde_t *pd);
 // @brief load pd to cr3 if pd is not NULL,
 //        else load kern_pg_dir
 void load_page_dir(pde_t *pd);
+
+
+/**
+ *    For debug only
+ */
+
+
+void print_page(ppage_t *p);
+void pmem_print();
+
 #endif

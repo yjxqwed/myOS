@@ -50,57 +50,55 @@ void syscall_init() {
 
 static void *sys_brk(uintptr_t __addr) {
     vmm_t *vmm = get_current_thread()->vmm;
+    // all user processes/threads should all have vmm struct
     ASSERT(vmm != NULL);
-    void *retval = NULL;
-    if (vmm == NULL) {
-        retval = SYSCALL_FAIL;
-    } else {
-        uintptr_t new_top = ROUND_UP_DIV(__addr, PAGE_SIZE) * PAGE_SIZE;
-        mutex_lock(vmm->vmm_mutex);
-        if (
-            new_top >= vmm->heap_bot &&
-            new_top <= (vmm->heap_bot + USER_HEAP_LIMIT)
-        ) {
-            // only handle good request
-            if (new_top < vmm->heap_top) {
-                // shrink heap
-                for (
-                    uint32_t brk = new_top;
-                    brk < vmm->heap_top;
-                    brk += PAGE_SIZE
-                ) {
-                    page_unmap(vmm->pgdir, brk);
-                }
-            } else if (new_top > vmm->heap_top) {
-                // expand heap
-                ppage_t *zp = get_zpage();
-                for (
-                    uint32_t brk = vmm->heap_top;
-                    brk < new_top;
-                    brk += PAGE_SIZE
-                ) {
-                    page_map(vmm->pgdir, brk, zp, PTE_USER | PTE_READABLE);
-                }
-            }
-            vmm->heap_top = new_top;
-        }
-        retval = vmm->heap_top;
-        mutex_unlock(vmm->vmm_mutex);
+    if (__addr == NULL) {
+        return vmm->heap_top;
     }
+
+    // the new top should not exceed the maximum
+    uintptr_t new_top = MIN(
+        ROUND_UP_DIV(__addr, PAGE_SIZE) * PAGE_SIZE,
+        USER_HEAP_BOTTOM + USER_HEAP_LIMIT
+    );
+
+    // the new top should not smaller than the minimum
+    new_top = MAX(new_top, USER_HEAP_BOTTOM);
+
+    mutex_lock(vmm->vmm_mutex);
+
+    if (new_top < vmm->heap_top) {
+        // shrink heap
+        for (
+            uint32_t brk = new_top;
+            brk < vmm->heap_top;
+            brk += PAGE_SIZE
+        ) {
+            page_unmap(vmm->pgdir, brk);
+        }
+    } else if (new_top > vmm->heap_top) {
+        // expand heap
+        // ppage_t *zp = get_zpage();
+        for (
+            uint32_t brk = vmm->heap_top;
+            brk < new_top;
+            brk += PAGE_SIZE
+        ) {
+            ppage_t *zp = pages_alloc(1, GFP_ZERO);
+            if (zp == NULL) {
+                new_top = brk;
+                break;
+            }
+            page_map(vmm->pgdir, brk, zp, PTE_USER | PTE_WRITABLE);
+        }
+    }
+
+    vmm->heap_top = new_top;
+    void *retval = vmm->heap_top;
+    mutex_unlock(vmm->vmm_mutex);
     return retval;
 }
 
-// static void *sys_sbrk(intptr_t __delta) {
-//     vmm_t *vmm = get_current_thread()->vmm;
-//     if (vmm == NULL) {
-//         return SYSCALL_FAIL;
-//     }
-//     if (__delta == 0) {
-//         return vmm->heap_top;
-//     } else {
-//         return SYSCALL_FAIL;
-//     }
-// }
 
 static void *sys_sleep(uint32_t ms) {
     thread_msleep(ms);

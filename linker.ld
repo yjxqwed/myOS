@@ -8,7 +8,6 @@ SECTIONS {
     .text ALIGN(8) : AT(ADDR(.text) - 0x80000000) {
         KEEP(*(.multiboot));
         *(.text*)
-
     }
 
     .rodata ALIGN(8) : AT(ADDR(.rodata) - 0x80000000) {

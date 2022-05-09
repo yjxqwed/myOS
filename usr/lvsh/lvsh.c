@@ -6,13 +6,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <common/types.h>
+#include <common/debug.h>
 
 #define LINE_LEN 128
 
-static char line[LINE_LEN];
-
 // get line from stdin
-static int lvsh_getline() {
+static int lvsh_getline(char* line) {
     char c = 0;
     int id = 0;
     do {
@@ -30,9 +29,10 @@ static int lvsh_getline() {
 }
 
 void lvsh(void) {
+    char line[LINE_LEN];
     while (1) {
         printf("$> ");
-        int ok = lvsh_getline();
+        int ok = lvsh_getline(line);
         printf("Your input: [%d][%s]\n", ok, line);
     }
 }

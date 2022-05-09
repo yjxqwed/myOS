@@ -608,11 +608,15 @@ void kernelMain() {
 
     // sys_getcwd(NULL, 0);
     extern lvsh();
-    process_execute(lvsh, "lvsh1", 1);
-    process_execute(lvsh, "lvsh2", 2);
-    process_execute(lvsh, "lvsh3", 3);
-    process_execute(lvsh, "lvsh4", 4);
-    process_execute(lvsh, "lvsh5", 5);
+    extern usr_test1();
+    extern usr_test2();
+    process_execute(usr_test1, "usr_test1", 1);
+    process_execute(usr_test2, "usr_test2", 1);
+    // process_execute(lvsh, "lvsh1", 1);
+    // process_execute(lvsh, "lvsh2", 2);
+    // process_execute(lvsh, "lvsh3", 3);
+    // process_execute(lvsh, "lvsh4", 4);
+    // process_execute(lvsh, "lvsh5", 5);
 
     // int fd = sys_open("/file1", O_CREAT);
     // sys_close(fd);

@@ -5,7 +5,6 @@
 #include <thread/sync.h>
 #include <common/debug.h>
 #include <device/tty.h>
-// #include <kprintf.h>
 
 // virtual address of video memory
 #define CONSOLE_VIDEO_MEM (__va(0xB8000))

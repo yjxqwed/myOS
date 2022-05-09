@@ -1,6 +1,6 @@
 # build flags
 G_PARAMS = -Wall -m32 -I include -I include/lib -I usr/include -nostdlib -fno-builtin \
-           -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel -O3
+           -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel -O0
 NASM_PARAMS = -I include -f elf32
 LD_PARAMS = -m elf_i386
 
@@ -39,9 +39,11 @@ thread_objs = thread/thread.elf32 thread/switch.elf32 thread/sync.elf32 \
 
 lvsh_objs = usr/lvsh/lvsh.elf32
 
+usr_test_objs = usr/test/test.elf32
+
 objects = $(device_objs) $(kernel_asm_objs) $(kernel_c_objs) \
           $(lib_objs) $(usr_objs) $(mm_objs) $(arch_x86_objs) \
-          $(thread_objs) $(fs_objs) $(lvsh_objs)
+          $(thread_objs) $(fs_objs) $(lvsh_objs) $(usr_test_objs)
 
 
 

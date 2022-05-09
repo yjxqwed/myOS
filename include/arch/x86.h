@@ -12,7 +12,7 @@
 
 // =================== PAGING/MMU =====================
 
-// page size = 4kb
+// page size = 4KiB
 #define PAGE_SIZE 0x1000
 
 #define __ALLIGNED(align) __attribute__((aligned(align)))
@@ -22,7 +22,7 @@
 
 // page directory shift -- the high 10 bits is page directory idx
 #define PD_IDX_SHIFT 22
-// page table shift -- the mid 10 bit2 is page table idx
+// page table shift -- the mid 10 bits is page table idx
 #define PT_IDX_SHIFT 12
 
 // x86 use 10-bit index for pde and pte
