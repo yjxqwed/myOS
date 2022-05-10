@@ -11,7 +11,7 @@ typedef short int16_t;
 typedef int int32_t;
 
 typedef uint32_t uintptr_t;
-typedef uint32_t intptr_t;
+typedef int32_t intptr_t;
 
 typedef float float32_t;
 typedef double float64_t;

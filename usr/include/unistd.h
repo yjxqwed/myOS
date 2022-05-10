@@ -23,16 +23,16 @@ int write(int fd, const void *buffer, size_t count);
 int read(int fd, void *buffer, size_t count);
 
 /**
- * @brief set program brk to __addr
- * @return new brk on success; old brk on failure
+ * @brief set program brk to addr
+ * @return 0 on success; -1 on failure
  */
-void *brk(uintptr_t __addr);
+int brk(void *addr);
 
 /**
- * @brief change program brk by __delta byte(s)
+ * @brief change program brk by increment byte(s)
  * @return new program brk
  */
-void *sbrk(intptr_t __delta);
+void *sbrk(intptr_t increment);
 
 /**
  * @brief sleep for ms milisec(s)

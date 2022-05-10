@@ -11,7 +11,6 @@
 #include <fs/myfs/fs.h>
 
 // static int sys_write(const char *str);
-// static void *sys_sbrk(intptr_t __delta);
 static void *sys_brk(uintptr_t __addr);
 static void *sys_sleep(uint32_t ms);
 

@@ -2,6 +2,7 @@
 #include <arch/x86.h>
 #include <common/types.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #define _syscall0(no) ({ \
     int32_t retval; \
@@ -48,10 +49,26 @@ int read(int fd, void *buffer, size_t count) {
     return _syscall3(SYSCALL_READ, fd, buffer, count);
 }
 
-void *brk(uintptr_t __addr) {
-    return _syscall1(SYSCALL_BRK, __addr);
+void *__brk(void *addr) {
+    return (void *)_syscall1(SYSCALL_BRK, addr);
+}
+
+void *sbrk(intptr_t increment) {
+    static void* brk = NULL;
+    if (brk == NULL) {
+        brk = __brk(NULL);
+    }
+    if (increment != 0) {
+        brk = __brk((int)brk + increment);
+    }
+    return brk;
+}
+
+int brk(void *addr) {
+    __brk(addr);
+    return 0;
 }
 
 void sleep(uint32_t ms) {
-    return _syscall1(SYSCALL_SLEEP, ms);
+    _syscall1(SYSCALL_SLEEP, ms);
 }
