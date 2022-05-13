@@ -184,6 +184,8 @@ static void clear_exit_q() {
     }
 }
 
+extern void switch_to(task_t *prev, task_t *next);
+
 static void schedule() {
     ASSERT(get_int_status() == INTERRUPT_OFF);
     task_t *old = current_task;
@@ -205,7 +207,6 @@ static void schedule() {
         } else {
             load_page_dir(NULL);
         }
-        extern void switch_to(task_t *prev, task_t *next);
         switch_to(old, next);
     }
 }
@@ -275,6 +276,21 @@ void print_exit_tasks() {
 void print_sleeping_tasks() {
     INT_STATUS old_status = disable_int();
     print_tasks(&sleeping_list);
+    set_int_status(old_status);
+}
+
+void print_task_nums() {
+    INT_STATUS old_status = disable_int();
+    uint32_t all_num, ready_num, sleeping_num, exit_num;
+    all_num = list_length(&task_all_list);
+    ready_num = list_length(&task_ready_list);
+    sleeping_num = list_length(&sleeping_list);
+    exit_num = list_length(&task_exit_list);
+    kprintf(
+        KPL_DEBUG,
+        "{all_num=%d, ready_num=%d, sleeping_num=%d, exit_num=%d}\n",
+        all_num, ready_num, sleeping_num, exit_num
+    );
     set_int_status(old_status);
 }
 

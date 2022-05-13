@@ -167,7 +167,14 @@ static void test_kmalloc() {
     *b6 = 0x12345678;
     uint32_t *b7 = kmalloc(127);
     *b7 = 0x12345678;
-    // return;
+    ASSERT(*b0 == 0x12345678);
+    ASSERT(*b1 == 0x12345678);
+    ASSERT(*b2 == 0x12345678);
+    ASSERT(*b3 == 0x12345678);
+    ASSERT(*b4 == 0x12345678);
+    ASSERT(*b5 == 0x12345678);
+    ASSERT(*b6 == 0x12345678);
+    ASSERT(*b7 == 0x12345678);
     kfree(b0);
     kfree(b1);
     kfree(b2);
@@ -203,6 +210,14 @@ static void test_kmalloc1() {
     a *= 2;
     uint32_t *b7 = kmalloc(a);
     *b7 = 0x12345678;
+    ASSERT(*b0 == 0x12345678);
+    ASSERT(*b1 == 0x12345678);
+    ASSERT(*b2 == 0x12345678);
+    ASSERT(*b3 == 0x12345678);
+    ASSERT(*b4 == 0x12345678);
+    ASSERT(*b5 == 0x12345678);
+    ASSERT(*b6 == 0x12345678);
+    ASSERT(*b7 == 0x12345678);
     // return;
     kfree(b0);
     kfree(b1);
@@ -217,9 +232,7 @@ static void test_kmalloc1() {
 static void test_kmalloc2() {
     uint32_t *b4 = kmalloc(1023);
     *b4 = 0x12345678;
-    INT_STATUS old_status = disable_int();
-    kprintf(KPL_DEBUG, "b4=0x%X\n", b4);
-    set_int_status(old_status);
+    ASSERT(*b4 == 0x12345678);
     kfree(b4);
 }
 
@@ -256,7 +269,7 @@ static void test(void *args) {
     // mutex_lock(&num_thread_started_lock);
     INT_STATUS old_status = disable_int();
     num_thread_started++;
-    kprintf(KPL_NOTICE, "num_thread_started=%d\n", num_thread_started);
+    // kprintf(KPL_NOTICE, "num_thread_started=%d\n", num_thread_started);
     // pmem_print();
     set_int_status(old_status);
     // mutex_unlock(&num_thread_started_lock);
@@ -349,7 +362,8 @@ static void test_thread_kmalloc() {
     // print_ready_tasks();
     // print_sleeping_tasks();
     // print_exit_tasks();
-    // MAGICBP;
+    kprintf(KPL_DEBUG, "test_thread_kmalloc starts!\n");
+    print_task_nums();
     // for (int i = 0; i < 10000000; i++);
     // for (int i = 0; i < 10000000; i++);
     // for (int i = 0; i < 10000000; i++);
@@ -380,23 +394,34 @@ static void test_thread_kmalloc() {
     // print_page(pp);
     kprintf(KPL_DEBUG, "back to main\n");
     kprintf(KPL_DEBUG, "num_thread_started=%d\n", num_thread_started);
-    print_all_tasks();
-    print_ready_tasks();
-    for (int i = 0; i < 1000000; i++);
-    for (int i = 0; i < 1000000; i++);
-    for (int i = 0; i < 1000000; i++);
-    for (int i = 0; i < 1000000; i++);
+
+    // print_all_tasks();
+    // print_ready_tasks();
+    // print_sleeping_tasks();
+    // print_exit_tasks();
+    print_task_nums();
+
+    thread_msleep(5 * 1000);
+
+    // print_all_tasks();
+    // print_ready_tasks();
+    // for (int i = 0; i < 1000000; i++);
+    // for (int i = 0; i < 1000000; i++);
+    // for (int i = 0; i < 1000000; i++);
+    // for (int i = 0; i < 1000000; i++);
     kprintf(KPL_DEBUG, "later\n");
-    print_all_tasks();
-    print_ready_tasks();
-    print_exit_tasks();
-    print_sleeping_tasks();
-    // vmm_print();
+
+    // print_all_tasks();
+    // print_ready_tasks();
+    // print_sleeping_tasks();
+    // print_exit_tasks();
+    print_task_nums();
+    // print_all_tasks();
+    // print_ready_tasks();
+    // print_exit_tasks();
+    // print_sleeping_tasks();
+    // // vmm_print();
     // while (1) {
-    //     for (int i = 0; i < 1000000; i++);
-    //     for (int i = 0; i < 1000000; i++);
-    //     for (int i = 0; i < 1000000; i++);
-    //     for (int i = 0; i < 1000000; i++);
     //     print_all_tasks();
     //     print_ready_tasks();
     // }
@@ -553,9 +578,13 @@ void kernelMain() {
     // test_thread();
     // pmem_print();
     // pmem_print();
+    // vmm_print();
     // MAGICBP;
     // test_kmalloc();
     // test_thread_kmalloc();
+    // pmem_print();
+    // vmm_print();
+    // MAGICBP;
     // pmem_print();
     // test_page_alloc();
     // pmem_print();
@@ -608,15 +637,15 @@ void kernelMain() {
 
     // sys_getcwd(NULL, 0);
     extern lvsh();
-    extern usr_test1();
-    extern usr_test2();
-    process_execute(usr_test1, "usr_test1", 1);
-    process_execute(usr_test2, "usr_test2", 1);
-    // process_execute(lvsh, "lvsh1", 1);
-    // process_execute(lvsh, "lvsh2", 2);
-    // process_execute(lvsh, "lvsh3", 3);
-    // process_execute(lvsh, "lvsh4", 4);
-    // process_execute(lvsh, "lvsh5", 5);
+    // extern usr_test1();
+    // extern usr_test2();
+    // process_execute(usr_test1, "usr_test1", 1);
+    // process_execute(usr_test2, "usr_test2", 1);
+    process_execute(lvsh, "lvsh1", 1);
+    process_execute(lvsh, "lvsh2", 2);
+    process_execute(lvsh, "lvsh3", 3);
+    process_execute(lvsh, "lvsh4", 4);
+    process_execute(lvsh, "lvsh5", 5);
 
     // int fd = sys_open("/file1", O_CREAT);
     // sys_close(fd);

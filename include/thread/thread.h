@@ -105,6 +105,8 @@ void print_all_tasks();
 void print_ready_tasks();
 void print_exit_tasks();
 void print_sleeping_tasks();
+void print_task_nums();
+
 
 inline void task_push_back_ready(task_t *t);
 inline void task_push_back_all(task_t *t);

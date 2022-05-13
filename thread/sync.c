@@ -63,21 +63,16 @@ static void print_mutex(mutex_t *mutex) {
 }
 
 void mutex_lock(mutex_t *mutex) {
-    // ASSERT(__valid_kva(mutex));
+    ASSERT(__valid_kva(mutex));
     INT_STATUS old_status = disable_int();
     task_t *curr = get_current_thread();
-    // kprintf(KPL_DEBUG, "lock: curr=%s, ", curr->task_name);
-    // print_mutex(mutex);
     if (mutex->holder == curr) {
         (mutex->holder_repeat_nr)++;
         set_int_status(old_status);
         return;
     }
     while (mutex->holder != NULL) {
-        // kprintf(KPL_NOTICE, "{curr(%s)->status(%d)}", curr->task_name, curr->status);
         ASSERT(curr->status == TASK_RUNNING);
-        // ASSERT(!list_find(&(mutex->wait_list), &(curr->general_tag)));
-        // list_push_back(&(mutex->wait_list), &(curr->general_tag));
         __list_push_back(&(mutex->wait_list), curr, general_tag);
         thread_block_self(TASK_BLOCKED);
     }
@@ -89,28 +84,14 @@ void mutex_lock(mutex_t *mutex) {
 }
 
 void mutex_unlock(mutex_t *mutex) {
-    // ASSERT(mutex != NULL);
     ASSERT(__valid_kva(mutex));
     INT_STATUS old_status = disable_int();
-    // kprintf(KPL_DEBUG, "mutex=0x%X\n", mutex);
-    task_t *curr = get_current_thread();
-    // kprintf(KPL_DEBUG, "unlock: curr=%s, ", curr->task_name);
-    // print_mutex(mutex);
     ASSERT(mutex->holder != NULL);
-    // if (mutex->holder != curr) {
-    //     print_mutex(mutex);
-    //     kprintf(KPL_PANIC, "curr=0x%X\n", curr);
-    // }
-    ASSERT(mutex->holder == curr);
+    ASSERT(mutex->holder == get_current_thread());
     ASSERT(mutex->holder_repeat_nr > 0);
     (mutex->holder_repeat_nr)--;
     if (mutex->holder_repeat_nr == 0) {
         mutex->holder = NULL;
-        // list_node_t *p = list_pop_front(&(mutex->wait_list));
-        // if (p != NULL) {
-        //     task_t *t = __container_of(task_t, general_tag, p);
-        //     thread_unblock(t);
-        // }
         task_t *t = __list_pop_front(&(mutex->wait_list), task_t, general_tag);
         if (t != NULL) {
             thread_unblock(t);
