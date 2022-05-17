@@ -49,23 +49,31 @@ int read(int fd, void *buffer, size_t count) {
     return _syscall3(SYSCALL_READ, fd, buffer, count);
 }
 
-void *__brk(void *addr) {
+static void *__brk(void *addr) {
     return (void *)_syscall1(SYSCALL_BRK, addr);
 }
 
 void *sbrk(intptr_t increment) {
-    static void* brk = NULL;
-    if (brk == NULL) {
-        brk = __brk(NULL);
+    static void* old_brk = NULL;
+    if (old_brk == NULL) {
+        old_brk = __brk(NULL);
     }
+    void *retval = old_brk;
     if (increment != 0) {
-        brk = __brk((int)brk + increment);
+        void *new_brk = __brk((int32_t)old_brk + increment);
+        if (new_brk != NULL) {
+            old_brk = new_brk;
+        } else {
+            retval = (void *)-1;
+        }
     }
-    return brk;
+    return retval;
 }
 
 int brk(void *addr) {
-    __brk(addr);
+    if (addr == NULL || __brk(addr) == NULL) {
+        return -1;
+    }
     return 0;
 }
 

@@ -15,13 +15,13 @@ void panic_spin(
 #define __panic_if(cond) if (!(cond)) { PANIC(#cond); }
 
 #ifndef KDEBUG
-#define MAGICBP ((void)0)
+#define MAGICBP ((void)0);
 #else
 #define MAGICBP do { __asm__ volatile("xchg bx, bx"); } while (0);
 #endif
 
 #ifndef KDEBUG
-#define ASSERT(CONDITION) ((void)0)
+#define ASSERT(CONDITION) ((void)0);
 #else
 #define ASSERT(CONDITION) if (!(CONDITION)) { PANIC(#CONDITION); }
 #endif

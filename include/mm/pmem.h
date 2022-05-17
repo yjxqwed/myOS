@@ -37,8 +37,7 @@ void pmem_init();
 
 /**
  *  After getting page(s) from pages_alloc, incref it(them).
- *  When you don't need it(them), decref it(them). There is
- *  no free.
+ *  When you don't need it(them), decref it(them).
  */
 
 /**
@@ -50,6 +49,14 @@ void pmem_init();
  *         NULL if failed to allocate
  */
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags);
+
+/**
+ * @brief free pg_cnt physical pages
+ * 
+ * @param ps array of pointers to ppage_t
+ * @param pg_cnt length of ps
+ */
+void pages_free(ppage_t **ps, uint32_t pg_cnt);
 
 /**
  * @brief Increase the reference to p; panic if p is free

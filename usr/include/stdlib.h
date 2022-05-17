@@ -3,7 +3,8 @@
 
 #include <common/types.h>
 
-void *malloc(uint32_t n);
+void *malloc(size_t size);
 void free(void *addr);
+void print_free_blks();
 
 #endif

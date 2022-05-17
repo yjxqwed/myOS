@@ -19,11 +19,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-static void kmain(void *args) {
-    kprintf(KPL_DEBUG, "main thread!\n");
-    // thread_start("test1", 31, test, "abc");
-    while (1);
-}
 
 static mutex_t m;
 static int32_t x = 5;
@@ -499,42 +494,6 @@ static dead2(void *args) {
     mutex_unlock(&m2);
 }
 
-static int bar(int a) {
-    return a + 1;
-}
-
-static void proc1() {
-    int a = 1;
-    a = bar(a);
-    int c = a + 2;
-    while (1) {
-        sleep(1500);
-        printf("hello proc1\n");
-    }
-}
-
-static void proc2() {
-    int a = 1;
-    a = bar(a);
-    int c = a + 2;
-    // void *p = sbrk(0);
-    // kprintf(KPL_DEBUG, "p=0x%X\n", p);
-    void *p = brk(0);
-    printf("proc2 p=0x%X\n", p);
-    void *p1 = brk(p + 27 * PAGE_SIZE);
-    c = *(int *)p;
-    printf("proc2 c=0x%X\n", c);
-    brk(p);
-    // c = *(int *)p;
-    printf("proc2 c=0x%X\n", c);
-    printf("proc2 p1=0x%X\n", p1);
-    // write("hello proc2\n");
-    while (1) {
-        sleep(1000);
-        printf("hello, proc2\n");
-    }
-}
-
 
 // void *console_thread(void *args) {
 //     int tty_no = (int)args;
@@ -577,14 +536,15 @@ void kernelMain() {
     // print_myOS();
     // test_thread();
     // pmem_print();
+
     // pmem_print();
     // vmm_print();
     // MAGICBP;
-    // test_kmalloc();
     // test_thread_kmalloc();
     // pmem_print();
     // vmm_print();
     // MAGICBP;
+
     // pmem_print();
     // test_page_alloc();
     // pmem_print();
@@ -636,16 +596,21 @@ void kernelMain() {
     // ktask->tty_no = 1;
 
     // sys_getcwd(NULL, 0);
-    extern lvsh();
+
     // extern usr_test1();
     // extern usr_test2();
     // process_execute(usr_test1, "usr_test1", 1);
     // process_execute(usr_test2, "usr_test2", 1);
+    // extern usr_test3();
+    // process_execute(usr_test3, "usr_test3", 1);
+    // extern void usr_test4();
+    // process_execute(usr_test4, "usr_test4", 1);
+    extern void lvsh();
     process_execute(lvsh, "lvsh1", 1);
-    process_execute(lvsh, "lvsh2", 2);
-    process_execute(lvsh, "lvsh3", 3);
-    process_execute(lvsh, "lvsh4", 4);
-    process_execute(lvsh, "lvsh5", 5);
+    // process_execute(lvsh, "lvsh2", 2);
+    // process_execute(lvsh, "lvsh3", 3);
+    // process_execute(lvsh, "lvsh4", 4);
+    // process_execute(lvsh, "lvsh5", 5);
 
     // int fd = sys_open("/file1", O_CREAT);
     // sys_close(fd);
@@ -761,6 +726,7 @@ void kernelMain() {
     while (1) {
         thread_msleep(5 * 1000);
         kprintf(KPL_DEBUG, "kernel still works\n");
+        print_task_nums();
     }
     // thread_msleep(10000);
     // while(1) {

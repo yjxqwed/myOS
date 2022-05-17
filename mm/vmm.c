@@ -56,6 +56,8 @@ bool_t init_vmm_struct(vmm_t *vmm) {
 
     vmm->heap_bot = USER_HEAP_BOTTOM;
     vmm->heap_top = USER_HEAP_BOTTOM;
+    vmm->real_heap_top = USER_HEAP_BOTTOM;
+
     vmm->stack_bot = USER_STACK_BOTTOM;
     vmm->stack_top = USER_STACK_BOTTOM + PAGE_SIZE;
     return True;

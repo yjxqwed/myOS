@@ -288,14 +288,28 @@ static ppage_t *__pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
 
 
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
-    ppage_t *fp = NULL;
     mutex_lock(&pmem_lock);
-    fp = __pages_alloc(pg_cnt, GFP_ZERO);
+    ppage_t *fp = __pages_alloc(pg_cnt, GFP_ZERO);
     mutex_unlock(&pmem_lock);
     return fp;
 }
 
+static void __page_free(ppage_t *p) {
+    ASSERT(p != NULL && p->num_ref == 0);
+    bitmap_set(&pmem_btmp, (p - pmap), 0);
+}
 
+void pages_free(ppage_t **ps, uint32_t pg_cnt) {
+    ASSERT(ps != NULL);
+    mutex_lock(&pmem_lock);
+    for (uint32_t i = 0; i < pg_cnt; i++) {
+        __page_free(ps[i]);
+    }
+    mutex_unlock(&pmem_lock);
+}
+
+
+// no lock
 static void __page_incref(ppage_t *p) {
     ASSERT(p != NULL);
     if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
@@ -305,36 +319,53 @@ static void __page_incref(ppage_t *p) {
     (p->num_ref)++;
 }
 
-
+// with lock
 void page_incref(ppage_t *p) {
     ASSERT(p != NULL);
     mutex_lock(&(p->page_lock));
-
     mutex_lock(&pmem_lock);
-    if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
-        PANIC("incref a free page");
-    }
+    __page_incref(p);
     mutex_unlock(&pmem_lock);
-
-    (p->num_ref)++;
     mutex_unlock(&(p->page_lock));
 }
 
+// no lock
+void __page_decref(ppage_t *p) {
+    ASSERT(p != NULL && p->num_ref > 0);
+    if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
+        PANIC("decref a free page");
+    }
+    (p->num_ref)--;
+    if (p->num_ref == 0) {
+        __page_free(p);
+    }
+}
+
+// void page_decref(ppage_t *p) {
+//     ASSERT(p != NULL);
+//     mutex_lock(&(p->page_lock));
+//     ASSERT(p->num_ref > 0);
+//     mutex_lock(&pmem_lock);
+//     if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
+//         PANIC("incref a free page");
+//     }
+//     mutex_unlock(&pmem_lock);
+//     (p->num_ref)--;
+//     if (p->num_ref == 0) {
+//         mutex_lock(&pmem_lock);
+//         bitmap_set(&pmem_btmp, (p - pmap), 0);
+//         mutex_unlock(&pmem_lock);
+//     }
+//     mutex_unlock(&(p->page_lock));
+// }
+
+// with lock
 void page_decref(ppage_t *p) {
     ASSERT(p != NULL);
     mutex_lock(&(p->page_lock));
-    ASSERT(p->num_ref > 0);
     mutex_lock(&pmem_lock);
-    if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
-        PANIC("incref a free page");
-    }
+    __page_decref(p);
     mutex_unlock(&pmem_lock);
-    (p->num_ref)--;
-    if (p->num_ref == 0) {
-        mutex_lock(&pmem_lock);
-        bitmap_set(&pmem_btmp, (p - pmap), 0);
-        mutex_unlock(&pmem_lock);
-    }
     mutex_unlock(&(p->page_lock));
 }
 

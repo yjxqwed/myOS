@@ -63,7 +63,7 @@ extern void isr128();
 
 #define SETINTDES(x) do { \
     setInterruptDescriptor( \
-        &(_idt[x]), isr##x, SELECTOR_KCODE, \
+        &(_idt[x]), (uint32_t)isr##x, SELECTOR_KCODE, \
         GATE_P_1 | GATE_DPL_0 | GATE_INT_32 \
     ); \
 } while (0);
@@ -147,7 +147,7 @@ void setISRs() {
     SETINTDES(47);
 
     setInterruptDescriptor(
-        &(_idt[0x80]), isr128, SELECTOR_KCODE,
+        &(_idt[0x80]), (uint32_t)isr128, SELECTOR_KCODE,
         GATE_P_1 | GATE_DPL_3 | GATE_TRAP_32
     );
 }
@@ -228,7 +228,7 @@ void interrupt_handler(isrp_t *p) {
         if (handlers[0x80] != NULL) {
             // to return value to the user mode, we need to overwrite
             // the eax register.
-            p->eax = handlers[0x80](p);
+            p->eax = (uint32_t)handlers[0x80](p);
         }
     } else {
         // kprintf(KPL_DUMP, "Unknown interrupt! 0x%x\n", int_no);

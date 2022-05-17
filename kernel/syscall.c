@@ -51,50 +51,60 @@ static void *sys_brk(uintptr_t __addr) {
     vmm_t *vmm = get_current_thread()->vmm;
     // all user processes/threads should all have vmm struct
     ASSERT(vmm != NULL);
+
+    console_kprintf(KPL_DEBUG, "__addr = 0x%X\n", __addr);
+
     if (__addr == NULL) {
         return vmm->heap_top;
     }
 
-    // the new top should not exceed the maximum
-    uintptr_t new_top = MIN(
-        ROUND_UP_DIV(__addr, PAGE_SIZE) * PAGE_SIZE,
-        USER_HEAP_BOTTOM + USER_HEAP_LIMIT
-    );
+    // heap [USER_HEAP_BOTTOM, USER_HEAP_BOTTOM) -> [USER_HEAP_BOTTOM, USER_HEAP_BOTTOM + USER_HEAP_LIMIT)
+    if (__addr < USER_HEAP_BOTTOM || __addr > USER_HEAP_BOTTOM + USER_HEAP_LIMIT) {
+        console_kprintf(KPL_DEBUG, "bad __addr, should be [0x%X, 0x%X]\n", USER_HEAP_BOTTOM, USER_HEAP_BOTTOM + USER_HEAP_LIMIT);
+        return NULL;
+    }
 
-    // the new top should not smaller than the minimum
-    new_top = MAX(new_top, USER_HEAP_BOTTOM);
+    uint32_t new_real_top = ROUND_UP_DIV(__addr, PAGE_SIZE) * PAGE_SIZE;
+
+    console_kprintf(KPL_DEBUG, "new_real_top = 0x%X\n", new_real_top);
 
     mutex_lock(vmm->vmm_mutex);
 
-    if (new_top < vmm->heap_top) {
+    if (new_real_top < vmm->real_heap_top) {
         // shrink heap
         for (
-            uint32_t brk = new_top;
-            brk < vmm->heap_top;
+            uint32_t brk = new_real_top;
+            brk < vmm->real_heap_top;
             brk += PAGE_SIZE
         ) {
             page_unmap(vmm->pgdir, brk);
         }
-    } else if (new_top > vmm->heap_top) {
+    } else if (new_real_top > vmm->real_heap_top) {
         // expand heap
         // ppage_t *zp = get_zpage();
         for (
-            uint32_t brk = vmm->heap_top;
-            brk < new_top;
+            uint32_t brk = vmm->real_heap_top;
+            brk < new_real_top;
             brk += PAGE_SIZE
         ) {
             ppage_t *zp = pages_alloc(1, GFP_ZERO);
-            if (zp == NULL) {
-                new_top = brk;
-                break;
-            }
+            // assume enough memory for now
+            ASSERT(zp != NULL);
+            // if (zp == NULL) {
+            //     new_top = brk;
+            //     break;
+            // }
             page_map(vmm->pgdir, brk, zp, PTE_USER | PTE_WRITABLE);
         }
     }
-
-    vmm->heap_top = new_top;
+    vmm->real_heap_top = new_real_top;
+    vmm->heap_top = __addr;
     void *retval = vmm->heap_top;
     mutex_unlock(vmm->vmm_mutex);
+    console_kprintf(
+        KPL_DEBUG, "vmm->real_heap_top = 0x%X, vmm->heap_top = 0x%X, retval = 0x%X\n",
+        vmm->real_heap_top, vmm->heap_top, retval
+    );
     return retval;
 }
 

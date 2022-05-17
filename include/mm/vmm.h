@@ -26,6 +26,8 @@ struct vmm_struct {
     uint32_t map_bot;
     uint32_t map_top;
 
+    // real_heap_top: the space that is mapped to pages
+    uint32_t real_heap_top;
     uint32_t heap_top;
     uint32_t heap_bot;
 

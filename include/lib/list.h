@@ -8,12 +8,9 @@
 #include <common/types.h>
 #include <common/debug.h>
 
-struct ListNode;
-typedef struct ListNode list_node_t;
-
 typedef struct ListNode {
-    list_node_t *prev;
-    list_node_t *next;
+    struct ListNode *prev;
+    struct ListNode *next;
 } list_node_t;
 
 typedef struct List {
