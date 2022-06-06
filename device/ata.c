@@ -7,6 +7,7 @@
 #include <kprintf.h>
 #include <sys/isr.h>
 #include <mm/kvmm.h>
+#include <lib/string.h>
 
 /**
  * @file device/ata.c
@@ -21,7 +22,7 @@
 
 // r: data; w: data
 #define reg_data(channel)        (channel->port_base + 0)
-// r: error; w: reatures
+// r: error; w: features
 #define reg_error(channel)       (channel->port_base + 1)
 #define reg_features(channel)    (reg_error(channel))
 // r: sector count; w: sector count
@@ -68,13 +69,23 @@
 #define ATA_CMD_WRITE_PIO_EXT     0x34
 #define ATA_CMD_WRITE_DMA         0xCA
 #define ATA_CMD_WRITE_DMA_EXT     0x35
+
 #define ATA_CMD_CACHE_FLUSH       0xE7
 #define ATA_CMD_CACHE_FLUSH_EXT   0xEA
-#define ATA_CMD_PACKET            0xA0
-#define ATA_CMD_IDENTIFY_PACKET   0xA1
 // Identyfy ata device
 #define ATA_CMD_IDENTIFY          0xEC
 
+#define ATA_CMD_PACKET            0xA0
+#define ATA_CMD_IDENTIFY_PACKET   0xA1
+
+
+/**
+ * The commands below are for ATAPI^ devices.
+ * ^ATAPI: ATA packet interface, i.e. CD-ROM.
+ */
+
+#define ATAPI_CMD_READ            0xA8
+#define ATAPI_CMD_EJECT           0x1B
 
 /**
  * ATA_CMD_IDENTIFY_PACKET and ATA_CMD_IDENTIFY return
@@ -96,14 +107,6 @@
 #define ATA_IDENT_MAX_LBA_EXT  200
 
 /**
- * The commands below are for ATAPI^ devices.
- * ^ATAPI: ATA packet interface, i.e. CD-ROM.
- */
-
-#define      ATAPI_CMD_READ       0xA8
-#define      ATAPI_CMD_EJECT      0x1B
-
-/**
  * device register
  * 
  * 7 |  1  |
@@ -123,8 +126,8 @@
  * 0 | HS0 | /
  */
 
-// dev reg placeholder (MBS is for must be set)
-#define DEV_REG_MBS      0xa0
+// dev reg placeholder (MBS is for "Must Be Set")
+#define DEV_REG_MBS      0xA0
 // CHS addressing mode
 #define DEV_REG_MOD_CHS  0x00
 // LBA addressing mode
@@ -139,23 +142,23 @@ struct PartitionTableEntry {
     // 0x80 = bootable; 0x00 = no
     uint8_t bootable;
 
-    // starting head/sector/cylinder number of this partition
+    // start head/sector/cylinder number of this partition
     // 8bits/6bits/10bits each, 3bytes in total
     uint8_t start_head;
     uint8_t start_sec : 6;
     uint16_t start_cyl : 10;
 
     // system id
-    // 0x05 0r 0x0f = extended partition entry
+    // 0x05 or 0x0f = extended partition entry
     uint8_t fs_type;
 
-    // starting head/sector/cylinder number of this partition
+    // end head/sector/cylinder number of this partition
     // 8bits/6bits/10bits each, 3bytes in total
     uint8_t end_head;
     uint8_t end_sec : 6;
     uint16_t end_cyl : 10;
 
-    // starting lba of this partitioin
+    // start lba of this partitioin
     uint32_t start_lba;
     // number of sectors in this partition
     uint32_t sec_cnt;
@@ -191,6 +194,13 @@ list_t partition_list;
 static void select_disk_sector(disk_t *hd, uint32_t lba, uint8_t sec_cnt);
 
 /**
+ * @brief select the disk
+ * 
+ * @param hd target device
+ */
+static void select_disk(disk_t *hd);
+
+/**
  * @brief send command to channel
  * @param chan target channel
  * @param cmd command
@@ -217,7 +227,7 @@ static void read_sector(disk_t *hd, void *buf, uint8_t sec_cnt);
 static void write_sector(disk_t *hd, const void *buf, uint8_t sec_cnt);
 
 /**
- * @brief [0x12,0x34,0x56,0x78] -> [0x34, 0x12, 0x78, 0x56]
+ * @brief [0x12, 0x34, 0x56, 0x78] -> [0x34, 0x12, 0x78, 0x56]
  */
 static void swap_adjacent_bytes(const char *src, char *buf, uint32_t len) {
     uint32_t i;
@@ -228,69 +238,62 @@ static void swap_adjacent_bytes(const char *src, char *buf, uint32_t len) {
     buf[i] = '\0';
 }
 
-static bool_t busy_wait(disk_t *hd);
-
 /**
- * @brief identify disk
- * @return -1 if no device; 1 if not ata device; 0 if success
+ * @brief wait 30s for the hd to finish the submitted request.
+ * 
+ * @param hd target hd to waith
+ * @return 0 - no err; 1 - error; 2 - timeout
  */
-static int identify_disk(disk_t *hd) {
-    char id_info[512];
-    select_disk_sector(hd, 0, 0);
-    cmd_out(hd->my_channel, ATA_CMD_IDENTIFY);
-    thread_msleep(100);
-    if (inportb(reg_status(hd->my_channel)) == 0) {
-        // no device here
-        kprintf(KPL_NOTICE, "no device\n");
-        return -1;
-    }
-    // kprintf(KPL_DEBUG, "status = %x\n", inportb(reg_status(hd->my_channel)));
-    sem_down(&(hd->my_channel->disk_done));
-
-    // int err = 0;
-
-    while (1) {
-        uint8_t status = inportb(reg_status(hd->my_channel));
-        if ((status & ATA_SR_ERR)) {
-            // If Err, device is not ATA.
-            kprintf(KPL_NOTICE, "unknown device\n");
-            return;
+static int busy_wait(disk_t *hd) {
+    ata_channel_t *chan = hd->my_channel;
+    int sleep_time = 30 * 1000;
+    while ((sleep_time -= 10) >= 0) {
+        uint8_t status = inportb(reg_status(chan));
+        if (status & ATA_SR_ERR) {
+            return 1;  // error
         }
-        if (!(status & ATA_SR_BSY) && (status & ATA_SR_DRQ)) {
-            // Everything is right.
-            break;
+        if ((!(status & ATA_SR_BSY)) && (status & ATA_SR_DRQ)) {
+            // device not busy and data requesty ready
+            return 0;  // no err
         }
         thread_msleep(10);
     }
+    return 2;  // timeout
+}
 
-    // if (err == 1) {
-    //     uint8_t cm = inportb(reg_lba_m(hd->my_channel));
-    //     uint8_t ch = inportb(reg_lba_h(hd->my_channel));
-    //     if ((cm == 0x14 && ch == 0xEB) || (cm == 0x69 && ch == 0x96)) {
-    //         cmd_out(hd->my_channel, ATA_CMD_IDENTIFY_PACKET);
-    //         sem_down(&(hd->my_channel->disk_done));
-    //     } else {
-    //         // unknown device type
-    //         kprintf(KPL_NOTICE, "unknown device\n");
-    //         return 1;
-    //     }
-    // }
+/**
+ * @brief identify disk
+ */
+static void identify_disk(disk_t *hd) {
+    select_disk(hd);
+    cmd_out(hd->my_channel, ATA_CMD_IDENTIFY);
+    // test whether it is empty or not
+    thread_msleep(1000);
+    if (inportb(reg_status(hd->my_channel)) == 0) {
+        hd->existed = False;
+        return;
+    }
+    sem_down(&(hd->my_channel->disk_done));
+    if (busy_wait(hd) != 0) {
+        hd->existed = False;
+        return;
+    }
 
+    char id_info[512];
     read_sector(hd, id_info, 1);
 
-    kprintf(KPL_NOTICE, "disk %s info:\n", hd->disk_name);
     char buf[64];
     uint32_t sn_start = 10 * 2, sn_len = 20;
     uint32_t md_start = 27 * 2, md_len = 40;
     swap_adjacent_bytes(id_info + sn_start, buf, sn_len);
-    kprintf(KPL_NOTICE, "    SN: %s\n", buf);
+    strncpy(buf, hd->SN, sn_len);
     swap_adjacent_bytes(id_info + md_start, buf, md_len);
-    kprintf(KPL_NOTICE, "    MODULE: %s\n", buf);
+    strncpy(buf, hd->MODULE, md_len);
     uint32_t sec_start = 60 * 2;
     uint32_t sectors = *(uint32_t *)(id_info + sec_start);
-    kprintf(KPL_NOTICE, "    SECTORS: %d\n", sectors);
-    kprintf(KPL_NOTICE, "    CAPACITY: %dMiB\n", sectors / 2048);
-    return 0;
+    hd->sectors = sectors;
+    hd->existed = True;
+    return;
 }
 
 
@@ -309,46 +312,33 @@ static void select_disk_sector(disk_t *hd, uint32_t lba, uint8_t sec_cnt) {
 }
 
 
-static void read_sector(disk_t *hd, void *buf, uint8_t sec_cnt) {
-    uint32_t num_bytes = 512;
-    if (sec_cnt == 0) {
-        num_bytes *= 256;
-    } else {
-        num_bytes *= sec_cnt;
+static void select_disk(disk_t *hd) {
+    ata_channel_t *chan = hd->my_channel;
+    uint8_t dev_reg = DEV_REG_MBS | DEV_REG_MOD_LBA;
+    if (hd->dev_no == 1) {
+        dev_reg |= DEV_REG_DEV_SLV;
     }
+    outportb(reg_dev(chan), dev_reg);
+}
+
+
+static void read_sector(disk_t *hd, void *buf, uint8_t sec_cnt) {
+    uint32_t num_bytes  = 512 * (sec_cnt == 0 ? 256 : sec_cnt);
     inportsw(reg_data(hd->my_channel), buf, num_bytes / 2);
 }
 
 
 static void write_sector(disk_t *hd, const void *buf, uint8_t sec_cnt) {
-    uint32_t num_bytes = 512;
-    if (sec_cnt == 0) {
-        num_bytes *= 256;
-    } else {
-        num_bytes *= sec_cnt;
-    }
+    uint32_t num_bytes  = 512 * (sec_cnt == 0 ? 256 : sec_cnt);
     outportsw(reg_data(hd->my_channel), buf, num_bytes / 2);
-}
-
-
-static bool_t busy_wait(disk_t *hd) {
-    ata_channel_t *chan = hd->my_channel;
-    int sleep_time = 30 * 1000;
-    while ((sleep_time -= 10) >= 0) {
-        uint8_t status = inportb(reg_status(chan));
-        if ((!(status & ATA_SR_BSY)) && (status & ATA_SR_DRQ)) {
-            return True;
-        } else {
-            thread_msleep(10);
-        }
-    }
-    return False;
 }
 
 
 void ata_read(disk_t *hd, uint32_t lba, void *buf, uint32_t sec_cnt) {
     // we use ATA-1, which only supports 28-bit lba
     ASSERT(lba < 0x10000000);
+
+    // can only access one disk on the same channel at the same time
     mutex_lock(&(hd->my_channel->chan_lock));
 
     // num of sectors done operated
@@ -359,7 +349,7 @@ void ata_read(disk_t *hd, uint32_t lba, void *buf, uint32_t sec_cnt) {
         cmd_out(hd->my_channel, ATA_CMD_READ_PIO);
         // use sem_down to wait for the completion of the disk
         sem_down(&(hd->my_channel->disk_done));
-        if (!busy_wait(hd)) {
+        if (busy_wait(hd) != 0) {
             char error[64];
             ksprintf(error, "%s read sector %d failed", hd->disk_name, lba);
             PANIC(error);
@@ -374,15 +364,18 @@ void ata_read(disk_t *hd, uint32_t lba, void *buf, uint32_t sec_cnt) {
 void ata_write(disk_t *hd, uint32_t lba, const void *buf, uint32_t sec_cnt) {
     // we use ATA-1, which only supports 28-bit lba
     ASSERT(lba < 0x10000000);
+
+    // can only access one disk on the same channel at the same time
     mutex_lock(&(hd->my_channel->chan_lock));
 
     // num of sectors done operated
     uint32_t sec_done = 0;
     while (sec_done < sec_cnt) {
         uint32_t num_sectors = MIN(sec_cnt - sec_done, 256);
-        select_disk_sector(hd, lba + sec_done, num_sectors);
+        // if num_sectors == 256, will pass 0 to select_disk_sector
+        select_disk_sector(hd, lba + sec_done, (uint8_t)num_sectors);
         cmd_out(hd->my_channel, ATA_CMD_WRITE_PIO);
-        if (!busy_wait(hd)) {
+        if (busy_wait(hd) != 0) {
             char error[64];
             ksprintf(error, "%s write sector %d failed", hd->disk_name, lba);
             PANIC(error);
@@ -402,8 +395,8 @@ static void *hd_handler(isrp_t *p) {
     ata_channel_t *chan = &(channels[irq_no - INT_ATA0]);
     ASSERT(chan->irq_no == irq_no);
     /**
-     * 不必担心此中断是否对应的是这一次的expecting_intr,
-     * 每次读写硬盘时会申请锁, 从而保证了同步一致性.
+     * this interrupt must be for the cmd we just sent out since
+     * the mutex is used everytime when issuing a cmd.
      */
     if (chan->expecting_intr) {
         chan->expecting_intr = False;
@@ -416,13 +409,15 @@ static void *hd_handler(isrp_t *p) {
     }
 }
 
-static uint32_t p_no, l_no;
-
 partition_t *first_part = NULL;
 disk_t *first_disk = NULL;
 
 static void partition_scan(disk_t *hd, uint32_t base_lba) {
     boot_sector_t *bs = kmalloc(sizeof(boot_sector_t));
+    static uint32_t primary_ext_base_lba = 0;
+    if (!bs) {
+        PANIC("ERR_NOMEM");
+    }
     ata_read(hd, base_lba, bs, 1);
     // traverse the 4 entries
     for (int i = 0; i < 4; i++) {
@@ -432,23 +427,28 @@ static void partition_scan(disk_t *hd, uint32_t base_lba) {
             continue;
         } else if (pe->fs_type == 0x5 || pe->fs_type == 0xf) {
             // extended partition entry
-            partition_scan(hd, base_lba + pe->start_lba);
+            if (primary_ext_base_lba == 0) {
+                primary_ext_base_lba = pe->start_lba;
+                partition_scan(hd, pe->start_lba);
+            } else {
+                partition_scan(hd, primary_ext_base_lba + pe->start_lba);
+            }
         } else {
             // normal partition entry
             partition_t *part;
             if (base_lba == 0) {
                 // primary partition
-                ASSERT(p_no < 4);
-                part = &(hd->prim_parts[p_no]);
-                ksprintf(part->part_name, "%s%d", hd->disk_name, 1 + p_no++);
+                ASSERT(hd->p_no < 4);
+                part = &(hd->prim_parts[hd->p_no]);
+                ksprintf(part->part_name, "%s%d", hd->disk_name, 1 + hd->p_no++);
             } else {
                 // logical partition
-                if (l_no >= 8) {
+                if (hd->l_no >= 8) {
                     kfree(bs);
                     return;
                 }
-                part = &(hd->logic_parts[l_no]);
-                ksprintf(part->part_name, "%s%d", hd->disk_name, 5 + l_no++);
+                part = &(hd->logic_parts[hd->l_no]);
+                ksprintf(part->part_name, "%s%d", hd->disk_name, 5 + hd->l_no++);
             }
             part->start_lba = base_lba + pe->start_lba;
             part->sec_cnt = pe->sec_cnt;
@@ -470,16 +470,33 @@ static void print_partitions() {
         partition_t *part = __container_of(partition_t, part_tag, p);
         kprintf(
             KPL_NOTICE,
-            "    %s start_lba:0x%X, sec_cnt:0x%X\n",
+            "    %s start_lba: 0x%X, sec_cnt: 0x%X\n",
             part->part_name, part->start_lba, part->sec_cnt
         );
     }
 }
 
+static void print_devices() {
+    for (int i = 0; i < 2; i++) {
+        ata_channel_t *ch = &(channels[i]);
+        for (int j = 0; j < 2; j++) {
+            disk_t *hd = &(ch->devices[j]);
+            if (!(hd->existed)) {
+                continue;
+            }
+            kprintf(KPL_NOTICE, "%s-%s: %s\n", ch->chan_name, j ? "slave" : "master", hd->disk_name);
+            kprintf(KPL_NOTICE, "    SN       = %s\n", hd->SN, hd->sectors, hd->sectors / 2048);
+            kprintf(KPL_NOTICE, "    MODULE   = %s\n", hd->MODULE);
+            kprintf(KPL_NOTICE, "    SECTORS  = %d\n", hd->sectors);
+            kprintf(KPL_NOTICE, "    CAPACITY = %dMiB\n", hd->sectors / 2048);
+            kprintf(KPL_NOTICE, "    p_no = %d, l_no = %d\n", hd->p_no, hd->l_no);
+        }
+    }
+}
 
 void ata_init() {
-    vmm_print();
     list_init(&partition_list);
+    // there are 2 ata channels
     for (int i = 0; i < 2; i++) {
         ata_channel_t *ch = &(channels[i]);
         ksprintf(ch->chan_name, "ata%d", i);
@@ -494,25 +511,26 @@ void ata_init() {
         mutex_init(&(ch->chan_lock));
         sem_init(&(ch->disk_done), 0);
         register_handler(ch->irq_no, hd_handler);
-        // each channel has at most 2 devices
+        // each channel has up to 2 devices
         for (int j = 0; j < 2; j++) {
             disk_t *hd = &(ch->devices[j]);
-            hd->dev_no = j;
             hd->my_channel = ch;
-            ksprintf(hd->disk_name, "sd%c", 'a' + i * 2 + j);
-            kprintf(KPL_NOTICE, "%s-%s: ", ch->chan_name, j ? "slave" : "master");
-            if (identify_disk(hd) != 0) {
-                hd->existed = False;
+            hd->dev_no = j;
+            identify_disk(hd);
+            if (!(hd->existed)) {
                 continue;
             }
-            hd->existed = True;
+            ksprintf(hd->disk_name, "sd%c", 'a' + i * 2 + j);
+            // hd->existed = True;
             if (!first_disk) {
                 first_disk = hd;
             }
-            p_no = l_no = 0;
+            hd->p_no = hd->l_no = 0;
             partition_scan(hd, 0);
         }
     }
+
+    print_devices();
     print_partitions();
 }
 

@@ -3,8 +3,8 @@
 
 /**
  * @file include/device/ata.h
- * @brief ATA (Advanced Technology Atachment), i.e.
- *        IDE (Integreted Device Electronics).
+ * @brief ATA (Advanced Technology Atachment)
+ *        IDE (Integreted Device Electronics)
  *        Basically, they are terms describing Hard Drives.
  */
 
@@ -70,23 +70,32 @@ void dirty_blocks_add(partition_t *part, uint32_t lba, void *data);
 void dirty_blocks_sync(partition_t *part);
 
 
-
 struct Disk {
+    // whether this device actually exists
+    bool_t existed;
     // name of this disk
     // for example 'sda'
     char disk_name[8];
     // the ata channel to which this disk belongs
     ata_channel_t *my_channel;
-    // each channel can have at most two devices
+    // each channel can have at most 2 devices
     // 0 for master and 1 for slave
     uint8_t dev_no;
+    // number of sectors on this disk
+    uint32_t sectors;
     // at most 4 primary partitions
     partition_t prim_parts[4];
+    // number of primary partitions
+    uint8_t p_no;
     // there can be infinitely many logic partitions
     // myOS supports at most 8 logic partitions
     partition_t logic_parts[8];
-    // whether this device actually exists
-    bool_t existed;
+    // number of logical partitions
+    uint8_t l_no;
+
+    // other info
+    char SN[20];
+    char MODULE[40];
 };
 
 
@@ -105,8 +114,7 @@ struct ATADevice {
 
 
 struct ATAChannel {
-    // name of this ata channel
-    // for example 'ata0' or 'ide0'
+    // name of this ata channel, for example 'ata0' or 'ide0'
     char chan_name[8];
     // starting port number of this channel
     uint16_t port_base;
@@ -118,7 +126,7 @@ struct ATAChannel {
     // and is waiting for an interrupt
     bool_t expecting_intr;
     // when done sending out a command, use this semaphore to block itself
-    // avoid busy waiting
+    // and avoid busy waiting
     sem_t disk_done;
     // every channel has at most 2 devices
     disk_t devices[2];

@@ -26,7 +26,7 @@ char* strcpy(const char* src, char* dest);
 // dest is not guaranteed to be null terminated
 char* strncpy(const char* src, char* dest, uint32_t n);
 
-void *memcpy(const void *src, void *dest, uint32_t n);
+void* memcpy(const void* src, void* dest, uint32_t n);
 
 /**
  * @brief compare 2 strings; both strings should be null terminated

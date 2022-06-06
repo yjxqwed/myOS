@@ -65,7 +65,7 @@ void kinit() {
     // enable interrupt
     enable_int();
     // init hard drives
-    // ata_init();
+    ata_init();
     // init file system
     // fs_init();
 }
