@@ -8,13 +8,15 @@
 
 #include <common/types.h>
 #include <list.h>
+#include <common/utils.h>
 
 #define SECTOR_SIZE 512
-#define SECTOR_SIZE_IN_BIT 4096
+#define SECTOR_SIZE_IN_BIT (8 * SECTOR_SIZE)
 
 // myfs use a sector as a block
-#define BLOCK_SIZE (1 * SECTOR_SIZE)
-#define BLOCK_SIZE_IN_BIT (1 * SECTOR_SIZE_IN_BIT)
+#define NR_SECTORS_PER_BLOCK 1
+#define BLOCK_SIZE (NR_SECTORS_PER_BLOCK * SECTOR_SIZE)
+#define BLOCK_SIZE_IN_BIT (8 * BLOCK_SIZE)
 
 // each partition can have at most 4096 files
 #define MAX_FILE_CNT_PER_PART 4096
@@ -25,10 +27,11 @@
 // max path length is 512
 #define MAX_PATH_LENGTH 512
 
-#define MAX_FILE_NAME_LENGTH 32
+#define MAX_FILE_NAME_LENGTH 55
 
-#define BOOT_BLOCK_SEC_CNT 1
-#define SUPER_BLOCK_SEC_CNT 1
+#define BOOT_BLOCK_BLK_CNT 1
+#define SUPER_BLOCK_START_BLK_ID BOOT_BLOCK_BLK_CNT
+#define SUPER_BLOCK_BLK_CNT 1
 
 #define FS_MAGIC 0x19971125
 
@@ -115,7 +118,7 @@ enum {
  * sizeof(inode_t) should be a divisor of 512
  */
 
-#define NR_BLOCKS_PER_INODE 15
+#define NR_BLOCKS_PER_INODE 14
 
 typedef struct INode {
     // inode number
@@ -128,14 +131,13 @@ typedef struct INode {
     uint32_t i_size;
 
     /**
-     * i_blocks is the array of data blocks, each data block contain some sectors
-     * i_blocks[0] ~ i_blocks[11] are direct sectors
-     * i_blocks[12] is the one-level indirect sector
-     * i_blocks[13] is the two-level indirect sector
-     * i_blocks[14] is the three-level indirect sector
+     * i_blocks is the array of lbas of data blocks
+     * i_blocks[0] ~ i_blocks[11] are direct blocks
+     * i_blocks[12] is the one-level indirect block
+     * i_blocks[13] is the two-level indirect block
      */
     uint32_t i_blocks[NR_BLOCKS_PER_INODE];
-} inode_t;
+} __attr_packed inode_t;
 
 
 // the in memory wrapper of inode
@@ -144,6 +146,7 @@ typedef struct InMemoryINode {
     inode_t inode;
     // number of times of this file being opened
     uint32_t i_open_times;
+    // one file can be written by a single writer.
     bool_t write_deny;
     // for linked list to use
     list_node_t i_tag;

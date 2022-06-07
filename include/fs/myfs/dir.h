@@ -16,7 +16,7 @@ typedef struct DirectoryEntry {
     uint32_t i_no;
     // file type of this entry
     file_type_e f_type;
-} dir_entry_t;
+} __attr_packed dir_entry_t ;
 
 /**
  * @brief get dir entry by name

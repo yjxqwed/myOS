@@ -67,5 +67,5 @@ void kinit() {
     // init hard drives
     ata_init();
     // init file system
-    // fs_init();
+    fs_init();
 }

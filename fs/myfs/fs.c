@@ -16,139 +16,157 @@
 #include <string.h>
 #include <device/tty.h>
 
-#define __super_block_lba(part_start_lba) \
-    (part_start_lba + BOOT_BLOCK_SEC_CNT)
+// #define __super_block_lba(part_start_lba) \
+//     (part_start_lba + BOOT_BLOCK_SEC_CNT)
 
 extern ata_channel_t channels[2];
 extern list_t partition_list;
 
+static void partition_block_read(partition_t *part, uint32_t blk_id, void *buf, uint32_t blk_cnt) {
+    // ASSERT(blk_id + blk_cnt <= part->sb->block_cnt);
+    uint32_t lba = part->start_lba + blk_id * NR_SECTORS_PER_BLOCK;
+    uint32_t sec_cnt = blk_cnt * NR_SECTORS_PER_BLOCK;
+    ASSERT(lba + sec_cnt <= part->sec_cnt);
+    kprintf(KPL_DEBUG, "part_read_blk: lba = 0x%X, cnt = %d\n", lba, sec_cnt);
+    ata_read(part->my_disk, lba, buf, sec_cnt);
+}
+
+static void partition_block_write(partition_t *part, uint32_t blk_id, void *buf, uint32_t blk_cnt) {
+    // ASSERT(blk_id + blk_cnt <= part->sb->block_cnt);
+    uint32_t lba = part->start_lba + blk_id * NR_SECTORS_PER_BLOCK;
+    uint32_t sec_cnt = blk_cnt * NR_SECTORS_PER_BLOCK;
+    ASSERT(lba + sec_cnt <= part->sec_cnt);
+    ata_write(part->my_disk, lba, buf, sec_cnt);
+}
 
 static int format_partition(partition_t *part) {
     ASSERT(part != NULL);
     kprintf(KPL_NOTICE, "Started to format partition %s\n", part->part_name);
-    // boot block occupies 1 sector
-    uint32_t boot_block_secs = BOOT_BLOCK_SEC_CNT;
-    // super block occupies 1 sector
-    uint32_t super_block_secs = SUPER_BLOCK_SEC_CNT;
+
     super_block_t *sb = (super_block_t *)kmalloc(sizeof(super_block_t));
-    if (sb == NULL) {
-        return -ERR_MEMORY_SHORTAGE;
+    uint8_t *buf = (uint8_t *)kmalloc(BLOCK_SIZE);
+    if (sb == NULL || buf == NULL) {
+        kfree(sb);
+        kfree(buf);
+        return -FSERR_NOMEM;
     }
+
     sb->fs_type = FS_MAGIC;
-    sb->sec_cnt = part->sec_cnt;
+    sb->block_cnt = part->sec_cnt / NR_SECTORS_PER_BLOCK;
     sb->inode_cnt = MAX_FILE_CNT_PER_PART;
     sb->part_start_lba = part->start_lba;
 
-    uint32_t curr_free_secs_start_lba =
-        part->start_lba + boot_block_secs + super_block_secs;
+    uint32_t curr_free_blks_start_id = BOOT_BLOCK_BLK_CNT + SUPER_BLOCK_BLK_CNT;
+    // inode_btmp
+    sb->inode_btmp_start_blk_id = curr_free_blks_start_id;
+    sb->inode_btmp_blk_cnt = ROUND_UP_DIV(sb->inode_cnt, BLOCK_SIZE_IN_BIT);
+    curr_free_blks_start_id += sb->inode_btmp_blk_cnt;
+    // inode_table
+    sb->inode_table_start_blk_id = curr_free_blks_start_id;
+    sb->inode_table_blk_cnt = ROUND_UP_DIV(sb->inode_cnt, BLOCK_SIZE / sizeof(inode_t));
+    curr_free_blks_start_id += sb->inode_table_blk_cnt;
+    // block_btmp
+    sb->block_btmp_start_blk_id = curr_free_blks_start_id;
+    sb->block_btmp_blk_cnt = ROUND_UP_DIV(sb->block_cnt, BLOCK_SIZE_IN_BIT);
+    curr_free_blks_start_id += sb->block_btmp_blk_cnt;
 
-    sb->inode_btmp_start_lba = curr_free_secs_start_lba;
-    sb->inode_btmp_sec_cnt = ROUND_UP_DIV(sb->inode_cnt, BLOCK_SIZE_IN_BIT);
-    curr_free_secs_start_lba += sb->inode_btmp_sec_cnt;
+    sb->data_start_blk_id = curr_free_blks_start_id;
 
-    sb->inode_table_start_lba = curr_free_secs_start_lba;
-    sb->inode_table_sec_cnt =
-        ROUND_UP_DIV(sb->inode_cnt, SECTOR_SIZE / sizeof(inode_t));
-    curr_free_secs_start_lba += sb->inode_table_sec_cnt;
-
-    sb->block_btmp_start_lba = curr_free_secs_start_lba;
-    sb->block_btmp_sec_cnt = ROUND_UP_DIV(sb->sec_cnt, BLOCK_SIZE_IN_BIT);
-    curr_free_secs_start_lba += sb->block_btmp_sec_cnt;
-
-    sb->data_start_lba = curr_free_secs_start_lba;
     sb->root_inode_no = 0;
     sb->dir_entry_size = sizeof(dir_entry_t);
 
-    kprintf(KPL_NOTICE, "%s info: \n", part->part_name);
+    kprintf(KPL_DEBUG, "%s info: \n", part->part_name);
     kprintf(
-        KPL_NOTICE,
+        KPL_DEBUG,
         "    fs_type: 0x%x\n"
         "    part_start_lba: 0x%x\n"
-        "    sec_cnt: 0x%x\n"
+        "    nr_sectors_per_block: 0x%x\n"
+        "    blk_cnt: 0x%x\n"
         "    inode_cnt: 0x%x\n"
-        "    inode_btmp_start_lba: 0x%x\n"
-        "    inode_btmp_sec_cnt: 0x%x\n"
-        "    inode_table_start_lba: 0x%x\n"
-        "    inode_table_sec_cnt: 0x%x\n"
-        "    block_btmp_start_lba: 0x%x\n"
-        "    block_btmp_sec_cnt: 0x%x\n"
-        "    data_start_lba: 0x%x\n",
-        sb->fs_type, sb->part_start_lba, sb->sec_cnt, sb->inode_cnt,
-        sb->inode_btmp_start_lba, sb->inode_btmp_sec_cnt,
-        sb->inode_table_start_lba, sb->inode_table_sec_cnt,
-        sb->block_btmp_start_lba, sb->block_btmp_sec_cnt,
-        sb->data_start_lba
+        "    inode_btmp_start_blk_id: 0x%x\n"
+        "    inode_btmp_blk_cnt: 0x%x\n"
+        "    inode_table_start_blk_id: 0x%x\n"
+        "    inode_table_blk_cnt: 0x%x\n"
+        "    block_btmp_start_blk_id: 0x%x\n"
+        "    block_btmp_blk_cnt: 0x%x\n"
+        "    data_start_blk_id: 0x%x\n",
+        sb->fs_type, sb->part_start_lba, NR_SECTORS_PER_BLOCK,
+        sb->block_cnt, sb->inode_cnt,
+        sb->inode_btmp_start_blk_id, sb->inode_btmp_blk_cnt,
+        sb->inode_table_start_blk_id, sb->inode_table_blk_cnt,
+        sb->block_btmp_start_blk_id, sb->block_btmp_blk_cnt,
+        sb->data_start_blk_id
     );
 
     // write super block to disk
     kprintf(KPL_NOTICE, "  Writing super block to disk... ");
-    ata_write(part->my_disk, part->start_lba + boot_block_secs, sb, super_block_secs);
+    // uint32_t sb_slba = part->start_lba + boot_block_secs;
+    // ata_write(part->my_disk, sb_slba, sb, super_block_secs);
+    partition_block_write(part, BOOT_BLOCK_BLK_CNT, sb, SUPER_BLOCK_BLK_CNT);
     kprintf(KPL_NOTICE, "  Done!\n");
-
-    uint32_t buf_size = MAX(sb->inode_btmp_sec_cnt, sb->inode_table_sec_cnt);
-    buf_size = MAX(buf_size, sb->block_btmp_sec_cnt);
-    buf_size *= SECTOR_SIZE;
-    uint8_t *buf = (uint8_t *)kmalloc(buf_size);
-    if (buf == NULL) {
-        kfree(sb);
-        return -ERR_MEMORY_SHORTAGE;
-    }
 
     // init inode_btmp
     // inode 0 has been assigned to root
     buf[0] = 0x01;
     kprintf(KPL_NOTICE, "  Writing inode bitmap to disk... ");
-    ata_write(part->my_disk, sb->inode_btmp_start_lba, buf, sb->inode_btmp_sec_cnt);
+    // ata_write(part->my_disk, sb->inode_btmp_start_lba, buf, 1);
+    partition_block_write(part, sb->inode_btmp_start_blk_id, buf, 1);
     kprintf(KPL_NOTICE, "  Done!\n");
     buf[0] = 0;
 
     // init inode_table
     inode_t *inode = (inode_t *)buf;
-    // inode is for root
+    // the first inode is for root
     inode->i_no = 0;
-    // root is a dir and it contains . (self) and .. (parent dir) by default
-    // as its dir entries
+    // root is a dir and it contains . (self) and .. (parent dir) by default as its dir entries
     inode->i_size = sb->dir_entry_size * 2;
-    inode->i_blocks[0] = sb->data_start_lba;
+    // inode->i_blocks[0] = sb->data_start_lba;
+    inode->i_blocks[0] = sb->data_start_blk_id;
     kprintf(KPL_NOTICE, "  Writing inode table to disk... ");
-    ata_write(part->my_disk, sb->inode_table_start_lba, buf, sb->inode_table_sec_cnt);
+    // ata_write(part->my_disk, sb->inode_table_start_lba, buf, 1);
+    partition_block_write(part, sb->inode_table_start_blk_id, buf, 1);
     kprintf(KPL_NOTICE, "  Done!\n");
     memset(buf, 0, sizeof(inode_t));
 
     /** init block_btmp */
-    uint32_t byte_len = sb->block_btmp_sec_cnt * SECTOR_SIZE;
+    // size of the btmp in bytes
+    uint32_t byte_len = sb->block_btmp_blk_cnt * BLOCK_SIZE;
+    // size of the btmp in bits
     uint32_t bit_len = byte_len * 8;
-    // num of sectors used by meta data
-    uint32_t used_sectors = sb->data_start_lba - sb->part_start_lba;
-    // non-existed sectors
-    uint32_t none_sectors = bit_len - sb->sec_cnt;
 
-    // the first used_sectors bits and last none_sectors bits should be 1
+    // the used-block-bits and the none-block-bits should be 1
     // others should be 0
-    uint32_t i;
-    for (i = 0; i < used_sectors / 8; i++) {
-        buf[i] = 0xff;
-    }
-    for (int j = 0; j < used_sectors % 8; j++) {
-        buf[i] |= (0x1 << j);
-    }
-
-    for (i = 0; i < none_sectors / 8; i++) {
-        buf[byte_len - 1 - i] = 0xff;
-    }
-    for (int j = 0; j < none_sectors % 8; j++) {
-        buf[byte_len - 1 - i] |= (0x01 << (7 - j));
-    }
-
-    // the first block is used by root
-    int byte_idx = (sb->data_start_lba - sb->part_start_lba) / 8;
-    int bit_idx = (sb->data_start_lba - sb->part_start_lba) % 8;
-    buf[byte_idx] |= (0x01 << bit_idx);
-
     kprintf(KPL_NOTICE, "  Writing block bitmap to disk... ");
-    ata_write(part->my_disk, sb->block_btmp_start_lba, buf, sb->block_btmp_sec_cnt);
+    uint32_t btmp_blk_offset = 0;
+    for (uint32_t i = 0; i <= sb->data_start_blk_id; i++) {
+        uint32_t byte_offset = i / 8 - btmp_blk_offset * BLOCK_SIZE, bit_offset = i % 8;
+        if (byte_offset >= BLOCK_SIZE) {
+            uint32_t bid = sb->block_btmp_start_blk_id + btmp_blk_offset;
+            partition_block_write(part, bid, buf, 1);
+            memset(buf, 0, BLOCK_SIZE);
+            btmp_blk_offset++;
+            byte_offset -= BLOCK_SIZE;
+        }
+        buf[byte_offset] |= (1 << bit_offset);
+    }
+
+    ASSERT(btmp_blk_offset <= sb->block_cnt / BLOCK_SIZE_IN_BIT);
+    if (btmp_blk_offset < sb->block_cnt / BLOCK_SIZE_IN_BIT) {
+        uint32_t bid = sb->block_btmp_start_blk_id + btmp_blk_offset;
+        partition_block_write(part, bid, buf, 1);
+        memset(buf, 0, BLOCK_SIZE);
+    }
+
+    btmp_blk_offset = sb->block_cnt / BLOCK_SIZE_IN_BIT;
+    for (uint32_t i = sb->block_cnt; i < bit_len; i++) {
+        uint32_t byte_offset = i / 8 - btmp_blk_offset * BLOCK_SIZE, bit_offset = i % 8;
+        buf[byte_offset] |= (1 << bit_offset);
+    }
+    // always write the last block
+    uint32_t bid = sb->block_btmp_start_blk_id + sb->block_btmp_blk_cnt - 1;
+    partition_block_write(part, bid, buf, 1);
+    memset(buf, 0, BLOCK_SIZE);
     kprintf(KPL_NOTICE, "  Done!\n");
-    memset(buf, 0, buf_size);
 
     // init root data
     dir_entry_t *de = (dir_entry_t *)buf;
@@ -163,76 +181,73 @@ static int format_partition(partition_t *part) {
     de[1].f_type = FT_DIRECTORY;
 
     kprintf(KPL_NOTICE, "  Writing root to disk... ");
-    ata_write(part->my_disk, sb->data_start_lba, buf, 1);
+    // ata_write(part->my_disk, sb->data_start_lba, buf, 1);
+    partition_block_write(part, sb->data_start_blk_id, buf, 1);
     kprintf(KPL_NOTICE, "  Done!\n");
 
-    // kprintf(KPL_DEBUG, "used: %x; none: %x; byte_len: 0x%x\n", used_sectors, none_sectors, byte_len);
     kfree(sb);
     kfree(buf);
     kprintf(KPL_NOTICE, "Done formatting partition %s\n", part->part_name);
-    return ERR_NO_ERR;
+    return FSERR_NOERR;
 }
 
 
 static partition_t *curr_part = NULL;
 
-
-static int mount_partition(const char *part_name) {
+static partition_t *get_partition(const char *part_name) {
     list_node_t *p;
     __list_for_each((&partition_list), p) {
         partition_t *part = __container_of(partition_t, part_tag, p);
         if (strcmp(part_name, part->part_name) == 0) {
-            // read superblock of this partition
-            super_block_t *sb = (super_block_t *)kmalloc(sizeof(super_block_t));
-            if (sb == NULL) {
-                return -FSERR_NOMEM;
-            }
-            ata_read(
-                part->my_disk, __super_block_lba(part->start_lba),
-                sb, SUPER_BLOCK_SEC_CNT
-            );
-            kprintf(KPL_DEBUG, "sb->root_inode = %d\n", sb->root_inode_no);
-            // read inode bitmap of this partition
-            part->inode_btmp.bits_ = (uint8_t *)kmalloc(sb->inode_btmp_sec_cnt * SECTOR_SIZE);
-            if (part->inode_btmp.bits_ == NULL) {
-                kfree(sb);
-                return -FSERR_NOMEM;
-            }
-            ata_read(
-                part->my_disk, sb->inode_btmp_start_lba,
-                part->inode_btmp.bits_, sb->inode_btmp_sec_cnt
-            );
-            bitmap_reinit(&(part->inode_btmp), sb->inode_btmp_sec_cnt * SECTOR_SIZE);
-
-            // read block bitmap of this partition
-            part->block_btmp.bits_ = (uint8_t *)kmalloc(sb->block_btmp_sec_cnt * SECTOR_SIZE);
-            if (part->block_btmp.bits_ == NULL) {
-                kfree(sb);
-                kfree(part->inode_btmp.bits_);
-                return -FSERR_NOMEM;
-            }
-            ata_read(
-                part->my_disk, sb->block_btmp_start_lba,
-                part->block_btmp.bits_, sb->block_btmp_sec_cnt
-            );
-            bitmap_reinit(&(part->block_btmp), sb->block_btmp_sec_cnt * SECTOR_SIZE);
-
-            for (int i = 0; i < NR_DIRTY_BLOCKS; i++) {
-                part->dirty_blocks[i].first = 0;
-                part->dirty_blocks[i].second = NULL;
-            }
-
-            part->sb = sb;
-            list_init(&(part->open_inodes));
-            curr_part = part;
-            kprintf(KPL_NOTICE, "%s mounted!\n", curr_part->part_name);
-            print_btmp(&(curr_part->block_btmp));
-            print_btmp(&(curr_part->inode_btmp));
-            open_root_dir(part);
-            return FSERR_NOERR;
+            return part;
         }
     }
-    return -FSERR_NOPART;
+    return NULL;
+}
+
+static int mount_partition(partition_t *part) {
+    if (part == NULL) {
+        return -FSERR_NOPART;
+    }
+
+    // read the superblock of this partition from disk
+    super_block_t *sb = (super_block_t *)kmalloc(sizeof(super_block_t));
+    if (sb == NULL) {
+        return -FSERR_NOMEM;
+    }
+    partition_block_read(part, SUPER_BLOCK_START_BLK_ID, sb, SUPER_BLOCK_BLK_CNT);
+    kprintf(KPL_DEBUG, "sb->root_inode = %d\n", sb->root_inode_no);
+
+    uint32_t inode_btmp_byte_len = sb->inode_btmp_blk_cnt * BLOCK_SIZE;
+    uint32_t block_btmp_byte_len = sb->block_btmp_blk_cnt * BLOCK_SIZE;
+    kprintf(KPL_DEBUG, "AAAAAAAAAAAAAAAAA %d, %d\n", inode_btmp_byte_len, inode_btmp_byte_len);
+    part->inode_btmp.bits_ = (uint8_t *)kmalloc(inode_btmp_byte_len);
+    part->block_btmp.bits_ = (uint8_t *)kmalloc(block_btmp_byte_len);
+    if (part->inode_btmp.bits_ == NULL || part->block_btmp.bits_ == NULL) {
+        kfree(sb);
+        kfree(part->inode_btmp.bits_);
+        kfree(part->block_btmp.bits_);
+        return -FSERR_NOMEM;
+    }
+    partition_block_read(part, sb->inode_btmp_start_blk_id, part->inode_btmp.bits_, sb->inode_btmp_blk_cnt);
+    bitmap_reinit(&(part->inode_btmp), inode_btmp_byte_len);
+
+    partition_block_read(part, sb->block_btmp_start_blk_id, part->block_btmp.bits_, sb->block_btmp_blk_cnt);
+    bitmap_reinit(&(part->block_btmp), block_btmp_byte_len);
+
+    for (int i = 0; i < NR_DIRTY_BLOCKS; i++) {
+        part->dirty_blocks[i].first = 0;
+        part->dirty_blocks[i].second = NULL;
+    }
+
+    part->sb = sb;
+    list_init(&(part->open_inodes));
+    curr_part = part;
+    kprintf(KPL_NOTICE, "%s mounted!\n", curr_part->part_name);
+    print_btmp(&(curr_part->block_btmp));
+    print_btmp(&(curr_part->inode_btmp));
+    // open_root_dir(part);
+    return FSERR_NOERR;
 }
 
 
@@ -245,26 +260,31 @@ void fs_init() {
     if (sb == NULL) {
         PANIC("failed to init fs");
     }
+
+    partition_t *first_part = NULL;
     __list_for_each((&partition_list), p) {
         partition_t *part = __container_of(partition_t, part_tag, p);
-        ata_read(
-            part->my_disk, __super_block_lba(part->start_lba),
-            sb, SUPER_BLOCK_SEC_CNT
-        );
+        if (first_part == NULL) {
+            first_part = part;
+        }
+        // ata_read(
+        //     part->my_disk, __super_block_lba(part->start_lba),
+        //     sb, SUPER_BLOCK_SEC_CNT
+        // );
+        partition_block_read(part, SUPER_BLOCK_START_BLK_ID, sb, SUPER_BLOCK_BLK_CNT);
         if (sb->fs_type == FS_MAGIC) {
             kprintf(KPL_NOTICE, "%s has a filesystem\n", part->part_name);
         } else {
             format_partition(part);
         }
-        // format_partition(part);
     }
-    if (mount_partition("sdc1") != FSERR_NOERR) {
-        PANIC("failed to mount sdc1");
+
+    // we use the first partition as the root directory :-)
+    if (!first_part || mount_partition(first_part) != FSERR_NOERR) {
+        PANIC("failed to mount the first partition");
     }
-    // kprintf(KPL_NOTICE, "root dir (%d) opened.\n", root_dir.im_inode->inode.i_no);
-    kprintf(KPL_NOTICE, "root dir (%d) opened.\n", root_imnode->inode.i_no);
+    // kprintf(KPL_NOTICE, "root dir (%d) opened.\n", root_imnode->inode.i_no);
     kfree(sb);
-    // MAGICBP;
 }
 
 

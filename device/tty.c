@@ -47,7 +47,7 @@ void tty_putkey(key_info_t ki) {
     // kprintf(KPL_DEBUG, "{ki:%X}", ki);
 
     // ALT-[1-6] is used to change TTY
-    if (__keyflags(ki) == (KIF_ALT)) {
+    if (__keyflags(ki) == (KIF_CTRL)) {
         key_code_e keycode = __keycode(ki);
         if (keycode >= KEYCODE_ALPHA1 && keycode <= KEYCODE_ALPHA6) {
             select_console(keycode - KEYCODE_ALPHA1);

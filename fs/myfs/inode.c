@@ -20,8 +20,8 @@ static void inode_locate(
     ASSERT(i_no < MAX_FILE_CNT_PER_PART);
     uint32_t num_inode_per_block = BLOCK_SIZE / sizeof(inode_t);
     uint32_t lba_offset = i_no / num_inode_per_block;
-    ASSERT(lba_offset < part->sb->inode_table_sec_cnt);
-    *lba = part->sb->inode_table_start_lba + lba_offset;
+    // ASSERT(lba_offset < part->sb->inode_table_sec_cnt);
+    // *lba = part->sb->inode_table_start_lba + lba_offset;
     *offset = i_no % num_inode_per_block;
 }
 
