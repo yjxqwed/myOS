@@ -6,9 +6,9 @@
 #include <fs/myfs/dir.h>
 #include <fs/myfs/utils.h>
 #include <mm/kvmm.h>
-#include <string.h>
+#include <lib/string.h>
 #include <thread/process.h>
-#include <kprintf.h>
+#include <lib/kprintf.h>
 #include <common/utils.h>
 
 static file_t file_table[MAX_FILE_OPEN];
@@ -111,7 +111,8 @@ int file_create(
     // sync file inode
     inode_sync(part, file_im_ino, io_buf);
     // add file inode to cache
-    __list_push_front(&(part->open_inodes), file_im_ino, i_tag);
+    // __list_push_front(&(part->open_inodes), file_im_ino, i_tag);
+    __list_push_front(&__myfs_field(part, open_inodes), file_im_ino, i_tag);
 
     return file_lfd;
 
@@ -273,7 +274,8 @@ int read_dirent(
         return 0;
     }
 
-    int dent_size = part->sb->dir_entry_size;
+    // int dent_size = part->sb->dir_entry_size;
+    int dent_size = __myfs_field(part, sb)->dir_entry_size;
 
     int blk_size = BLOCK_SIZE - BLOCK_SIZE % dent_size;
 

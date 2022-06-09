@@ -16,7 +16,8 @@ im_inode_t *root_imnode = NULL;
 
 void open_root_dir(partition_t *part) {
     // root_dir.im_inode = inode_open(part, part->sb->root_inode_no);
-    root_imnode = inode_open(part, part->sb->root_inode_no);
+    // root_imnode = inode_open(part, part->sb->root_inode_no);
+    root_imnode = inode_open(part, __myfs_field(part, sb)->root_inode_no);
     // root_dir.dir_pos = 0;
 }
 
@@ -32,7 +33,7 @@ int get_dir_entry_by_name(
     // const dir_t *dir, 
     const char *name, dir_entry_t *dir_entry, void *io_buffer
 ) {
-    uint32_t nr_de_per_block = __nr_des_per_block(part->sb->dir_entry_size);
+    uint32_t nr_de_per_block = __nr_des_per_block(__myfs_field(part, sb)->dir_entry_size);
     // handle direct blocks only for now
     for (int i = 0; i < 12; i++) {
         // uint32_t lba = dir->im_inode->inode.i_blocks[i];
@@ -46,7 +47,7 @@ int get_dir_entry_by_name(
             // a valid dir entry should have a valid inode number
             if (des[j].f_type != FT_NONE && !strcmp(name, des[j].filename)) {
                 // dir_entry = &(des[j]);
-                memcpy(&(des[j]), dir_entry, part->sb->dir_entry_size);
+                memcpy(&(des[j]), dir_entry, __myfs_field(part, sb)->dir_entry_size);
                 return FSERR_NOERR;
             }
         }
@@ -75,9 +76,9 @@ int write_dir_entry(
 ) {
     // make sure dir is in part
     // ASSERT(list_find(&(part->open_inodes), &(dir->im_inode->i_tag)));
-    ASSERT(list_find(&(part->open_inodes), &(dir->i_tag)));
+    ASSERT(list_find(&__myfs_field(part, open_inodes), &(dir->i_tag)));
 
-    uint32_t dir_entry_size = part->sb->dir_entry_size;
+    uint32_t dir_entry_size = __myfs_field(part, sb)->dir_entry_size;
     uint32_t nr_de_per_block = __nr_des_per_block(dir_entry_size);
     // ASSERT(dir->im_inode->inode.i_size % nr_de_per_block == 0);
     ASSERT(dir->inode.i_size % nr_de_per_block == 0);

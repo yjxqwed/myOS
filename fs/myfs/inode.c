@@ -1,29 +1,20 @@
-#include <fs/myfs/inode.h>
+
 #include <device/ata.h>
-#include <common/debug.h>
+#include <fs/myfs/inode.h>
 #include <fs/myfs/fs.h>
 #include <fs/myfs/fs_types.h>
-#include <list.h>
-#include <string.h>
+#include <fs/myfs/utils.h>
+
+#include <lib/list.h>
+#include <lib/string.h>
+#include <lib/kprintf.h>
+
 #include <mm/kvmm.h>
-
-#include <kprintf.h>
-
+#include <common/debug.h>
 
 /**
  * @brief locate inode on disk; results will be stored in lba and offset
  */
-// static void inode_locate(
-//     const partition_t *part, uint32_t i_no,
-//     uint32_t *lba, uint32_t *offset
-// ) {
-//     ASSERT(i_no < MAX_FILE_CNT_PER_PART);
-//     uint32_t num_inode_per_block = BLOCK_SIZE / sizeof(inode_t);
-//     uint32_t lba_offset = i_no / num_inode_per_block;
-//     // ASSERT(lba_offset < part->sb->inode_table_sec_cnt);
-//     // *lba = part->sb->inode_table_start_lba + lba_offset;
-//     *offset = i_no % num_inode_per_block;
-// }
 
 /**
  * @brief locate inode on disk; results will be stored in lba and offset
@@ -34,8 +25,8 @@ static void inode_locate(
     ASSERT(i_no < MAX_FILE_CNT_PER_PART);
     uint32_t num_inode_per_block = BLOCK_SIZE / sizeof(inode_t);
     uint32_t blk_offset = i_no / num_inode_per_block;
-    ASSERT(blk_offset < part->sb->inode_table_blk_cnt);
-    *blk_id = part->sb->inode_table_start_blk_id + blk_offset;
+    ASSERT(blk_offset < __myfs_field(part, sb)->inode_table_blk_cnt);
+    *blk_id = __myfs_field(part, sb)->inode_table_start_blk_id + blk_offset;
     *offset = i_no % num_inode_per_block;
 }
 
@@ -49,10 +40,11 @@ void inode_sync(partition_t *part, im_inode_t *im_inode, void *buffer) {
 }
 
 im_inode_t *inode_open(partition_t *part, uint32_t i_no) {
-    ASSERT(part != NULL && i_no < part->sb->inode_cnt);
+    ASSERT(part != NULL && i_no < __myfs_field(part, sb)->inode_cnt);
     // first find in the open_inodes cache
     list_node_t *p;
-    __list_for_each((&(part->open_inodes)), p) {
+    list_t *part_open_inodes = &__myfs_field(part, open_inodes);
+    __list_for_each(part_open_inodes, p) {
         im_inode_t *im_inode = __container_of(im_inode_t, i_tag, p);
         if (im_inode->inode.i_no == i_no) {
             (im_inode->i_open_times)++;
@@ -83,7 +75,7 @@ im_inode_t *inode_open(partition_t *part, uint32_t i_no) {
     im_inode->i_open_times = 1;
     im_inode->write_deny = False;
     // add the inode to the front of the cache list
-    __list_push_front(&(part->open_inodes), im_inode, i_tag);
+    __list_push_front(part_open_inodes, im_inode, i_tag);
     im_inode->dirty = False;
     return im_inode;
 }

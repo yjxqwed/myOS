@@ -6,8 +6,10 @@
  * @brief some definitions of myfs
  */
 
+
+#include <lib/list.h>
+#include <lib/bitmap.h>
 #include <common/types.h>
-#include <list.h>
 #include <common/utils.h>
 
 #define SECTOR_SIZE 512
@@ -31,7 +33,6 @@
 
 #define BOOT_BLOCK_BLK_CNT 1
 #define SUPER_BLOCK_START_BLK_ID BOOT_BLOCK_BLK_CNT
-#define SUPER_BLOCK_BLK_CNT 1
 
 #define FS_MAGIC 0x19971125
 
@@ -112,6 +113,51 @@ enum {
     FSERR_RANGE
 };
 
+// myfs superblock
+typedef struct SuperBlock {
+    // a magic number indicating the file system type of this partition
+    uint32_t fs_type;
+    // number of blocks in this partition
+    uint32_t block_cnt;
+    // number of inodes in this partition
+    uint32_t inode_cnt;
+    // start lba of this partition
+    uint32_t part_start_lba;
+
+    // inode bitmap
+    uint32_t inode_btmp_start_blk_id;
+    uint32_t inode_btmp_blk_cnt;
+
+    // inode table 
+    uint32_t inode_table_start_blk_id;
+    uint32_t inode_table_blk_cnt;
+
+    // block bitmap
+    uint32_t block_btmp_start_blk_id;
+    uint32_t block_btmp_blk_cnt;
+
+    // data region start lba
+    uint32_t data_start_blk_id;
+
+    // inode number of the root directory of this partition
+    uint32_t root_inode_no;
+    // size of a directory entry
+    uint32_t dir_entry_size;
+} super_block_t;
+
+#define SUPER_BLOCK_BLK_CNT ROUND_UP(sizeof(super_block_t), BLOCK_SIZE)
+
+// implements partition_t.fs_sturct
+typedef struct myfs_struct {
+    super_block_t *sb;
+
+    btmp_t block_btmp;
+
+    btmp_t inode_btmp;
+
+    // list of open inodes (a in memory cache for performance)
+    list_t open_inodes;
+} myfs_struct_t;
 
 /**
  * dir_t is an in memory structure

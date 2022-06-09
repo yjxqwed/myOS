@@ -180,10 +180,21 @@ typedef struct BootSector boot_sector_t;
 
 
 // there are 2 ATA channels
-ata_channel_t channels[2];
+static ata_channel_t channels[2];
 
 // list of partitions
 list_t partition_list;
+
+partition_t *get_partition(const char *part_name) {
+    list_node_t *p;
+    __list_for_each((&partition_list), p) {
+        partition_t *part = __container_of(partition_t, part_tag, p);
+        if (strcmp(part_name, part->part_name) == 0) {
+            return part;
+        }
+    }
+    return NULL;
+}
 
 /**
  * @brief select the disk and sector(s) to read/write
@@ -536,33 +547,33 @@ void ata_init() {
 
 
 void dirty_blocks_add(partition_t *part, uint32_t lba, void *data) {
-    for (int i = 0; i < NR_DIRTY_BLOCKS; i++) {
-        if (lba == part->dirty_blocks[i].first) {
-            ASSERT(part->dirty_blocks[i].second == data);
-            return;
-        } else if (part->dirty_blocks[i].first == 0) {
-            part->dirty_blocks[i].first = lba;
-            part->dirty_blocks[i].second = data;
-            return;
-        }
-    }
-    dirty_blocks_sync(part);
-    ASSERT(part->dirty_blocks[0].first == 0);
-    part->dirty_blocks[0].first = lba;
-    part->dirty_blocks[0].second = data;
-    return;
+    // for (int i = 0; i < NR_DIRTY_BLOCKS; i++) {
+    //     if (lba == part->dirty_blocks[i].first) {
+    //         ASSERT(part->dirty_blocks[i].second == data);
+    //         return;
+    //     } else if (part->dirty_blocks[i].first == 0) {
+    //         part->dirty_blocks[i].first = lba;
+    //         part->dirty_blocks[i].second = data;
+    //         return;
+    //     }
+    // }
+    // dirty_blocks_sync(part);
+    // ASSERT(part->dirty_blocks[0].first == 0);
+    // part->dirty_blocks[0].first = lba;
+    // part->dirty_blocks[0].second = data;
+    // return;
 }
 
 void dirty_blocks_sync(partition_t *part) {
-    for (int i = 0; i < NR_DIRTY_BLOCKS; i++) {
-        lba_data_pair_t *p = &(part->dirty_blocks[i]);
-        if (p->first != 0) {
-            ASSERT(__valid_kva(p->second));
-            ata_write(part->my_disk, p->first, p->second, 1);
-            p->first = 0;
-            p->second = NULL;
-        } else {
-            break;
-        }
-    }
+    // for (int i = 0; i < NR_DIRTY_BLOCKS; i++) {
+    //     lba_data_pair_t *p = &(part->dirty_blocks[i]);
+    //     if (p->first != 0) {
+    //         ASSERT(__valid_kva(p->second));
+    //         ata_write(part->my_disk, p->first, p->second, 1);
+    //         p->first = 0;
+    //         p->second = NULL;
+    //     } else {
+    //         break;
+    //     }
+    // }
 }

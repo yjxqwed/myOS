@@ -5,6 +5,8 @@
 #include <common/types.h>
 #include <device/ata.h>
 
+#define __myfs_field(part, member) (((myfs_struct_t *)(part->fs_struct))->member)
+
 /**
  * @brief path descriptor
  */

@@ -8,20 +8,16 @@
  *        Basically, they are terms describing Hard Drives.
  */
 
+#include <common/types.h>
+#include <thread/sync.h>
+#include <lib/bitmap.h>
+#include <lib/list.h>
+
 typedef struct Partition partition_t;
 typedef struct Disk disk_t;
 typedef struct ATADevice ata_device_t;
 typedef struct ATAChannel ata_channel_t;
-
-#include <common/types.h>
-
 typedef __pair(uint32_t, void *) lba_data_pair_t;
-
-
-#include <thread/sync.h>
-#include <lib/bitmap.h>
-#include <lib/list.h>
-#include <fs/myfs/superblock.h>
 
 #define NR_DIRTY_BLOCKS 16
 
@@ -38,12 +34,6 @@ struct Partition {
     // name of this partition
     char part_name[8];
 
-    super_block_t *sb;
-
-    btmp_t block_btmp;
-
-    btmp_t inode_btmp;
-
     /**
      * Blocks need to be sync after an operation
      *   first is lba, second is kva to write to disk
@@ -53,9 +43,16 @@ struct Partition {
      */
     lba_data_pair_t dirty_blocks[NR_DIRTY_BLOCKS];
 
-    // list of open inodes (a in memory cache for performance)
-    list_t open_inodes;
+    // used by the filesystem in this partition
+    void *fs_struct;
 };
+
+/**
+ * @brief get partition by name
+ * 
+ * @return partition_t* NULL if no such partition
+ */
+partition_t *get_partition(const char *part_name);
 
 /**
  * @brief add a dirty block to sync

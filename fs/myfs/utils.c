@@ -1,6 +1,7 @@
 #include <fs/myfs/fs_types.h>
 #include <fs/myfs/utils.h>
 #include <common/types.h>
+#include <lib/string.h>
 
 
 int analyze_path(const char *pathname, path_info_t *pi) {
@@ -107,30 +108,32 @@ int analyze_path(const char *pathname, path_info_t *pi) {
 
 int inode_alloc(partition_t *part) {
     ASSERT(part != NULL);
-    int idx = bitmap_scan(&(part->inode_btmp), 1);
+    btmp_t *part_ibtmp = &__myfs_field(part, inode_btmp);
+    int idx = bitmap_scan(part_ibtmp, 1);
     if (idx == -1) {
         return -1;
     }
-    bitmap_set(&(part->inode_btmp), idx, 1);
+    bitmap_set(part_ibtmp, idx, 1);
     return idx;
 }
 
 void inode_reclaim(partition_t *part, int i_no) {
-    bitmap_set(&(part->inode_btmp), i_no, 0);
+    bitmap_set(&__myfs_field(part, inode_btmp), i_no, 0);
 }
 
 int block_alloc(partition_t *part) {
     ASSERT(part != NULL);
-    int idx = bitmap_scan(&(part->block_btmp), 1);
+    btmp_t *part_bbtmp = &__myfs_field(part, block_btmp);
+    int idx = bitmap_scan(part_bbtmp, 1);
     if (idx == -1) {
         return -1;
     }
-    bitmap_set(&(part->block_btmp), idx, 1);
+    bitmap_set(part_bbtmp, idx, 1);
     return idx;
 }
 
 void block_reclaim(partition_t *part, int blk_no) {
-    bitmap_set(&(part->block_btmp), blk_no, 0);
+    bitmap_set(&__myfs_field(part, block_btmp), blk_no, 0);
 }
 
 void inode_btmp_sync(partition_t *part, int inode_bit_idx) {
