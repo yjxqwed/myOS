@@ -152,3 +152,17 @@ void block_btmp_sync(partition_t *part, int blk_bit_idx) {
     // // dirty_blocks_add(part, lba, data);
     // ata_write(part->my_disk, lba, data, 1);
 }
+
+void partition_block_read(partition_t *part, uint32_t blk_id, void *buf, uint32_t blk_cnt) {
+    uint32_t lba = part->start_lba + blk_id * NR_SECTORS_PER_BLOCK;
+    uint32_t sec_cnt = blk_cnt * NR_SECTORS_PER_BLOCK;
+    ASSERT(lba + sec_cnt <= part->sec_cnt);
+    ata_read(part->my_disk, lba, buf, sec_cnt);
+}
+
+void partition_block_write(partition_t *part, uint32_t blk_id, void *buf, uint32_t blk_cnt) {
+    uint32_t lba = part->start_lba + blk_id * NR_SECTORS_PER_BLOCK;
+    uint32_t sec_cnt = blk_cnt * NR_SECTORS_PER_BLOCK;
+    ASSERT(lba + sec_cnt <= part->sec_cnt);
+    ata_write(part->my_disk, lba, buf, sec_cnt);
+}

@@ -24,7 +24,7 @@ im_inode_t *dir_open(partition_t *part, uint32_t i_no) {
     return inode_open(part, i_no);
 }
 
-// num of dir entries per block
+// num of dir-entries per block
 #define __nr_des_per_block(de_size) (BLOCK_SIZE / de_size)
 
 int get_dir_entry_by_name(
@@ -62,8 +62,7 @@ void dir_close(im_inode_t *dir) {
 }
 
 void create_dir_entry(
-    const char *filename, uint32_t i_no,
-    file_type_e ft, dir_entry_t *de
+    const char *filename, uint32_t i_no, file_type_e ft, dir_entry_t *de
 ) {
     de->f_type = ft;
     de->i_no = i_no;

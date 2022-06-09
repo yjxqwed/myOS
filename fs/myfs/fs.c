@@ -22,23 +22,6 @@
 extern ata_channel_t channels[2];
 extern list_t partition_list;
 
-static void partition_block_read(partition_t *part, uint32_t blk_id, void *buf, uint32_t blk_cnt) {
-    // ASSERT(blk_id + blk_cnt <= part->sb->block_cnt);
-    uint32_t lba = part->start_lba + blk_id * NR_SECTORS_PER_BLOCK;
-    uint32_t sec_cnt = blk_cnt * NR_SECTORS_PER_BLOCK;
-    ASSERT(lba + sec_cnt <= part->sec_cnt);
-    kprintf(KPL_DEBUG, "part_read_blk: lba = 0x%X, cnt = %d\n", lba, sec_cnt);
-    ata_read(part->my_disk, lba, buf, sec_cnt);
-}
-
-static void partition_block_write(partition_t *part, uint32_t blk_id, void *buf, uint32_t blk_cnt) {
-    // ASSERT(blk_id + blk_cnt <= part->sb->block_cnt);
-    uint32_t lba = part->start_lba + blk_id * NR_SECTORS_PER_BLOCK;
-    uint32_t sec_cnt = blk_cnt * NR_SECTORS_PER_BLOCK;
-    ASSERT(lba + sec_cnt <= part->sec_cnt);
-    ata_write(part->my_disk, lba, buf, sec_cnt);
-}
-
 static int format_partition(partition_t *part) {
     ASSERT(part != NULL);
     kprintf(KPL_NOTICE, "Started to format partition %s\n", part->part_name);
@@ -100,30 +83,23 @@ static int format_partition(partition_t *part) {
 
     // write super block to disk
     kprintf(KPL_NOTICE, "  Writing super block to disk... ");
-    // uint32_t sb_slba = part->start_lba + boot_block_secs;
-    // ata_write(part->my_disk, sb_slba, sb, super_block_secs);
     partition_block_write(part, BOOT_BLOCK_BLK_CNT, sb, SUPER_BLOCK_BLK_CNT);
     kprintf(KPL_NOTICE, "  Done!\n");
 
     // init inode_btmp
-    // inode 0 has been assigned to root
-    buf[0] = 0x01;
+    buf[0] = 0x01;  // inode 0 has been assigned to root
     kprintf(KPL_NOTICE, "  Writing inode bitmap to disk... ");
-    // ata_write(part->my_disk, sb->inode_btmp_start_lba, buf, 1);
     partition_block_write(part, sb->inode_btmp_start_blk_id, buf, 1);
     kprintf(KPL_NOTICE, "  Done!\n");
     buf[0] = 0;
 
     // init inode_table
     inode_t *inode = (inode_t *)buf;
-    // the first inode is for root
-    inode->i_no = 0;
+    inode->i_no = 0;  // the first inode is for root
     // root is a dir and it contains . (self) and .. (parent dir) by default as its dir entries
     inode->i_size = sb->dir_entry_size * 2;
-    // inode->i_blocks[0] = sb->data_start_lba;
     inode->i_blocks[0] = sb->data_start_blk_id;
     kprintf(KPL_NOTICE, "  Writing inode table to disk... ");
-    // ata_write(part->my_disk, sb->inode_table_start_lba, buf, 1);
     partition_block_write(part, sb->inode_table_start_blk_id, buf, 1);
     kprintf(KPL_NOTICE, "  Done!\n");
     memset(buf, 0, sizeof(inode_t));
@@ -181,7 +157,6 @@ static int format_partition(partition_t *part) {
     de[1].f_type = FT_DIRECTORY;
 
     kprintf(KPL_NOTICE, "  Writing root to disk... ");
-    // ata_write(part->my_disk, sb->data_start_lba, buf, 1);
     partition_block_write(part, sb->data_start_blk_id, buf, 1);
     kprintf(KPL_NOTICE, "  Done!\n");
 
@@ -220,7 +195,6 @@ static int mount_partition(partition_t *part) {
 
     uint32_t inode_btmp_byte_len = sb->inode_btmp_blk_cnt * BLOCK_SIZE;
     uint32_t block_btmp_byte_len = sb->block_btmp_blk_cnt * BLOCK_SIZE;
-    kprintf(KPL_DEBUG, "AAAAAAAAAAAAAAAAA %d, %d\n", inode_btmp_byte_len, inode_btmp_byte_len);
     part->inode_btmp.bits_ = (uint8_t *)kmalloc(inode_btmp_byte_len);
     part->block_btmp.bits_ = (uint8_t *)kmalloc(block_btmp_byte_len);
     if (part->inode_btmp.bits_ == NULL || part->block_btmp.bits_ == NULL) {
@@ -246,7 +220,7 @@ static int mount_partition(partition_t *part) {
     kprintf(KPL_NOTICE, "%s mounted!\n", curr_part->part_name);
     print_btmp(&(curr_part->block_btmp));
     print_btmp(&(curr_part->inode_btmp));
-    // open_root_dir(part);
+    open_root_dir(part);
     return FSERR_NOERR;
 }
 
@@ -267,10 +241,6 @@ void fs_init() {
         if (first_part == NULL) {
             first_part = part;
         }
-        // ata_read(
-        //     part->my_disk, __super_block_lba(part->start_lba),
-        //     sb, SUPER_BLOCK_SEC_CNT
-        // );
         partition_block_read(part, SUPER_BLOCK_START_BLK_ID, sb, SUPER_BLOCK_BLK_CNT);
         if (sb->fs_type == FS_MAGIC) {
             kprintf(KPL_NOTICE, "%s has a filesystem\n", part->part_name);

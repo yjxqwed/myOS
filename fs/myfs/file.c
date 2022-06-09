@@ -13,7 +13,7 @@
 
 static file_t file_table[MAX_FILE_OPEN];
 
-int file_table_get_free_slot() {
+static int file_table_get_free_slot() {
     for (int i = 0; i < MAX_FILE_OPEN; i++) {
         if (file_table[i].im_inode == NULL) {
             return i;
@@ -22,7 +22,8 @@ int file_table_get_free_slot() {
     return -1;
 }
 
-void file_table_reclaim(int gfd) {
+static void file_table_reclaim(int gfd) {
+    ASSERT(0 <= gfd && gfd < MAX_FILE_OPEN);
     file_table[gfd].im_inode = NULL;
 }
 
@@ -30,7 +31,7 @@ void file_table_reclaim(int gfd) {
  * @brief install the global fd into task's own fd_table
  * @return private fd
  */
-int install_global_fd(int gfd) {
+static int install_global_fd(int gfd) {
     task_t *task = get_current_thread();
     ASSERT(task->fd_table != NULL);
     for (int i = 3; i < NR_OPEN; i++) {
@@ -42,7 +43,7 @@ int install_global_fd(int gfd) {
     return -1;
 }
 
-void task_reclaim_fd(int lfd) {
+static void task_reclaim_fd(int lfd) {
     task_t *task = get_current_thread();
     ASSERT(task->fd_table != NULL);
     task->fd_table[lfd] = -1;

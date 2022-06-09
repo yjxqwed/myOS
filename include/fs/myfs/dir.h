@@ -36,11 +36,17 @@ int write_dir_entry(
 
 /**
  * @brief open a directory
+ * 
+ * @param part partition
+ * @param i_no inode number of the dir
+ * @return im_inode_t* pointer to the inode of the dir
  */
 im_inode_t *dir_open(partition_t *part, uint32_t i_no);
 
 /**
  * @brief close a directory
+ * 
+ * @param dir pointer to the inode of the dir
  */
 void dir_close(im_inode_t *dir);
 
@@ -48,21 +54,20 @@ void dir_close(im_inode_t *dir);
  * @brief init dir entry
  */
 void create_dir_entry(
-    const char *filename, uint32_t i_no,
-    file_type_e ft, dir_entry_t *de
+    const char *filename, uint32_t i_no, file_type_e ft, dir_entry_t *de
 );
 
 /**
  * @brief create a dir in part under pdir with dirname
  */
 int dir_create(
-    partition_t *part, im_inode_t *pdir, const char *dirname,
-    void *io_buf
+    partition_t *part, im_inode_t *pdir, const char *dirname, void *io_buf
 );
 
+/**
+ * @brief open the root directory; only used when mount the partition
+ */
 void open_root_dir(partition_t *part);
-
-#define NR_DIR_ENTRY_PER_BLOCK (BLOCK_SIZE / sizeof(dir_entry_t))
 
 
 void print_dentry(const dir_entry_t *dent);

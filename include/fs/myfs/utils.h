@@ -55,5 +55,14 @@ void inode_btmp_sync(partition_t *part, int inode_bit_idx);
  */
 void block_btmp_sync(partition_t *part, int blk_bit_idx);
 
+/**
+ * @brief read block(s)
+ */
+void partition_block_read(partition_t *part, uint32_t blk_id, void *buf, uint32_t blk_cnt);
+
+/**
+ * @brief write block(s)
+ */
+void partition_block_write(partition_t *part, uint32_t blk_id, void *buf, uint32_t blk_cnt);
 
 #endif

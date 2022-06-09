@@ -21,26 +21,19 @@ struct SuperBlock {
     // start lba of this partition
     uint32_t part_start_lba;
 
-    // inode bitmap start lba
-    // uint32_t inode_btmp_start_lba;
+    // inode bitmap
     uint32_t inode_btmp_start_blk_id;
-    // number of blocks used by the inode bitmap
     uint32_t inode_btmp_blk_cnt;
 
-    // inode table start lba
-    // uint32_t inode_table_start_lba;
+    // inode table 
     uint32_t inode_table_start_blk_id;
-    // number of blocks used by the inode table
     uint32_t inode_table_blk_cnt;
 
-    // sector bitmap start lba
-    // uint32_t block_btmp_start_lba;
+    // block bitmap
     uint32_t block_btmp_start_blk_id;
-    // number of blocks used by the block bitmap
     uint32_t block_btmp_blk_cnt;
 
     // data region start lba
-    // uint32_t data_start_lba;
     uint32_t data_start_blk_id;
 
     // inode number of the root directory of this partition
