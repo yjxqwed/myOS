@@ -7,11 +7,9 @@ typedef struct Task task_t;
 #include <list.h>
 #include <arch/x86.h>
 #include <mm/vmm.h>
-#include <fs/myfs/fs_types.h>
+// #include <fs/myfs/fs_types.h>
 
 #define MAX_TASKS 256
-// a task can open at most 8 files
-#define NR_OPEN 8
 
 typedef uint16_t thread_id_t;
 
@@ -55,10 +53,6 @@ struct Task {
     // node in the list of all tasks
     list_node_t list_all_tag;
 
-    // process has its own page directory
-    // (virtual address)
-    // pde_t *pg_dir;
-
     // process has its own address space
     vmm_t *vmm;
 
@@ -72,7 +66,6 @@ struct Task {
     int tty_no;
 
     // file discriptor table
-    // int fd_table[NR_OPEN];
     int *fd_table;
 
     // current work dir inode number

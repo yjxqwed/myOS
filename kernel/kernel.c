@@ -10,10 +10,12 @@
 #include <device/tty.h>
 #include <device/console.h>
 
-#include <fs/myfs/fs.h>
-#include <fs/myfs/file.h>
-#include <fs/myfs/fs_types.h>
-#include <fs/myfs/dir.h>
+// #include <fs/myfs/fs.h>
+// #include <fs/myfs/file.h>
+// #include <fs/myfs/fs_types.h>
+// #include <fs/myfs/dir.h>
+
+#include <fs/simplefs/simplefs.h>
 
 #include <stdio.h>
 #include <stdlib.h>

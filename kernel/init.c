@@ -13,7 +13,8 @@
 #include <arch/x86.h>
 #include <thread/thread.h>
 #include <sys/syscall.h>
-#include <fs/myfs/fs.h>
+// #include <fs/myfs/fs.h>
+#include <fs/simplefs/simplefs.h>
 
 static void test_magic_number(uint32_t magic_number) {
     // check magic number
@@ -67,5 +68,6 @@ void kinit() {
     // init hard drives
     ata_init();
     // init file system
-    fs_init();
+    // fs_init();
+    simplefs_init();
 }

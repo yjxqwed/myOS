@@ -8,9 +8,9 @@
 #include <common/utils.h>
 #include <thread/thread.h>
 #include <mm/pmem.h>
-#include <fs/myfs/fs.h>
+// #include <fs/myfs/fs.h>
+#include <fs/simplefs/simplefs.h>
 
-// static int sys_write(const char *str);
 static void *sys_brk(uintptr_t __addr);
 static void *sys_sleep(uint32_t ms);
 

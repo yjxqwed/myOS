@@ -1,31 +1,65 @@
-/**
- * @file simplefs.h
- * A very simple fs without directories
- */
+#ifndef __SIMPLEFS_FILESYSTEM_H__
+#define __SIMPLEFS_FILESYSTEM_H__
 
 #include <common/types.h>
 #include <common/utils.h>
 
-#define SECTOR_SIZE 512
-#define SECTOR_SIZE_IN_BIT (8 * SECTOR_SIZE)
-#define SIMPLE_FS_MAGIC 0x12345678
-#define MAX_FILENAME_LENGTH 23
+// open file flags
+enum {
+    // read only
+    O_RDONLY = 0,
+    // write only
+    O_WRONLY = 1,
+    // read & write
+    O_RDWR   = 2,
+    // create
+    O_CREAT  = 4,
+};
 
-typedef struct FileDescriptor {
-    // index is a sector of lbas; each lba is a data-sector
-    uint32_t index_sector_lba;
-    // number of bytes in this file
-    uint32_t size;
-    // filename
-    char filename[MAX_FILENAME_LENGTH + 1];
-} __attr_packed file_descriptor_t;
+// for lseek
+enum {
+    SEEK_SET = 0,
+    SEEK_CUR = 1,
+    SEEK_END = 2
+};
 
-typedef struct SuperBlock {
-    uint32_t fs_type;
-    uint32_t part_start_lba;
-    uint32_t sec_cnt;
+// Reserved FDs
+enum {
+    FD_STDIN = 0,
+    FD_STDOUT,
+    FD_STDERR
+};
 
-    uint32_t sector_btmp_start_lba;
-    uint32_t sector_btmp_sec_cnt;
+void simplefs_init();
 
-} __attr_packed super_block_t;
+/**
+ * @brief open a file
+ */
+int sys_open(const char *pathname, uint32_t flags);
+
+/**
+ * @brief close a file
+ */
+int sys_close(int fd);
+
+/**
+ * @brief read from fd
+ * @return number of bytes read
+ */
+int sys_read(int fd, void *buffer, size_t count);
+
+/**
+ * @brief write to fd
+ * @return number of bytes written
+ */
+int sys_write(int fd, void *buffer, size_t count);
+
+typedef int off_t;
+
+/**
+ * @brief set file position pointer
+ * @return file position pointer or -errno
+ */
+off_t sys_lseek(int fd, off_t offset, int whence);
+
+#endif
