@@ -533,9 +533,15 @@ static void print_myOS(void) {
     );
 }
 
+extern void kernel_test_simplefs();
+
 void kernelMain() {
     kprintf(KPL_DUMP, "\nHello Wolrd! --- This is myOS by Justing Yang\n");
     // print_myOS();
+
+    kernel_test_simplefs();
+
+
     // test_thread();
     // pmem_print();
 

@@ -43,9 +43,12 @@ lvsh_objs = usr/lvsh/lvsh.elf32
 
 usr_test_objs = usr/test/test.elf32
 
+kernel_test_objs = kernel/test/simplefs_test.elf32
+
 objects = $(device_objs) $(kernel_asm_objs) $(kernel_c_objs) \
           $(lib_objs) $(usr_objs) $(mm_objs) $(arch_x86_objs) \
-          $(thread_objs) $(lvsh_objs) $(usr_test_objs) $(simplefs_objs)
+          $(thread_objs) $(lvsh_objs) $(usr_test_objs) $(simplefs_objs) \
+          $(kernel_test_objs)
 
 
 
