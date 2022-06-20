@@ -34,18 +34,21 @@ static void *syscall_handler(isrp_t *p) {
 }
 
 void syscall_init() {
+    // file system
+    handlers[SYSCALL_OPEN] = sys_open;
+    handlers[SYSCALL_CLOSE] = sys_close;
     handlers[SYSCALL_WRITE] = sys_write;
     handlers[SYSCALL_READ] = sys_read;
+    handlers[SYSCALL_LSEEK] = sys_lseek;
+    handlers[SYSCALL_UNLINK] = sys_unlink;
+    handlers[SYSCALL_STAT] = sys_stat;
+    handlers[SYSCALL_LIST_FILES] = sys_list_files;
+    // extend heap
     handlers[SYSCALL_BRK] = sys_brk;
-    // handlers[SYSCALL_SBRK] = sys_sbrk;
+    // sleep
     handlers[SYSCALL_SLEEP] = sys_sleep;
     register_handler(0x80, syscall_handler);
 }
-
-// static int sys_write(const char *str) {
-//     tty_puts(get_current_thread()->tty_no, str, CONS_BLACK, CONS_GRAY);
-//     return 0;
-// }
 
 static void *sys_brk(uintptr_t __addr) {
     vmm_t *vmm = get_current_thread()->vmm;

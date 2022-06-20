@@ -140,7 +140,6 @@ static arena_t* arena_of_blk(mem_blk_t* blk) {
 }
 
 static void *__kmalloc(uint32_t size) {
-    ASSERT(get_int_status() == INTERRUPT_ON);
     if (size > k_mem_blk_descs[NR_MEM_BLK_DESC - 1].block_size) {
         uint32_t pg_cnt = ROUND_UP_DIV(first_memblk_addr + sizeof(mem_blk_t) + size, PAGE_SIZE);
         arena_t *a = (arena_t *)k_get_free_pages(pg_cnt, GFP_ZERO);

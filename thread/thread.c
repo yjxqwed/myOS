@@ -146,6 +146,15 @@ static void thread_kmain() {
     set_int_status(old_status);
     kmain->status = TASK_RUNNING;
     current_task = kmain;
+
+    // for kernel test fs
+    kmain->fd_table = (int *)kmalloc(8 * sizeof(int));
+    if (kmain->fd_table == NULL) {
+        PANIC("Failed to init kmain");
+    }
+    for (int i = 0; i < 8; i++) {
+        kmain->fd_table[i] = -1;
+    }
 }
 
 

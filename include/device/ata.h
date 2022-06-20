@@ -10,7 +10,7 @@
 
 #include <common/types.h>
 #include <thread/sync.h>
-#include <lib/bitmap.h>
+// #include <lib/bitmap.h>
 #include <lib/list.h>
 
 typedef struct Partition partition_t;
@@ -20,6 +20,7 @@ typedef struct ATAChannel ata_channel_t;
 typedef __pair(uint32_t, void *) lba_data_pair_t;
 
 #define NR_DIRTY_BLOCKS 16
+#define SECTOR_SIZE 512
 
 // an in memory structure for a partition
 struct Partition {

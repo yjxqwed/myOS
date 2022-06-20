@@ -53,6 +53,9 @@ task_t *process_execute(char *filename, char *name, int tty_no) {
     }
     init_vmm_struct(t->vmm);
     t->fd_table = (int *)kmalloc(NR_OPEN * sizeof(int));
+    for (int i = 0; i < NR_OPEN; i++) {
+        t->fd_table[i] = i < 3 ? i : -1;
+    }
     if (t->fd_table == NULL) {
         rollback = 2;
         goto rb;

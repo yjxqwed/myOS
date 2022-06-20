@@ -6,22 +6,25 @@
 #define SYSCALL_FAIL ((void *)-1)
 
 enum {
-    SYSCALL_ARG0 = 0,
-
+    SYSCALL_ARG0 = 0,  // syscalls after this require 0 arguments
     SYSCALL_GETPID,
 
-    SYSCALL_ARG1,
-
-
+    SYSCALL_ARG1,      // syscalls after this require 1 argument
     SYSCALL_BRK,
-    // SYSCALL_SBRK,
     SYSCALL_SLEEP,
+    SYSCALL_CLOSE,
+    SYSCALL_UNLINK,
+    SYSCALL_LIST_FILES,
 
-    SYSCALL_ARG2,
-
-    SYSCALL_ARG3,
+    SYSCALL_ARG2,      // syscalls after this require 2 arguments
+    SYSCALL_OPEN,
+    SYSCALL_STAT,
+    
+    SYSCALL_ARG3,      // syscalls after this require 3 arguments
     SYSCALL_READ,
     SYSCALL_WRITE,
+    SYSCALL_LSEEK,
+
 };
 
 void syscall_init();

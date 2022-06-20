@@ -24,6 +24,7 @@ typedef double float64_t;
 #define True (!False)
 
 typedef int bool_t;
+typedef int off_t;
 
 // a easy pair for array
 // __pair(uint32_t, uint32_t) pairs[13];
