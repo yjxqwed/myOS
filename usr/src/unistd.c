@@ -26,6 +26,17 @@
     retval; \
 })
 
+#define _syscall2(no, arg1, arg2) ({ \
+    int32_t retval; \
+    __asm_volatile( \
+        "int 0x80" \
+        : "=a"(retval) \
+        : "a"(no), "b"(arg1), "c"(arg2) \
+        : "memory" \
+    ); \
+    retval; \
+})
+
 #define _syscall3(no, arg1, arg2, arg3) ({ \
     int32_t retval; \
     __asm_volatile( \
@@ -40,6 +51,31 @@
 // int getpid() {
 //     return _syscall0(SYSCALL_GETPID);
 // }
+
+
+int open(const char *filename, uint32_t flags) {
+    return _syscall2(SYSCALL_OPEN, filename, flags);
+}
+
+int close(int fd) {
+    return _syscall1(SYSCALL_CLOSE, fd);
+}
+
+int stat(const char *filename, stat_t *s) {
+    return _syscall2(SYSCALL_STAT, filename, s);
+}
+
+int unlink(const char *filename) {
+    return _syscall1(SYSCALL_UNLINK, filename);
+}
+
+int list_files(stat_t *s) {
+    return _syscall1(SYSCALL_LIST_FILES, s);
+}
+
+off_t lseek(int fd, off_t offset, int whence) {
+    return (off_t)_syscall3(SYSCALL_LSEEK, fd, offset, whence);
+}
 
 int write(int fd, const void *buffer, size_t count) {
     return _syscall3(SYSCALL_WRITE, fd, buffer, count);

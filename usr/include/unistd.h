@@ -6,11 +6,60 @@
  */
 
 #include <common/types.h>
-
+#include <fs/fs.h>
 
 #define	STDIN_FILENO    0  /* Standard input.  */
 #define	STDOUT_FILENO   1  /* Standard output.  */
 #define	STDERR_FILENO   2  /* Standard error output.  */
+
+/**
+ * @brief open a file
+ * 
+ * @return fd or -1
+ */
+int open(const char *filename, uint32_t flags);
+
+/**
+ * @brief close a fd
+ * 
+ * @return 0 or -1
+ */
+int close(int fd);
+
+/**
+ * @brief get info of a file
+ * 
+ * @param filename 
+ * @param s user allocated buffer
+ * @return int 0 or -1
+ */
+int stat(const char *filename, stat_t *s);
+
+/**
+ * @brief delete a file
+ * 
+ * @param filename 
+ * @return int 0 or -1
+ */
+int unlink(const char *filename);
+
+/**
+ * @brief get info of all files
+ * 
+ * @param s user allocated buffer (should be large enough)
+ * @return int number of objects or -1
+ */
+int list_files(stat_t *s);
+
+/**
+ * @brief change file pos
+ * 
+ * @param fd 
+ * @param offset 
+ * @param whence 
+ * @return off_t new pos or -1
+ */
+off_t lseek(int fd, off_t offset, int whence);
 
 /**
  * @brief write to fd
