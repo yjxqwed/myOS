@@ -71,6 +71,9 @@ struct Task {
     // current work dir inode number
     int cwd_inode_no;
 
+    // true if this is a user process
+    bool_t is_user_process;
+
     // a magic number to guard this struct
     uint32_t stack_guard;
 };

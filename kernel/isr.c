@@ -195,10 +195,10 @@ void cpu_exception_handler(isrp_t *p) {
     } else {
         uint32_t err_code = p->err_code;
         uint32_t int_no = p->int_no;
-        kprintf(KPL_PANIC, cpu_execption_msgs[int_no]);
+        console_kprintf(KPL_PANIC, cpu_execption_msgs[int_no]);
         printISRParam(p);
-        kprintf(KPL_PANIC, " System Halted.\n");
-        while(1);
+        console_kprintf(KPL_PANIC, " System Halted.\n");
+        hlt();
     }
 }
 
@@ -212,7 +212,7 @@ void interrupt_request_handler(isrp_t *p) {
     if (handlers[p->int_no] != NULL) {
         handlers[p->int_no](p);
     } else {
-        // kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
+        // console_kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
     }
 }
 

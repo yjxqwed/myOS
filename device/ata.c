@@ -541,6 +541,27 @@ void ata_init() {
         }
     }
 
+    if (first_disk == NULL) {
+        PANIC("No disk!");
+    }
+
+    if (first_part == NULL) {
+        boot_sector_t *bs = kmalloc(sizeof(boot_sector_t));
+        if (!bs) {
+            PANIC("ERR_NOMEM");
+        }
+        part_tab_entry_t *pte = &(bs->partition_table[0]);
+        pte->bootable = 0x00;
+        pte->fs_type = 0x66;  // myOS
+        pte->start_lba = 0x800;
+        pte->sec_cnt = (first_disk->sectors - pte->start_lba);
+        ata_write(first_disk, 0, bs, 1);
+        kfree(bs);
+        partition_scan(first_disk, 0);
+    }
+
+    ASSERT(first_part != NULL);
+
     print_devices();
     print_partitions();
 }

@@ -38,13 +38,14 @@ void lvsh(void) {
         printf("$> ");
         int ok = lvsh_getline(line);
         if (strcmp(line, "ls") == 0) {
-            stat_t *buffer = line;
+            stat_t *buffer = malloc(4096 * sizeof(stat_t));
             int nfiles = list_files(buffer);
             printf("simplefs_list_files: %d\n", nfiles);
             for (int i = 0; i < nfiles; i++) {
                 stat_t *sb = buffer + i;
                 printf("%d, %d, %d, %s\n", sb->file_id, sb->size, sb->blocks, sb->filename);
             }
+            free(buffer);
         } else {
             printf("Your input: [%d][%s]\n", ok, line);
         }

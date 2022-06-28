@@ -1,6 +1,6 @@
 megs: 512
 
-# linux
+# linux/Mac
 romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
 vgaromimage: file=/usr/local/share/bochs/VGABIOS-lgpl-latest
 
@@ -13,9 +13,11 @@ ata0-master: type=cdrom, path="mykernel.iso", status=inserted
 ata1-slave: type=disk, path="e.img", mode=flat
 boot: cdrom
 log: bochsout.txt
-mouse: enabled = 0
+mouse: enabled=0
 magic_break: enabled=1
-# display_library: x, options="gui_debug"
+
+# for correct display on mac
+display_library: sdl2
 
 # keyboard: enabled=1, map=/usr/share/bochs/keymaps/x11-pc-us.map
 
@@ -25,3 +27,5 @@ error: action=report
 panic: action=ask
 
 clock: sync=realtime
+
+gdbstub: enabled=0 port=1234, text_base=0, data_base=0, bss_base=0

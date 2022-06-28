@@ -1,12 +1,13 @@
 # build flags
 G_PARAMS = -Wall -m32 -I include -I include/lib -I usr/include -nostdlib -fno-builtin \
-           -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel -O0
+           -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel
 NASM_PARAMS = -I include -f elf32
 LD_PARAMS = -m elf_i386
 
 ifeq ($(ver), release)
+G_PARAMS += -O3
 else
-G_PARAMS += -D KDEBUG
+G_PARAMS += -g -D KDEBUG -O0
 endif
 
 # objects
@@ -53,7 +54,7 @@ objects = $(device_objs) $(kernel_asm_objs) $(kernel_c_objs) \
 
 
 # build rules
-.PHONY = clean dump
+.PHONY = clean dump docker docker-release
 
 all: mykernel.iso
 
@@ -71,6 +72,12 @@ clean:
 
 dump:
 	objdump -D -M intel mykernel.bin | less
+
+docker:
+	docker exec -w /mnt/external/myOS myos1 make
+
+docker-release:
+	docker exec -w /mnt/external/myOS myos1 make ver=release
 
 mykernel.iso: mykernel.bin
 	mkdir iso

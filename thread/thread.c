@@ -116,6 +116,7 @@ task_t *task_create(
     task->elapsed_ticks = 0;
     task->vmm = NULL;
     task->fd_table = NULL;
+    task->is_user_process = False;
     return task;
 }
 
@@ -148,13 +149,13 @@ static void thread_kmain() {
     current_task = kmain;
 
     // for kernel test fs
-    kmain->fd_table = (int *)kmalloc(8 * sizeof(int));
-    if (kmain->fd_table == NULL) {
-        PANIC("Failed to init kmain");
-    }
-    for (int i = 0; i < 8; i++) {
-        kmain->fd_table[i] = -1;
-    }
+    // kmain->fd_table = (int *)kmalloc(8 * sizeof(int));
+    // if (kmain->fd_table == NULL) {
+    //     PANIC("Failed to init kmain");
+    // }
+    // for (int i = 0; i < 8; i++) {
+    //     kmain->fd_table[i] = -1;
+    // }
 }
 
 

@@ -41,11 +41,12 @@ static void start_process(void *filename) {
 task_t *process_execute(char *filename, char *name, int tty_no) {
     task_t *t = task_create(name, 31, start_process, filename);
     // cwd is root(/) by default for now
-    t->cwd_inode_no = 0;
+    // t->cwd_inode_no = 0;
     int rollback = 0;
     if (t == NULL) {
         goto rb;
     }
+    t->is_user_process = True;
     t->vmm = (vmm_t *)kmalloc(sizeof(vmm_t));
     if (t->vmm == NULL || !init_vmm_struct(t->vmm)) {
         rollback = 1;

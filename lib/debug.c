@@ -5,8 +5,8 @@
 #include <thread/thread.h>
 
 void printISRParam(const isrp_t* p) {
-    kprintf(
-        KPL_PANIC, 
+    console_kprintf(
+        KPL_PANIC,
         "\n{eip=%x; errco=%x; "
         "edi=%X, esi=%X, ebx=%X, edx=%X, ecx=%X, eax=%X}\n",
         p->eip, p->err_code,
@@ -19,13 +19,11 @@ void panic_spin(
     const char* funcname, const char* cause
 ) {
     disable_int();
-    kprintf(KPL_DUMP, "\n");
-    kprintf(KPL_PANIC, "!!!!! error !!!!!\n");
-    kprintf(KPL_PANIC, "file: %s\n", filename);
-    kprintf(KPL_PANIC, "line: %d\n", line);
-    kprintf(KPL_PANIC, "function: %s\n", funcname);
-    kprintf(KPL_PANIC, "cause: %s\n", cause);
-    // print_all_tasks();
+    console_kprintf(KPL_DUMP, "\n");
+    console_kprintf(KPL_PANIC, "!!!!! error !!!!!\n");
+    console_kprintf(KPL_PANIC, "file: %s\n", filename);
+    console_kprintf(KPL_PANIC, "line: %d\n", line);
+    console_kprintf(KPL_PANIC, "function: %s\n", funcname);
+    console_kprintf(KPL_PANIC, "cause: %s\n", cause);
     hlt();
-    // while (1);
 }

@@ -539,7 +539,7 @@ void kernelMain() {
     kprintf(KPL_DUMP, "\nHello Wolrd! --- This is myOS by Justing Yang\n");
     // print_myOS();
 
-    kernel_test_simplefs();
+    // kernel_test_simplefs();
 
 
     // test_thread();
@@ -616,7 +616,6 @@ void kernelMain() {
     extern void lvsh();
     process_execute(lvsh, "lvsh1", 1);
     // process_execute(lvsh, "lvsh2", 2);
-    // process_execute(lvsh, "lvsh3", 3);
     // process_execute(lvsh, "lvsh4", 4);
     // process_execute(lvsh, "lvsh5", 5);
 
