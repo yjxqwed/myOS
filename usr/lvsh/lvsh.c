@@ -52,3 +52,8 @@ void lvsh(void) {
     }
 }
 
+int main() {
+    lvsh();
+    return 0;
+}
+

@@ -17,7 +17,7 @@
 // user stack size limit 16KiB
 #define USER_STACK_LIMIT 0x00004000
 
-#define USER_HEAP_BOTTOM 0x02000000
+#define USER_HEAP_BOTTOM 0x08000000
 // user heap size limit 16MiB
 #define USER_HEAP_LIMIT 0x01000000
 

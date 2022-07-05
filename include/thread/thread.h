@@ -4,14 +4,12 @@
 typedef struct Task task_t;
 
 #include <common/types.h>
-#include <list.h>
+#include <lib/list.h>
 #include <arch/x86.h>
 #include <mm/vmm.h>
 // #include <fs/myfs/fs_types.h>
 
 #define MAX_TASKS 256
-
-typedef uint16_t thread_id_t;
 
 // thread_func_t is a function pointer to a function
 // that accepts void * and returns void *
@@ -38,8 +36,9 @@ struct Task {
     // in the kernel mode
     uintptr_t kernel_stack;
 
-    uint16_t task_id;
-    uint16_t parent_id;
+    pid_t task_id;
+    pid_t parent_id;
+
     char task_name[TASK_NAME_LEN];
     task_status_e status;
 
@@ -79,14 +78,13 @@ struct Task {
 };
 
 
-// start a new thread; return 0 on scuess
+// start a new thread
 // @param name name of this thread
 // @param prio priority of this thread
 // @param func the function to be run
 // @param args the parameter(s) of func
 task_t *thread_start(
-    const char *name, uint16_t prio,
-    thread_func_t func, void *args
+    const char *name, uint16_t prio, thread_func_t func, void *args
 );
 
 // wait for task
@@ -108,8 +106,7 @@ inline void task_push_back_ready(task_t *t);
 inline void task_push_back_all(task_t *t);
 
 task_t *task_create(
-    const char *name, uint16_t prio,
-    thread_func_t func, void *args
+    const char *name, uint16_t prio, thread_func_t func, void *args
 );
 
 // associate task with tty
@@ -136,5 +133,15 @@ task_t *get_current_thread();
 void thread_msleep(uint32_t msec);
 
 void sleep_manage();
+
+/**
+ * @brief allocate a pid; return -1 if no available pid
+ */
+pid_t pid_alloc();
+
+/**
+ * @brief free an allocated pid
+ */
+void pid_free(pid_t pid);
 
 #endif

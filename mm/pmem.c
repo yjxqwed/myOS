@@ -330,7 +330,7 @@ void page_incref(ppage_t *p) {
 }
 
 // no lock
-void __page_decref(ppage_t *p) {
+static void __page_decref(ppage_t *p) {
     ASSERT(p != NULL && p->num_ref > 0);
     if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
         PANIC("decref a free page");
@@ -340,24 +340,6 @@ void __page_decref(ppage_t *p) {
         __page_free(p);
     }
 }
-
-// void page_decref(ppage_t *p) {
-//     ASSERT(p != NULL);
-//     mutex_lock(&(p->page_lock));
-//     ASSERT(p->num_ref > 0);
-//     mutex_lock(&pmem_lock);
-//     if (bitmap_bit_test(&pmem_btmp, p - pmap) == 0) {
-//         PANIC("incref a free page");
-//     }
-//     mutex_unlock(&pmem_lock);
-//     (p->num_ref)--;
-//     if (p->num_ref == 0) {
-//         mutex_lock(&pmem_lock);
-//         bitmap_set(&pmem_btmp, (p - pmap), 0);
-//         mutex_unlock(&pmem_lock);
-//     }
-//     mutex_unlock(&(p->page_lock));
-// }
 
 // with lock
 void page_decref(ppage_t *p) {
@@ -503,10 +485,10 @@ void page_unmap(pde_t *pgdir, void *va) {
 int page_map(pde_t *pgdir, void *va, ppage_t *p, uint32_t perm) {
     pte_t *pte = pgdir_walk(pgdir, va, True);
     if (pte == NULL) {
-        return ERR_MEMORY_SHORTAGE;
+        return -ERR_MEMORY_SHORTAGE;
     }
 
-    // panic if there's already a page mapped there
+    // panic if there's already a mapped page
     ASSERT(!(*pte & PTE_PRESENT));
 
     *pte = (pte_t)__pg_entry(page2pa(p), PTE_PRESENT | perm);

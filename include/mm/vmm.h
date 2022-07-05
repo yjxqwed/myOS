@@ -5,8 +5,6 @@ typedef struct vmm_struct vmm_t;
 
 #include <arch/x86.h>
 #include <common/types.h>
-#include <thread/sync.h>
-
 
 /**
  * @brief struct related to process address space
@@ -15,7 +13,6 @@ struct vmm_struct {
 
     // every process has its own page directory
     pde_t *pgdir;
-    mutex_t *vmm_mutex;
 
     uint32_t args_end;
     uint32_t args_start;
@@ -41,17 +38,14 @@ struct vmm_struct {
 
 /**
  * @brief Initialize a vmm object
- * 
- * @param vmm The object to initialize
- * @return bool_t True on success and False on failure
  */
-bool_t init_vmm_struct(vmm_t *vmm);
+int init_vmm_struct(vmm_t *vmm);
 
 /**
  * @brief Destroy a vmm object
- * 
- * @param vmm The object to destroy
  */
 void destroy_vmm_struct(vmm_t *vmm);
+
+void *sys_brk(uintptr_t __addr);
 
 #endif

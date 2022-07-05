@@ -166,3 +166,14 @@ int strcmp(const char *a, const char *b) {
         return 0;
     }
 }
+
+int memcmp(const void *a, const void *b, size_t n) {
+    uint8_t *pa = (uint8_t *)a;
+    uint8_t *pb = (uint8_t *)b;
+    for (int i = 0; i < n; i++) {
+        if (pa[i] != pb[i]) {
+            return 1;
+        }
+    }
+    return 0;
+}

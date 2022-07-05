@@ -34,4 +34,11 @@ void* memcpy(const void* src, void* dest, uint32_t n);
  */
 int strcmp(const char *a, const char *b);
 
+/**
+ * @brief compare 2 memory buffers
+ * 
+ * @return 0 if a[0:n] == b[0:n]; 1 otherwise.
+ */
+int memcmp(const void *a, const void *b, size_t n);
+
 #endif

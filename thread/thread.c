@@ -7,6 +7,7 @@
 #include <common/types.h>
 #include <kprintf.h>
 #include <sys/tss.h>
+#include <lib/bitmap.h>
 
 typedef struct ThreadStack {
     uint32_t ebp;
@@ -25,6 +26,9 @@ static __PAGE_ALLIGNED uint8_t reserved_pcb[PAGE_SIZE];
 uint32_t kmain_stack_top = (uintptr_t)reserved_pcb + PAGE_SIZE;
 static task_t *kmain = NULL;
 static task_t *idle_thread = NULL;
+
+static btmp_t pid_btmp;
+static uint8_t pid_btmp_bits[MAX_TASKS / 8];
 
 // @brief schedule the tasks
 static void schedule();
@@ -146,16 +150,10 @@ static void thread_kmain() {
     task_push_back_all(kmain);
     set_int_status(old_status);
     kmain->status = TASK_RUNNING;
+    kmain->task_id = pid_alloc();
+    ASSERT(kmain->task_id == 0);
+    kmain->parent_id = -1;
     current_task = kmain;
-
-    // for kernel test fs
-    // kmain->fd_table = (int *)kmalloc(8 * sizeof(int));
-    // if (kmain->fd_table == NULL) {
-    //     PANIC("Failed to init kmain");
-    // }
-    // for (int i = 0; i < 8; i++) {
-    //     kmain->fd_table[i] = -1;
-    // }
 }
 
 
@@ -179,6 +177,8 @@ void thread_init() {
     list_init(&task_all_list);
     list_init(&task_exit_list);
     list_init(&sleeping_list);
+    bitmap_init(&pid_btmp, MAX_TASKS / 8);
+    pid_btmp.bits_ = pid_btmp_bits;
     thread_kmain();
     idle_thread = thread_start("idle", 10, idle, NULL);
 }
@@ -199,15 +199,16 @@ extern void switch_to(task_t *prev, task_t *next);
 static void schedule() {
     ASSERT(get_int_status() == INTERRUPT_OFF);
     task_t *old = current_task;
-    // ASSERT(!list_empty(&task_ready_list));
     if (list_empty(&task_ready_list)) {
         thread_unblock(idle_thread);
     }
+    ASSERT(!list_empty(&task_ready_list));
     task_t *next = __list_pop_front(&task_ready_list, task_t, general_tag);
     ASSERT(next->stack_guard == 0x19971125);
     ASSERT(next->status == TASK_READY);
     next->status = TASK_RUNNING;
     current_task = next;
+    // old == next is only possible when idle -> idle
     if (old != next) {
         if (next->vmm != NULL) {
             // if next is a user process, the kernel stack should always
@@ -407,4 +408,19 @@ void thread_msleep(uint32_t msec) {
 
 void task_assign_tty(task_t *task, int tty_no) {
     task->tty_no = tty_no;
+}
+
+pid_t pid_alloc() {
+    pid_t pid = bitmap_scan(&pid_btmp, 1);
+    if (pid != -1) {
+        bitmap_set(&pid_btmp, pid, 1);
+    }
+    return pid;
+}
+
+void pid_free(pid_t pid) {
+    if (pid == -1) {
+        return;
+    }
+    bitmap_set(&pid_btmp, pid, 0);
 }
