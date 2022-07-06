@@ -2,23 +2,14 @@
  * @file simplefs.c
  */
 
-#include <common/debug.h>
 
-#include <lib/list.h>
-#include <lib/kprintf.h>
-#include <lib/bitmap.h>
-#include <lib/string.h>
+#include "bitmap.h"
 
-#include <mm/kvmm.h>
+#include "ata.h"
+#include "simplefs.h"
 
-#include <device/ata.h>
-#include <device/tty.h>
 
-#include <thread/process.h>
-#include <thread/sync.h>
-
-#include <fs/simplefs/simplefs.h>
-
+#define SECTOR_SIZE 512
 #define SECTOR_SIZE_IN_BIT (8 * SECTOR_SIZE)
 #define SIMPLE_FS_MAGIC 0x12345678
 #define BOOT_BLOCK_SEC_CNT 1
@@ -44,9 +35,6 @@ typedef struct {
     int desc_id;
     // current file pointer position
     uint32_t file_pos;
-
-    // forked processes share the same file struct with parent process
-    uint32_t open_times;
 } file_t;
 
 typedef struct {
@@ -66,17 +54,15 @@ typedef struct {
 
     // sectors with lba >= data_start_lba are free to use for files
     uint32_t data_start_lba;
+
 } __attr_packed super_block_t;
 
 // implements partition_t.fs_sturct
 typedef struct {
     super_block_t *sb;
-
     btmp_t sector_btmp;
     // in memory bitmap to record which fids are used
     btmp_t file_btmp;
-
-    mutex_t fs_lock;
 } simplefs_struct_t;
 
 extern partition_t *first_part;
@@ -84,32 +70,25 @@ extern partition_t *first_part;
 // simple fs only operates the first partition
 static partition_t *__part = NULL;
 static simplefs_struct_t *__simplefs = NULL;
-
-// system level file table; simplefs supports up to 32 open files
 static file_t __file_table[MAX_FILE_OPEN];
-static mutex_t __file_table_lock;
 
-// write dirty sec_btmp to disk
 static void sync_sec_btmp(int id) {
     int btmp_lba = __simplefs->sb->sector_btmp_start_lba + id / SECTOR_SIZE_IN_BIT;
     void *data = __simplefs->sector_btmp.bits_ + id / SECTOR_SIZE_IN_BIT * SECTOR_SIZE;
     ata_write(__part->my_disk, btmp_lba, data, 1);
 }
 
-// get a free sec
 static int sec_alloc() {
     ASSERT(__simplefs != NULL);
-    int lba = -1;
     int idx = bitmap_scan(&(__simplefs->sector_btmp), 1);
-    if (idx >= 0) {
-        bitmap_set(&(__simplefs->sector_btmp), idx, 1);
-        sync_sec_btmp(idx);
-        lba = __simplefs->sb->start_lba + idx;
+    if (idx == -1) {
+        return -1;
     }
-    return lba;
+    bitmap_set(&(__simplefs->sector_btmp), idx, 1);
+    sync_sec_btmp(idx);
+    return __simplefs->sb->start_lba + idx;
 }
 
-// reclaim a sec
 static void sec_free(uint32_t lba) {
     ASSERT(lba >= __simplefs->sb->start_lba);
     int idx = lba - __simplefs->sb->start_lba;
@@ -141,13 +120,11 @@ static void print_simplefs(const simplefs_struct_t *simplefs) {
     print_btmp(&(simplefs->file_btmp));
 }
 
-// write modified super block to disk
 static void sync_super_block(uint8_t *buf) {
     memcpy(__simplefs->sb, buf, sizeof(super_block_t));
     ata_write(__part->my_disk, __part->start_lba + 1, buf, 1);
 }
 
-// write file desc table to disk
 static void sync_desc_table(uint32_t file_id, file_desc_t *fdesc, uint8_t *buf) {
     super_block_t *sb = __simplefs->sb;
     uint32_t lba = sb->file_desc_table_start_lba + file_id / NR_DESC_PER_SEC;
@@ -157,7 +134,6 @@ static void sync_desc_table(uint32_t file_id, file_desc_t *fdesc, uint8_t *buf) 
     ata_write(__part->my_disk, lba, buf, 1);
 }
 
-// get a new gfd
 static int gfd_alloc() {
     for (int i = 0; i < MAX_FILE_OPEN; i++) {
         if (__file_table[i].desc.idx_lba == 0) {
@@ -309,7 +285,6 @@ void simplefs_init() {
 
     simplefs->sb = sb;
     __part->fs_struct = simplefs;
-    mutex_init(&(simplefs->fs_lock));
     __simplefs = simplefs;
     kfree(buf);
     print_simplefs(simplefs);
@@ -382,54 +357,23 @@ static int find(const char *filename, file_desc_t *fd, uint8_t *buf, int create)
     return fid;
 }
 
-/**
- * @brief install the global fd into task's own fd_table
- * @return private fd
- */
+
 static int lfd_install(int gfd) {
     ASSERT(0 <= gfd && gfd < MAX_FILE_OPEN);
-    task_t *task = get_current_thread();
-    if (task->is_user_process) {
-        ASSERT(task->fd_table != NULL);
-        int lfd = -1;
-        for (int i = 3; i < NR_OPEN; i++) {
-            if (task->fd_table[i] == -1) {
-                task->fd_table[i] = gfd;
-                lfd = i;
-                break;
-            }
-        }
-        return lfd;
-    } else {
-        return gfd;
-    }
+    return gfd + 3;
 }
 
 static void lfd_free(int lfd) {
     if (lfd == -1) {
         return;
     }
-    task_t *task = get_current_thread();
-    if (task->is_user_process) {
-        ASSERT(3 <= lfd && lfd < NR_OPEN);
-        ASSERT(task->fd_table != NULL);
-        ASSERT(task->fd_table[lfd] != -1);
-        task->fd_table[lfd] = -1;
-    }
 }
 
 static int lfd2gfd(int lfd) {
-    task_t *task = get_current_thread();
-    int gfd = -1;
-
-    if (task->is_user_process) {
-        if (3 <= lfd && lfd < NR_OPEN) {
-            gfd = task->fd_table[lfd];
-        }
-    } else {
-        gfd = lfd;
+    if (lfd < 0 || lfd >= 8) {
+        return -1;
     }
-
+    int gfd = lfd - 3;
     return gfd;
 }
 
@@ -454,196 +398,160 @@ static bool_t already_open(const char *filename) {
 }
 
 int simplefs_file_open(const char *filename, uint32_t flags) {
-    int gfd = -1, lfd = -1, fid = -1, ret = -1;
-    uint8_t *io_buf = NULL;
-    file_desc_t fdesc;
+    int gfd = -1, lfd = -1;
+    uint8_t *buf = NULL;
 
-    mutex_lock(&(__simplefs->fs_lock));
-    if (strlen(filename) > MAX_FILENAME_LENGTH) {
-        // filename too long
-    } 
-    // else if (already_open(filename)) {
-    //     // file already open
-    // } 
-    else if ((gfd = gfd_alloc()) == -1) {
-        // no available gfd
-    } else if ((lfd = lfd_install(gfd)) == -1) {
-        // no available lfd
-    } else if ((io_buf = kmalloc(SECTOR_SIZE)) == NULL) {
-        // no mem
-    } else if ((fid= find(filename, &fdesc, io_buf, flags & O_CREAT)) == -1) {
-        // file doesn't exist or can not create
-    } else {
-        __file_table[gfd].desc_id = fid;
-        __file_table[gfd].desc = fdesc;
+    if (
+        strlen(filename) <= MAX_FILENAME_LENGTH &&  // valid filename
+        !already_open(filename) &&  // not open
+        (gfd = gfd_alloc()) != -1 &&  // valid gfd
+        (lfd = lfd_install(gfd)) != -1 &&  // valid lfd
+        (buf = kmalloc(SECTOR_SIZE)) != NULL &&  // enough memory
+        (__file_table[gfd].desc_id = find(filename, &(__file_table[gfd].desc), buf, flags & O_CREAT)) >= 0
+    ) {
         __file_table[gfd].file_pos = 0;
-        ret = lfd;
-        ASSERT(!(get_current_thread()->is_user_process) || 3 <= ret && ret < NR_OPEN);
-    }
-    if (ret < 0) {
-        // failed to open
+    } else {
         lfd_free(lfd);
+        lfd = -1;
         gfd_free(gfd);
+        gfd = -1;
     }
-    mutex_unlock(&(__simplefs->fs_lock));
 
-    kfree(io_buf);
-    return ret;
+    kfree(buf);
+    return lfd;
 }
 
 int simplefs_file_close(int fd) {
-    mutex_lock(&(__simplefs->fs_lock));
     int gfd = lfd2gfd(fd);
-    int ret = -1;
-    if (gfd >= 0 && gfd < MAX_FILE_OPEN) {
-        ASSERT(__file_table[gfd].desc.idx_lba != 0);
-        __file_table[gfd].desc.idx_lba = 0;
-        gfd_free(gfd);
-        lfd_free(fd);
-        ret = 0;
+    if (gfd < 0 || gfd > MAX_FILE_OPEN) {
+        return -1;
     }
-    mutex_unlock(&(__simplefs->fs_lock));
-    return ret;
+
+    __file_table[gfd].desc.idx_lba = 0;
+    gfd_free(gfd);
+    lfd_free(fd);
+    return 0;
 }
 
 int simplefs_file_write(int fd, const void *buffer, size_t count) {
-    int ret = -1;
-    file_t *fp = NULL;
-    mutex_lock(&(__simplefs->fs_lock));
-    if ((fp = lfd2file(fd)) == NULL) {
-        // bad fd
-    } else {
-        ASSERT(fp->file_pos <= fp->desc.size);
-        uint8_t *io_buf = NULL;
-        if ((count = MIN(count, MAX_FILE_SIZE - fp->file_pos)) == 0) {
-            // nothing to write
-            ret = 0;
-        } else if ((io_buf = kmalloc(2 * SECTOR_SIZE)) == NULL) {
-            // no mem
-        } else {
-            int *lbas = io_buf + SECTOR_SIZE;
-            ASSERT(fp->desc.idx_lba != 0);
-            ata_read(__part->my_disk, fp->desc.idx_lba, lbas, 1);
-
-            int bytes_written = 0;
-            int pos = fp->file_pos;
-            while (bytes_written < count) {
-                int sec_no = pos / SECTOR_SIZE;
-                int sec_off = pos % SECTOR_SIZE;
-                int bytes_to_write = MIN(count - bytes_written, SECTOR_SIZE - sec_off);
-                bool_t new_blk = False;
-                if (lbas[sec_no] <= 0) {
-                    ASSERT(sec_off == 0);
-                    lbas[sec_no] = sec_alloc();
-                    if (lbas[sec_no] <= 0) {
-                        // no blks
-                        break;
-                    }
-                    new_blk = True;
-                }
-                ASSERT(lbas[sec_no] > 0);
-                if (!new_blk) {
-                    ata_read(__part->my_disk, lbas[sec_no], io_buf, 1);
-                }
-                memcpy((uint8_t *)buffer + bytes_written, io_buf + sec_off, bytes_to_write);
-                ata_write(__part->my_disk, lbas[sec_no], io_buf, 1);
-                pos += bytes_to_write;
-                bytes_written += bytes_to_write;
-            }
-
-            if (pos > fp->desc.size) {
-                // sync lbas
-                ata_write(__part->my_disk, fp->desc.idx_lba, lbas, 1);
-            }
-
-            fp->file_pos = pos;
-            fp->desc.size = MAX(fp->desc.size, fp->file_pos);
-
-            sync_desc_table(fp->desc_id, &(fp->desc), io_buf);
-            kfree(io_buf);
-            ret = bytes_written;
-        }
+    file_t *fp = lfd2file(fd);
+    if (fp == NULL) {
+        // bad local fd
+        return -1;
     }
-    mutex_unlock(&(__simplefs->fs_lock));
-    return ret;
+    ASSERT(fp->file_pos <= fp->desc.size);
+    count = MIN(count, MAX_FILE_SIZE - fp->file_pos);
+
+    if (count == 0) {
+        return 0;
+    }
+
+    uint8_t *io_buf = kmalloc(2 * SECTOR_SIZE);
+    if (io_buf == NULL) {
+        // no mem
+        return -1;
+    }
+    int *lbas = io_buf + SECTOR_SIZE;
+    ata_read(__part->my_disk, fp->desc.idx_lba, lbas, 1);
+
+    int bytes_written = 0;
+    int pos = fp->file_pos;
+    while (bytes_written < count) {
+        int sec_no = pos / SECTOR_SIZE;
+        int sec_off = pos % SECTOR_SIZE;
+        int bytes_to_write = MIN(count - bytes_written, SECTOR_SIZE - sec_off);
+        bool_t new_blk = False;
+        if (lbas[sec_no] <= 0) {
+            ASSERT(sec_off == 0);
+            lbas[sec_no] = sec_alloc();
+            if (lbas[sec_no] <= 0) {
+                // no blks
+                break;
+            }
+            new_blk = True;
+        }
+        ASSERT(lbas[sec_no] > 0);
+        if (!new_blk) {
+            ata_read(__part->my_disk, lbas[sec_no], io_buf, 1);
+        }
+        memcpy((uint8_t *)buffer + bytes_written, io_buf + sec_off, bytes_to_write);
+        ata_write(__part->my_disk, lbas[sec_no], io_buf, 1);
+        pos += bytes_to_write;
+        bytes_written += bytes_to_write;
+    }
+
+    if (pos > fp->desc.size) {
+        // sync lbas
+        ata_write(__part->my_disk, fp->desc.idx_lba, lbas, 1);
+    }
+
+    fp->file_pos = pos;
+    fp->desc.size = MAX(fp->desc.size, fp->file_pos);
+
+    sync_desc_table(fp->desc_id, &(fp->desc), io_buf);
+    kfree(io_buf);
+    return bytes_written;
 }
 
 int simplefs_file_read(int fd, void *buffer, size_t count) {
-    INT_STATUS old_status = enable_int();
-    file_t *fp = NULL;
-    uint8_t *io_buf = NULL;
-    int ret = -1;
-    mutex_lock(&(__simplefs->fs_lock));
-    if ((fp = lfd2file(fd)) == NULL) {
-        // bad fd
-    } else {
-        ASSERT(fp->file_pos <= fp->desc.size);
-        if ((count = MIN(count, fp->desc.size - fp->file_pos)) == 0) {
-            // nothing to read
-            ret = 0;
-        } else if ((io_buf = kmalloc(2 * SECTOR_SIZE)) == NULL) {
-            // no mem
-        } else {
-            int *lbas = io_buf + SECTOR_SIZE;
-            ASSERT(fp->desc.idx_lba != 0);
-            ata_read(__part->my_disk, fp->desc.idx_lba, lbas, 1);
-
-            int bytes_read = 0;
-            int pos = fp->file_pos;
-            while (bytes_read < count) {
-                int sec_no = pos / SECTOR_SIZE;
-                int sec_off = pos % SECTOR_SIZE;
-                int bytes_to_read = MIN(count - bytes_read, SECTOR_SIZE - sec_off);
-                ASSERT(lbas[sec_no] > 0);
-                ata_read(__part->my_disk, lbas[sec_no], io_buf, 1);
-                memcpy(io_buf + sec_off, (uint8_t *)buffer + bytes_read, bytes_to_read);
-                pos += bytes_to_read;
-                bytes_read += bytes_to_read;
-            }
-
-            ASSERT(pos <= fp->desc.size);
-            fp->file_pos = pos;
-            kfree(io_buf);
-            ret = bytes_read;
-        }
+    file_t *fp = lfd2file(fd);
+    if (fp == NULL) {
+        // bad local fd
+        return -1;
     }
-    mutex_unlock(&(__simplefs->fs_lock));
-    set_int_status(old_status);
-    return ret;
+    ASSERT(fp->file_pos <= fp->desc.size);
+    count = MIN(count, fp->desc.size - fp->file_pos);
+    if (count == 0) {
+        return 0;
+    }
+    uint8_t *io_buf = kmalloc(2 * SECTOR_SIZE);
+    if (io_buf == NULL) {
+        // no mem
+        return -1;
+    }
+    int *lbas = io_buf + SECTOR_SIZE;
+    ata_read(__part->my_disk, fp->desc.idx_lba, lbas, 1);
+
+    int bytes_read = 0;
+    int pos = fp->file_pos;
+    while (bytes_read < count) {
+        int sec_no = pos / SECTOR_SIZE;
+        int sec_off = pos % SECTOR_SIZE;
+        int bytes_to_read = MIN(count - bytes_read, SECTOR_SIZE - sec_off);
+        ASSERT(lbas[sec_no] > 0);
+        ata_read(__part->my_disk, lbas[sec_no], io_buf, 1);
+        memcpy(io_buf + sec_off, (uint8_t *)buffer + bytes_read, bytes_to_read);
+        pos += bytes_to_read;
+        bytes_read += bytes_to_read;
+    }
+
+    ASSERT(pos <= fp->desc.size);
+    fp->file_pos = pos;
+    kfree(io_buf);
+    return bytes_read;
 }
 
 off_t simplefs_file_lseek(int fd, off_t offset, int whence) {
-    file_t *fp = NULL;
-    int ret = -1;
+    file_t *fp = lfd2file(fd);
+    if (fp == NULL) {
+        // bad local fd
+        return -1;
+    }
     int new_pos = -1;
-    mutex_lock(&(__simplefs->fs_lock));
-    if ((fp = lfd2file(fd)) == NULL) {
-        // bad fd
-    } else if (SEEK_SET == whence) {
+    if (whence == SEEK_SET) {
         new_pos = offset;
-        ret = 0;
-    } else if (SEEK_CUR == whence) {
+    } else if (whence == SEEK_CUR) {
         new_pos = (int)(fp->file_pos) + offset;
-        ret = 0;
-    } else if (SEEK_END == whence) {
+    } else if (whence == SEEK_END) {
         new_pos = (int)(fp->desc.size) + offset;
-        ret = 0;
     } else {
         // bad whence
+        return -1;
     }
-
-    if (ret == 0) {
-        if (new_pos < 0 || new_pos > fp->desc.size) {
-            // bad result
-            ret = -1;
-        } else {
-            fp->file_pos = new_pos;
-            ret = new_pos;
-        }
+    if (new_pos < 0 || new_pos > fp->desc.size) {
+        return -1;
     }
-
-    mutex_unlock(&(__simplefs->fs_lock));
-    return ret;
+    return fp->file_pos = new_pos;
 }
 
 int simplefs_file_delete(const char *filename) {
@@ -652,7 +560,7 @@ int simplefs_file_delete(const char *filename) {
     uint8_t *buf = NULL;
 
     int ret = -1;
-    mutex_lock(&(__simplefs->fs_lock));
+
     if (
         __simplefs->sb->file_cnt > 0 &&
         strlen(filename) <= MAX_FILENAME_LENGTH &&  // valid filename
@@ -683,7 +591,7 @@ int simplefs_file_delete(const char *filename) {
 
         ret = 0;
     }
-    mutex_unlock(&(__simplefs->fs_lock));
+
     kfree(buf);
     return ret;
 }
@@ -693,7 +601,6 @@ int simplefs_file_stat(const char *filename, stat_t *s) {
     int fid = -1;
     uint8_t *buf = NULL;
     int ret = -1;
-    mutex_lock(&(__simplefs->fs_lock));
     if (
         strlen(filename) <= MAX_FILENAME_LENGTH &&
         (buf = kmalloc(SECTOR_SIZE)) != NULL &&
@@ -705,7 +612,6 @@ int simplefs_file_stat(const char *filename, stat_t *s) {
         s->blocks = 1 + ROUND_UP_DIV(s->size, SECTOR_SIZE);
         ret = 0;
     }
-    mutex_unlock(&(__simplefs->fs_lock));
     kfree(buf);
     return ret;
 }
@@ -716,7 +622,6 @@ int simplefs_list_files(stat_t *s) {
     btmp_t *fbtmp = &(__simplefs->file_btmp);
     ASSERT(fbtmp->num_zero + sb->file_cnt == MAX_FILE_CNT);
     int ret = -1;
-    mutex_lock(&(__simplefs->fs_lock));
     if (sb->file_cnt == 0) {
         ret = 0;
     } else if ((buf = kmalloc(SECTOR_SIZE)) != NULL) {
@@ -740,70 +645,5 @@ int simplefs_list_files(stat_t *s) {
         ASSERT(nfiles == sb->file_cnt);
         ret = nfiles;
     }
-    mutex_unlock(&(__simplefs->fs_lock));
     return ret;
-}
-
-int sys_open(const char *pathname, uint32_t flags) {
-    return simplefs_file_open(pathname, flags);
-}
-
-int sys_close(int fd) {
-    return simplefs_file_close(fd);
-}
-
-int sys_read(int fd, void *buffer, size_t count) {
-    kprintf(KPL_DEBUG, "sys_read: fd=%d\n", fd);
-    if (fd == FD_STDIN) {
-        int idx = 0;
-        char *buff = (char *)buffer;
-        while (idx < count) {
-            // sys_read will only get printable chars, \n and \b
-            char c = get_printable_char(tty_getkey_curr());
-            if (c == '\0') {
-                continue;
-            }
-            buff[idx++] = c;
-        }
-        return idx;
-    } else if (fd == FD_STDOUT || fd == FD_STDERR) {
-        return -1;
-    } else {
-        return simplefs_file_read(fd, buffer, count);
-    }
-}
-
-int sys_write(int fd, const void *buffer, size_t count) {
-    if (fd == FD_STDIN) {
-        return -1;
-    } else if (fd == FD_STDOUT) {
-        return tty_puts(
-            get_current_thread()->tty_no, buffer, count, CONS_BLACK, CONS_GRAY
-        );
-    } else if (fd == FD_STDERR) {
-        return tty_puts(
-            get_current_thread()->tty_no, buffer, count, CONS_BLACK, CONS_GRAY
-        );
-    } else {
-        return simplefs_file_write(fd, buffer, count);
-    }
-}
-
-off_t sys_lseek(int fd, off_t offset, int whence) {
-    if (fd == FD_STDIN || fd == FD_STDOUT || fd == FD_STDERR) {
-        return -1;
-    }
-    return simplefs_file_lseek(fd, offset, whence);
-}
-
-int sys_unlink(const char* pathname) {
-    return simplefs_file_delete(pathname);
-}
-
-int sys_stat(const char *filename, stat_t *s) {
-    return simplefs_file_stat(filename, s);
-}
-
-int sys_list_files(stat_t *s) {
-    return simplefs_list_files(s);
 }

@@ -1,0 +1,4 @@
+.vscode/
+*.dSYM
+file*
+fstool

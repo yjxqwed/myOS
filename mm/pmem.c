@@ -289,7 +289,7 @@ static ppage_t *__pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
 
 ppage_t *pages_alloc(uint32_t pg_cnt, uint32_t gfp_flags) {
     mutex_lock(&pmem_lock);
-    ppage_t *fp = __pages_alloc(pg_cnt, GFP_ZERO);
+    ppage_t *fp = __pages_alloc(pg_cnt, gfp_flags);
     mutex_unlock(&pmem_lock);
     return fp;
 }

@@ -76,9 +76,15 @@ static void thread_run_func(thread_func_t func, void *args) {
 }
 
 static void task_init(
-    task_t *task, const char *name, uint16_t prio
+    task_t *task, const char *name, uint16_t prio, pid_t task_id
 ) {
     // all tasks have cwd = root (/)
+    task->task_id = task_id;
+    if (task_id == 0) {
+        task->parent_id = -1;
+    } else {
+        task->parent_id = get_current_thread()->task_id;
+    }
     task->cwd_inode_no = 0;
     task->priority = prio;
     task->ticks = prio;
@@ -94,17 +100,25 @@ task_t *task_create(
     const char *name, uint16_t prio,
     thread_func_t func, void *args
 ) {
-    // if (num_tasks >= MAX_TASKS) {
-    //     return NULL;
-    // }
+    if (strlen(name) >= TASK_NAME_LEN) {
+        // bad task name
+        return NULL;
+    }
+
+    pid_t task_id = pid_alloc();
+    if (task_id == -1) {
+        // no task id
+        return NULL;
+    }
+
     task_t *task = (task_t *)k_get_free_pages(1, GFP_ZERO);
     if (task == NULL) {
+        // no memory
+        pid_free(task_id);
         return NULL;
     }
-    if (strlen(name) >= TASK_NAME_LEN) {
-        return NULL;
-    }
-    task_init(task, name, prio);
+
+    task_init(task, name, prio, task_id);
 
     // init thread stack
     task->kernel_stack -= sizeof(thread_stk_t);
@@ -122,6 +136,14 @@ task_t *task_create(
     task->fd_table = NULL;
     task->is_user_process = False;
     return task;
+}
+
+void task_destroy(task_t *task) {
+    if (task == NULL) {
+        return;
+    }
+    pid_free(task->task_id);
+    k_free_pages(task, 1);
 }
 
 task_t *thread_start(
@@ -145,14 +167,12 @@ task_t *thread_start(
 // after the bootstrap
 static void thread_kmain() {
     kmain = (task_t *)reserved_pcb;
-    task_init(kmain, "kmain", 31);
+    task_init(kmain, "kmain", 31, pid_alloc());
     INT_STATUS old_status = disable_int();
     task_push_back_all(kmain);
     set_int_status(old_status);
     kmain->status = TASK_RUNNING;
-    kmain->task_id = pid_alloc();
-    ASSERT(kmain->task_id == 0);
-    kmain->parent_id = -1;
+    ASSERT(kmain->task_id == 0 && kmain->parent_id == -1);
     current_task = kmain;
 }
 

@@ -116,3 +116,11 @@ int brk(void *addr) {
 void sleep(uint32_t ms) {
     _syscall1(SYSCALL_SLEEP, ms);
 }
+
+pid_t getpid() {
+    return _syscall0(SYSCALL_GETPID);
+}
+
+pid_t getppid() {
+    return _syscall0(SYSCALL_GETPPID);
+}

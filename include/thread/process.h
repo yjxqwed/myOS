@@ -12,6 +12,9 @@
  * @param name name of the process
  * @param tty_no tty of this process
  */
-task_t *process_execute(char *filename, char *name, int tty_no);
+task_t *process_execute(const char *filename, const char *name, int tty_no);
+
+pid_t sys_getpid();
+pid_t sys_getppid();
 
 #endif

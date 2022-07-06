@@ -88,4 +88,14 @@ void *sbrk(intptr_t increment);
  */
 void sleep(uint32_t ms);
 
+/**
+ * @brief get pid
+ */
+pid_t getpid();
+
+/**
+ * @brief get parent pid
+ */
+pid_t getppid();
+
 #endif

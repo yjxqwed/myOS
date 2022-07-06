@@ -50,14 +50,103 @@ enum segment_type {
    PT_PHDR             // 程序头表
 };
 
+static int read_elf32_ehdr(int fd, elf32_ehdr_t *ehdr) {
+    ASSERT(fd != -1 && ehdr != NULL);
+    int elf32_ehdr_sz = sizeof(elf32_ehdr_t);
+    memset(ehdr, 0, elf32_ehdr_sz);
+    int ret = -1;
+    if (simplefs_file_read(fd, ehdr, elf32_ehdr_sz) != elf32_ehdr_sz) {
+        // failed to read
+    } else if (
+        memcmp(ehdr->e_ident, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0", 16) != 0 ||  // elf32 idents
+        ehdr->e_type != 2 ||  // ET_EXEC (executable file)
+        ehdr->e_machine != 3 ||  // x86
+        ehdr->e_version != 1 ||  // current version (default value)
+        ehdr->e_phnum > 1024 ||
+        ehdr->e_phentsize != sizeof(elf32_phdr_t)
+    ) {
+        // failed to verify ehdr
+    } else {
+        // good to go
+        ret = 0;
+    }
+    return ret;
+}
 
-static void start_process(void *filename) {
-    void *func = filename;
+static int segment_load(int fd, pde_t *new_pd, const elf32_phdr_t *phdr) {
+    ASSERT(phdr->p_type == PT_LOAD);
+
+    uint32_t vaddr_first_page = __pg_start_addr(phdr->p_vaddr);
+    uint32_t num_pages = ROUND_UP_DIV(phdr->p_memsz + phdr->p_vaddr - vaddr_first_page, PAGE_SIZE);
+
+    vmm_map_pages(new_pd, vaddr_first_page, num_pages, PTE_USER | PTE_WRITABLE);
+    task_t *ct = get_current_thread();
+    pde_t *curr_pd = NULL;
+
+    if (ct->vmm != NULL) {
+        curr_pd = ct->vmm->pgdir;
+    }
+    load_page_dir(new_pd);
+    off_t off = simplefs_file_lseek(fd, phdr->p_offset, SEEK_SET);
+    ASSERT(off == phdr->p_offset);
+    kprintf(KPL_DEBUG, "off=0x%x, vfp=0x%x, fsz=0x%x", off, vaddr_first_page, phdr->p_filesz);
+    simplefs_file_read(fd, vaddr_first_page, phdr->p_filesz);
+    for (int i = 0; i < 10; i++) {
+        kprintf(KPL_DEBUG, "{0x%X}", *((uint32_t *)vaddr_first_page + i));
+    }
+    load_page_dir(curr_pd);
+    return 0;
+}
+
+static int load(int fd, const elf32_ehdr_t *ehdr, pde_t *pd) {
+    // INT_STATUS old_status = disable_int();
+
+    int ret = -1;
+    elf32_phdr_t phdr;
+
+    Elf32_Off prog_header_offset = ehdr->e_phoff; 
+    Elf32_Half prog_header_size = ehdr->e_phentsize;
+
+    /* 遍历所有程序头 */
+    uint32_t prog_idx = 0;
+    while (prog_idx < ehdr->e_phnum) {
+        memset(&phdr, 0, prog_header_size);
+
+        /* 将文件的指针定位到程序头 */
+        off_t off = simplefs_file_lseek(fd, prog_header_offset, SEEK_SET);
+        ASSERT(off == prog_header_offset);
+        /* 只获取程序头 */
+        int nbrd = simplefs_file_read(fd, &phdr, prog_header_size);
+        if (nbrd != prog_header_size) {
+            goto __load_done__;
+        }
+
+        /* 如果是可加载段就调用segment_load加载到内存 */
+        if (PT_LOAD == phdr.p_type) {
+            if (segment_load(fd, pd, &phdr) != 0) {
+                goto __load_done__;
+            }
+        }
+
+        /* 更新下一个程序头的偏移 */
+        prog_header_offset += ehdr->e_phentsize;
+        prog_idx++;
+    }
+
+    ret = 0;
+
+__load_done__:
+    // set_int_status(old_status);
+    return ret;
+}
+
+
+static void start_process(void *entry) {
     uint32_t ss = SELECTOR_USTK;
     uint32_t esp = USER_STACK_BOTTOM - 0x10;
     uint32_t eflags = EFLAGS_MSB(1) | EFLAGS_IF(1);
     uint32_t cs = SELECTOR_UCODE;
-    uint32_t eip = (uint32_t)func;
+    uint32_t eip = (uint32_t)entry;
     __asm_volatile(
         "push %0\n\t"
         "push %1\n\t"
@@ -81,152 +170,78 @@ static void start_process(void *filename) {
     );
 }
 
-task_t *process_execute(char *filename, char *name, int tty_no) {
-    task_t *t = task_create(name, 31, start_process, filename);
-    // cwd is root(/) by default for now
-    // t->cwd_inode_no = 0;
-    int rollback = 0;
-    if (t == NULL) {
-        goto rb;
+static void process_destroy(task_t *task) {
+    if (task == NULL) {
+        return;
     }
-    t->is_user_process = True;
+    destroy_vmm_struct(task->vmm);
+    kfree(task->vmm);
+    kfree(task->fd_table);
+    task_destroy(task);
+}
+
+task_t *process_execute(const char *filename, const char *name, int tty_no) {
+    // open target file
+    int fd = simplefs_file_open(filename, 0);
+    if (fd == -1) {
+        goto __process_execute_fail__;
+    }
+
+    // read elf32 header
+    elf32_ehdr_t ehdr;
+    if (read_elf32_ehdr(fd, &ehdr) != 0) {
+        goto __process_execute_fail__;
+    }
+
+    // create a task object
+    task_t *t = task_create(name, 31, start_process, ehdr.e_entry);
+    if (t == NULL) {
+        goto __process_execute_fail__;
+    }
+
+    // create a vmm object
     t->vmm = (vmm_t *)kmalloc(sizeof(vmm_t));
     if (t->vmm == NULL || init_vmm_struct(t->vmm) != 0) {
-        rollback = 1;
-        goto rb;
+        goto __process_execute_fail__;
     }
-    init_vmm_struct(t->vmm);
+
+    // create the fd table
     t->fd_table = (int *)kmalloc(NR_OPEN * sizeof(int));
+    if (t->fd_table == NULL) {
+        goto __process_execute_fail__;
+    }
     for (int i = 0; i < NR_OPEN; i++) {
         t->fd_table[i] = i < 3 ? i : -1;
     }
-    if (t->fd_table == NULL) {
-        rollback = 2;
-        goto rb;
+
+    // load segments
+    if (load(fd, &ehdr, t->vmm->pgdir) != 0) {
+        goto __process_execute_fail__;
     }
+
+    // assign tty
+    task_assign_tty(t, tty_no);
+    t->is_user_process = True;
+
+    // push the task to lists
     INT_STATUS old_status = disable_int();
     ASSERT(t->status == TASK_READY);
     task_push_back_ready(t);
     task_push_back_all(t);
-    task_assign_tty(t, tty_no);
     set_int_status(old_status);
+    simplefs_file_close(fd);
     return t;
 
-rb:
-    switch (rollback) {
-        case 2:
-            destroy_vmm_struct(t->vmm);
-            kfree(t->vmm);
-        case 1:
-            k_free_pages(t, 1);
-        default:
-            return NULL;
-    }
+__process_execute_fail__:
+    simplefs_file_close(fd);
+    process_destroy(t);
+    return NULL;
 }
 
-// /* 将文件描述符fd指向的文件中, 偏移为offset, 大小为filesz的段加载到虚拟地址为vaddr的内存 */
-// static bool segment_load(int32_t fd, uint32_t offset, uint32_t filesz, uint32_t vaddr) {
-//     uint32_t vaddr_first_page = vaddr & 0xfffff000;    // vaddr地址所在的页框
-//     uint32_t size_in_first_page = PG_SIZE - (vaddr & 0x00000fff);     // 加载到内存后,文件在第一个页框中占用的字节大小
-//     uint32_t occupy_pages = 0;
-//     /* 若一个页框容不下该段 */
-//     if (filesz > size_in_first_page) {
-//         uint32_t left_size = filesz - size_in_first_page;
-//         occupy_pages = DIV_ROUND_UP(left_size, PG_SIZE) + 1;	     // 1是指vaddr_first_page
-//     } else {
-//         occupy_pages = 1;
-//     }
+pid_t sys_getpid() {
+    return get_current_thread()->task_id;
+}
 
-//     /* 为进程分配内存 */
-//     uint32_t page_idx = 0;
-//     uint32_t vaddr_page = vaddr_first_page;
-//     while (page_idx < occupy_pages) {
-//         uint32_t* pde = pde_ptr(vaddr_page);
-//         uint32_t* pte = pte_ptr(vaddr_page);
-
-//         /* 如果pde不存在,或者pte不存在就分配内存.
-//         * pde的判断要在pte之前,否则pde若不存在会导致
-//         * 判断pte时缺页异常 */
-//         if (!(*pde & 0x00000001) || !(*pte & 0x00000001)) {
-//         if (get_a_page(PF_USER, vaddr_page) == NULL) {
-//             return false;
-//         }
-//         } // 如果原进程的页表已经分配了,利用现有的物理页,直接覆盖进程体
-//         vaddr_page += PG_SIZE;
-//         page_idx++;
-//     }
-//     sys_lseek(fd, offset, SEEK_SET);
-//     sys_read(fd, (void*)vaddr, filesz);
-//     return true;
-// }
-
-// static int segment_load(int fd, const elf32_phdr_t *phdr) {
-    
-// }
-
-// /* 从文件系统上加载用户程序pathname,成功则返回程序的起始地址,否则返回-1 */
-// static int load(const char *pathname) {
-//     int ret = -1;
-//     struct Elf32_Ehdr elf_header;
-//     struct Elf32_Phdr prog_header;
-//     int elf32_hdr_sz = sizeof(struct Elf32_Ehdr);
-
-//     memset(&elf_header, 0, elf32_hdr_sz);
-
-//     int fd = sys_open(pathname, O_RDONLY);
-//     if (fd == -1) {
-//         return -1;
-//     }
-
-//     if (sys_read(fd, &elf_header, elf32_hdr_sz) != elf32_hdr_sz) {
-//         ret = -1;
-//         goto done;
-//     }
-
-//     /* verify elf header */
-//     if (
-//         memcmp(elf_header.e_ident, "\177ELF\1\1\1\0\0\0\0\0\0\0\0\0", 16) != 0 ||  // elf32 idents
-//         elf_header.e_type != 2 ||  // ET_EXEC (executable file)
-//         elf_header.e_machine != 3 ||  // x86
-//         elf_header.e_version != 1 ||  // current version (default value)
-//         elf_header.e_phnum > 1024 ||
-//         elf_header.e_phentsize != elf32_hdr_sz
-//     ) {
-//         ret = -1;
-//         goto done;
-//     }
-
-//     Elf32_Off prog_header_offset = elf_header.e_phoff; 
-//     Elf32_Half prog_header_size = elf_header.e_phentsize;
-
-//     /* 遍历所有程序头 */
-//     uint32_t prog_idx = 0;
-//     while (prog_idx < elf_header.e_phnum) {
-//         memset(&prog_header, 0, prog_header_size);
-
-//         /* 将文件的指针定位到程序头 */
-//         sys_lseek(fd, prog_header_offset, SEEK_SET);
-
-//         /* 只获取程序头 */
-//         if (sys_read(fd, &prog_header, prog_header_size) != prog_header_size) {
-//             ret = -1;
-//             goto done;
-//         }
-
-//         /* 如果是可加载段就调用segment_load加载到内存 */
-//         if (PT_LOAD == prog_header.p_type) {
-//             if (!segment_load(fd, prog_header.p_offset, prog_header.p_filesz, prog_header.p_vaddr)) {
-//                 ret = -1;
-//                 goto done;
-//             }
-//         }
-
-//         /* 更新下一个程序头的偏移 */
-//         prog_header_offset += elf_header.e_phentsize;
-//         prog_idx++;
-//     }
-//     ret = elf_header.e_entry;
-// done:
-//     sys_close(fd);
-//     return ret;
-// }
+pid_t sys_getppid() {
+    return get_current_thread()->parent_id;
+}

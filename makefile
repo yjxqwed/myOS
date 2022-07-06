@@ -1,5 +1,5 @@
 # build flags
-G_PARAMS = -Wall -m32 -I include -I include/lib -I usr/include -nostdlib -fno-builtin \
+G_PARAMS = -Wall -m32 -I include -I include/lib -nostdlib -fno-builtin \
            -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel
 NASM_PARAMS = -I include -f elf32
 LD_PARAMS = -m elf_i386
@@ -33,23 +33,16 @@ fs_objs = fs/myfs/fs.elf32 fs/myfs/file.elf32 fs/myfs/dir.elf32 \
 
 simplefs_objs = fs/simplefs/simplefs.elf32
 
-usr_objs = usr/src/unistd.elf32 usr/src/stdio.elf32 usr/src/malloc.elf32
-
 arch_x86_objs = arch/x86/interrupt.elf32
 
 thread_objs = thread/thread.elf32 thread/switch.elf32 thread/sync.elf32 \
               thread/process.elf32
 
-lvsh_objs = usr/lvsh/lvsh.elf32
-
-usr_test_objs = usr/test/test.elf32
-
 kernel_test_objs = kernel/test/simplefs_test.elf32
 
 objects = $(device_objs) $(kernel_asm_objs) $(kernel_c_objs) \
-          $(lib_objs) $(usr_objs) $(mm_objs) $(arch_x86_objs) \
-          $(thread_objs) $(lvsh_objs) $(usr_test_objs) $(simplefs_objs) \
-          $(kernel_test_objs)
+          $(lib_objs) $(mm_objs) $(arch_x86_objs) \
+          $(thread_objs) $(simplefs_objs) $(kernel_test_objs)
 
 
 

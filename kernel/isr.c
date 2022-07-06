@@ -92,6 +92,18 @@ static void irq_remap(void) {
     outportb(PIC_S_CTLMASK, 0x0);
 }
 
+void disable_pit() {
+    uint8_t val = inportb(PIC_M_CTLMASK);
+    val |= (uint8_t)0x01;
+    outportb(PIC_M_CTLMASK, val);
+}
+
+void enable_pit() {
+    uint8_t val = inportb(PIC_M_CTLMASK);
+    val &= (uint8_t)0xfe;
+    outportb(PIC_M_CTLMASK, val);
+}
+
 extern Gate _idt[IDT_SIZE];
 void setISRs() {
     SETINTDES(0);

@@ -12,6 +12,11 @@
 
 // =================== PAGING/MMU =====================
 
+typedef uint32_t PageDirectoryEntry;
+typedef PageDirectoryEntry pde_t;
+typedef uint32_t PageTableEntry;
+typedef PageTableEntry pte_t;
+
 // page size = 4KiB
 #define PAGE_SIZE 0x1000
 
@@ -37,16 +42,13 @@
 #define __pde_idx(x) ((uintptr_t)(x) >> PD_IDX_SHIFT)
 #define __pte_idx(x) (((uintptr_t)(x) & PT_IDX_MASK) >> PT_IDX_SHIFT)
 
-#define __pg_entry(page_pa, attr) ((uintptr_t)(page_pa) | (attr))
+#define __pg_entry(page_pa, attr) ((pte_t)((uintptr_t)(page_pa) | (attr)))
 
 #define __page_number(x) (uint32_t)(((uintptr_t)(x)) / PAGE_SIZE)
 
 #define __page_aligned(x) (((uintptr_t)(x) & PG_OFFSET_MASK) == 0 ? True : False)
 
 // ========== Page Directory ==========
-
-typedef uint32_t PageDirectoryEntry;
-typedef PageDirectoryEntry pde_t;
 
 // ignored
 #define PDE_GLOBAL        0x100
@@ -72,8 +74,6 @@ typedef PageDirectoryEntry pde_t;
 // void set_pde_attr(pde_t *pde, int attr, int val);
 
 // ========== Page Table ==========
-typedef uint32_t PageTableEntry;
-typedef PageTableEntry pte_t;
 
 // set to prevent the TLB from updating the
 // address in its cache if cr3 is reset
@@ -332,5 +332,8 @@ INT_STATUS disable_int();
 #define PIC_M_CTLMASK 0x21
 #define PIC_S_CTL     0xA0
 #define PIC_S_CTLMASK 0xA1
+
+void disable_pit();
+void enable_pit();
 
 #endif

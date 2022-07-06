@@ -48,4 +48,11 @@ void destroy_vmm_struct(vmm_t *vmm);
 
 void *sys_brk(uintptr_t __addr);
 
+/**
+ * @brief map <np> pages to the space starting with va
+ * 
+ * @return 0 if succeed
+ */
+int vmm_map_pages(pde_t *pd, uint32_t va, size_t np, uint32_t perm);
+
 #endif

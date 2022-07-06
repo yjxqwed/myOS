@@ -46,6 +46,12 @@ void lvsh(void) {
                 printf("%d, %d, %d, %s\n", sb->file_id, sb->size, sb->blocks, sb->filename);
             }
             free(buffer);
+        } else if (strcmp(line, "pid") == 0) {
+            pid_t pid = getpid();
+            printf("pid: %d\n", pid);
+        } else if (strcmp(line, "ppid") == 0) {
+            pid_t ppid = getppid();
+            printf("ppid: %d\n", ppid);
         } else {
             printf("Your input: [%d][%s]\n", ok, line);
         }

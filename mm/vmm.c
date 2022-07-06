@@ -27,6 +27,25 @@ static void destroy_pd(pde_t *pd) {
     }
 }
 
+int vmm_map_pages(pde_t *pd, uint32_t va, size_t np, uint32_t perm) {
+    int ret = 0;
+
+    // va must be page aligned
+    ASSERT(__page_aligned(va));
+
+    for (int i = 0; i < np; i++) {
+        ppage_t *p = pages_alloc(1, GFP_ZERO);
+        // assume enough memory
+        ASSERT(p != NULL);
+        int ok = page_map(pd, va, p, perm);
+        // assume successful map
+        ASSERT(ok == 0);
+        va += PAGE_SIZE;
+    }
+
+    return ret;
+}
+
 
 int init_vmm_struct(vmm_t *vmm) {
     // ASSERT(vmm != NULL);
@@ -68,6 +87,7 @@ void destroy_vmm_struct(vmm_t *vmm) {
     if (vmm == NULL) {
         return;
     }
+    // TODO: delete the address space
     k_free_pages(vmm->pgdir, 1);
 }
 

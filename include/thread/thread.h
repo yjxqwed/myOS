@@ -109,6 +109,8 @@ task_t *task_create(
     const char *name, uint16_t prio, thread_func_t func, void *args
 );
 
+void task_destroy(task_t *task);
+
 // associate task with tty
 void task_assign_tty(task_t *task, int tty_no);
 

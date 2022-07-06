@@ -3,10 +3,10 @@
 #include <kprintf.h>
 #include <device/tty.h>
 #include <thread/thread.h>
+#include <thread/process.h>
 #include <common/types.h>
 #include <common/debug.h>
 #include <common/utils.h>
-#include <thread/thread.h>
 #include <mm/pmem.h>
 #include <mm/vmm.h>
 
@@ -48,6 +48,10 @@ void syscall_init() {
     handlers[SYSCALL_BRK] = sys_brk;
     // sleep
     handlers[SYSCALL_SLEEP] = sys_sleep;
+    // pid
+    handlers[SYSCALL_GETPID] = sys_getpid;
+    handlers[SYSCALL_GETPPID] = sys_getppid;
+
     register_handler(0x80, syscall_handler);
 }
 

@@ -17,10 +17,6 @@
 
 #include <fs/simplefs/simplefs.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
 
 static mutex_t m;
 static int32_t x = 5;
@@ -613,8 +609,9 @@ void kernelMain() {
     // process_execute(usr_test3, "usr_test3", 1);
     // extern void usr_test4();
     // process_execute(usr_test4, "usr_test4", 1);
-    extern void lvsh();
-    process_execute(lvsh, "lvsh1", 1);
+    // extern void lvsh();
+    process_execute("lvsh", "lvsh", 1);
+    process_execute("lvsh", "lvsh", 2);
     // process_execute(lvsh, "lvsh2", 2);
     // process_execute(lvsh, "lvsh4", 4);
     // process_execute(lvsh, "lvsh5", 5);
