@@ -201,13 +201,23 @@ char* cpu_execption_msgs[] = {
 
 static interrupt_handler_t handlers[IDT_SIZE] = {NULL};
 
+static void page_fault_handler(isrp_t *p) {
+    console_kprintf(KPL_PANIC, cpu_execption_msgs[p->int_no]);
+    printISRParam(p);
+    uint32_t cr2 = scr2();
+    console_kprintf(KPL_PANIC, " cr2 = 0x%X\n", cr2);
+    console_kprintf(KPL_PANIC, " 0x%X\n", *(uint32_t *)(p->eip));
+    console_kprintf(KPL_PANIC, " System Halted.\n");
+    hlt();
+}
+
 void cpu_exception_handler(isrp_t *p) {
     if (handlers[p->int_no] != NULL) {
         handlers[p->int_no](p);
+    } else if (p->int_no == 14) {
+        page_fault_handler(p);
     } else {
-        uint32_t err_code = p->err_code;
-        uint32_t int_no = p->int_no;
-        console_kprintf(KPL_PANIC, cpu_execption_msgs[int_no]);
+        console_kprintf(KPL_PANIC, cpu_execption_msgs[p->int_no]);
         printISRParam(p);
         console_kprintf(KPL_PANIC, " System Halted.\n");
         hlt();

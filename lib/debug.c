@@ -5,12 +5,15 @@
 #include <thread/thread.h>
 
 void printISRParam(const isrp_t* p) {
+    task_t *t = get_current_thread();
     console_kprintf(
         KPL_PANIC,
-        "\n{eip=%x; errco=%x; "
+        "\n[%s, %d]"
+        "{eip=%x; errco=%x; "
         "edi=%X, esi=%X, ebx=%X, edx=%X, ecx=%X, eax=%X}\n",
+        t->task_name, t->task_id,
         p->eip, p->err_code,
-        p->edi, p->esi, p->ebx, p->edx, p->ecx, p->eax, p->eax
+        p->edi, p->esi, p->ebx, p->edx, p->ecx, p->eax
     );
 }
 

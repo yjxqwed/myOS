@@ -79,22 +79,31 @@ static int segment_load(int fd, pde_t *new_pd, const elf32_phdr_t *phdr) {
     uint32_t vaddr_first_page = __pg_start_addr(phdr->p_vaddr);
     uint32_t num_pages = ROUND_UP_DIV(phdr->p_memsz + phdr->p_vaddr - vaddr_first_page, PAGE_SIZE);
 
-    vmm_map_pages(new_pd, vaddr_first_page, num_pages, PTE_USER | PTE_WRITABLE);
     task_t *ct = get_current_thread();
     pde_t *curr_pd = NULL;
-
     if (ct->vmm != NULL) {
         curr_pd = ct->vmm->pgdir;
     }
-    load_page_dir(new_pd);
+
+    vmm_map_pages(new_pd, vaddr_first_page, num_pages, PTE_USER | PTE_WRITABLE);
     off_t off = simplefs_file_lseek(fd, phdr->p_offset, SEEK_SET);
     ASSERT(off == phdr->p_offset);
-    kprintf(KPL_DEBUG, "off=0x%x, vfp=0x%x, fsz=0x%x", off, vaddr_first_page, phdr->p_filesz);
-    simplefs_file_read(fd, vaddr_first_page, phdr->p_filesz);
-    for (int i = 0; i < 10; i++) {
-        kprintf(KPL_DEBUG, "{0x%X}", *((uint32_t *)vaddr_first_page + i));
-    }
+    // console_kprintf(KPL_DEBUG, "off=0x%x, vfp=0x%x, fsz=0x%x", off, vaddr_first_page, phdr->p_filesz);
+    void *buffer = kmalloc(phdr->p_filesz);
+    ASSERT(buffer != NULL);
+    simplefs_file_read(fd, buffer, phdr->p_filesz);
+
+    INT_STATUS old_status = disable_int();
+    load_page_dir(new_pd);
+    memcpy(buffer, vaddr_first_page, phdr->p_filesz);
     load_page_dir(curr_pd);
+    set_int_status(old_status);
+
+    kfree(buffer);
+
+    // for (int i = 0; i < 10; i++) {
+    //     console_kprintf(KPL_DEBUG, "{0x%X}", *((uint32_t *)vaddr_first_page + i));
+    // }
     return 0;
 }
 
@@ -181,6 +190,8 @@ static void process_destroy(task_t *task) {
 }
 
 task_t *process_execute(const char *filename, const char *name, int tty_no) {
+    task_t *t = NULL;
+
     // open target file
     int fd = simplefs_file_open(filename, 0);
     if (fd == -1) {
@@ -194,7 +205,7 @@ task_t *process_execute(const char *filename, const char *name, int tty_no) {
     }
 
     // create a task object
-    task_t *t = task_create(name, 31, start_process, ehdr.e_entry);
+    t = task_create(name, 31, start_process, ehdr.e_entry);
     if (t == NULL) {
         goto __process_execute_fail__;
     }
@@ -244,4 +255,14 @@ pid_t sys_getpid() {
 
 pid_t sys_getppid() {
     return get_current_thread()->parent_id;
+}
+
+pid_t sys_create_process(const char *filename, char * const argv[]) {
+    task_t *cp = get_current_thread();
+    task_t *t = process_execute(filename, filename, cp->tty_no);
+    pid_t ret = -1;
+    if (t != NULL) {
+        ret = t->task_id;
+    }
+    return ret;
 }

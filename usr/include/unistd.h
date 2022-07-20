@@ -98,4 +98,9 @@ pid_t getpid();
  */
 pid_t getppid();
 
+/**
+ * @brief create a children process
+ */
+pid_t create_process(const char *filename, char * const argv[]);
+
 #endif

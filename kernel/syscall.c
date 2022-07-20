@@ -51,7 +51,7 @@ void syscall_init() {
     // pid
     handlers[SYSCALL_GETPID] = sys_getpid;
     handlers[SYSCALL_GETPPID] = sys_getppid;
-
+    handlers[SYSCALL_CREATE_PROCESS] = sys_create_process;
     register_handler(0x80, syscall_handler);
 }
 

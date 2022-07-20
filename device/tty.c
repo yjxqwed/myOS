@@ -7,6 +7,8 @@
 
 #define KB_BUFFER_SIZE 64
 
+static int tty_ready = 0;
+
 struct TTY {
     // the console associated to this tty
     console_t *my_console;
@@ -108,6 +110,7 @@ void tty_init() {
     }
     select_console(0);
     kb_init();
+    tty_ready = 1;
 }
 
 
@@ -124,5 +127,12 @@ int tty_puts_curr(
     const char *str, size_t count,
     color_e bg, color_e fg
 ) {
-    return console_puts(ttys[get_curr_console_tty()].my_console, str, count, bg, fg, True);
+    if (!tty_ready) {
+        return 0;
+    }
+    int tty_no = get_curr_console_tty();
+    if (tty_no < 0 || tty_no >= NR_TTY) {
+        return 0;
+    }
+    return console_puts_nolock(ttys[tty_no].my_console, str, count, bg, fg, True);
 }

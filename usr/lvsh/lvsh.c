@@ -37,6 +37,9 @@ void lvsh(void) {
     while (1) {
         printf("$> ");
         int ok = lvsh_getline(line);
+        if (ok == 0) {
+            continue;
+        }
         if (strcmp(line, "ls") == 0) {
             stat_t *buffer = malloc(4096 * sizeof(stat_t));
             int nfiles = list_files(buffer);
@@ -54,6 +57,9 @@ void lvsh(void) {
             printf("ppid: %d\n", ppid);
         } else {
             printf("Your input: [%d][%s]\n", ok, line);
+            pid_t cpid = create_process(line, NULL);
+            MAGICBP
+            printf("cpid = %d\n", cpid);
         }
     }
 }

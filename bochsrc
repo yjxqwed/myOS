@@ -28,4 +28,4 @@ error: action=report
 
 clock: sync=realtime
 
-gdbstub: enabled=0 port=1234, text_base=0, data_base=0, bss_base=0
+# gdbstub: enabled=1 port=1234, text_base=0, data_base=0, bss_base=0

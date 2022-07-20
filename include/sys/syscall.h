@@ -20,7 +20,8 @@ enum {
     SYSCALL_ARG2,      // syscalls after this require 2 arguments
     SYSCALL_OPEN,
     SYSCALL_STAT,
-    
+    SYSCALL_CREATE_PROCESS,
+
     SYSCALL_ARG3,      // syscalls after this require 3 arguments
     SYSCALL_READ,
     SYSCALL_WRITE,

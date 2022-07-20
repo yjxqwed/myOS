@@ -271,6 +271,17 @@ static inline uint32_t scr3() {
     return cr3;
 }
 
+static inline uint32_t scr2() {
+    uint32_t cr2;
+    __asm_volatile (
+        "mov %0, cr2"
+        : "=r"(cr2)
+        :
+        :
+    );
+    return cr2;
+}
+
 static inline void invlpg(void *va) {
     __asm_volatile (
         "invlpg [%0]"
