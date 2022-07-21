@@ -74,4 +74,9 @@ void console_set_cursor(console_t *cons, int row, int col);
  */
 void set_video_start_row(uint32_t row);
 
+/**
+ * @brief clear the console
+ */
+void clear_screen(console_t *cons);
+void clear_curr_console();
 #endif

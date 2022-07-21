@@ -128,3 +128,7 @@ pid_t getppid() {
 pid_t create_process(const char *filename, char * const argv[]) {
     return _syscall2(SYSCALL_CREATE_PROCESS, filename, argv);
 }
+
+void clear() {
+    _syscall0(SYSCALL_CLS); 
+}

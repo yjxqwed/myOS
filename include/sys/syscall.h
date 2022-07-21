@@ -9,6 +9,7 @@ enum {
     SYSCALL_ARG0 = 0,  // syscalls after this require 0 arguments
     SYSCALL_GETPID,
     SYSCALL_GETPPID,
+    SYSCALL_CLS,
 
     SYSCALL_ARG1,      // syscalls after this require 1 argument
     SYSCALL_BRK,

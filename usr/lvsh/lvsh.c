@@ -49,6 +49,8 @@ void lvsh(void) {
         } else if (strcmp(line, "ppid") == 0) {
             pid_t ppid = getppid();
             printf("ppid: %d\n", ppid);
+        } else if (strcmp(line, "clear") == 0) {
+            clear();
         } else {
             printf("Your input: [%d][%s]\n", ok, line);
             pid_t cpid = create_process(line, NULL);

@@ -103,4 +103,9 @@ pid_t getppid();
  */
 pid_t create_process(const char *filename, char * const argv[]);
 
+/**
+ * @brief clear current screen
+ */
+void clear();
+
 #endif

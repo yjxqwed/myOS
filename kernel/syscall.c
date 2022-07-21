@@ -34,6 +34,11 @@ static void *syscall_handler(isrp_t *p) {
     }
 }
 
+static void *sys_clear() {
+    clear_curr_console();
+    return NULL;
+}
+
 void syscall_init() {
     // file system
     handlers[SYSCALL_OPEN] = sys_open;
@@ -52,6 +57,8 @@ void syscall_init() {
     handlers[SYSCALL_GETPID] = sys_getpid;
     handlers[SYSCALL_GETPPID] = sys_getppid;
     handlers[SYSCALL_CREATE_PROCESS] = sys_create_process;
+    // clear
+    handlers[SYSCALL_CLS] = sys_clear;
     register_handler(0x80, syscall_handler);
 }
 

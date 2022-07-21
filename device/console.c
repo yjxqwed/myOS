@@ -70,10 +70,30 @@ static inline void clear_row(console_t *cons, int row) {
     }
 }
 
-static inline void clear_screen(console_t *cons) {
+static void __set_cursor(console_t *cons) {
+    if (current_console == -1 || (cons != &(consoles[current_console]))) {
+        return;
+    }
+    int pos = (
+        cons->cursor_row_base + cons->cursor_row
+    ) * CONSOLE_MAXCOL + cons->cursor_col;
+    outportb(0x3d4, 0x0f);
+    outportb(0x3d5, (uint8_t)(pos & 0xff));
+    outportb(0x3d4, 0x0e);
+    outportb(0x3d5, (uint8_t)((pos >> 8) & 0xff));
+}
+
+void clear_screen(console_t *cons) {
     for (int i = 0; i < CONSOLE_MAXROW; i++) {
         clear_row(cons, i);
     }
+    cons->cursor_col = 0;
+    cons->cursor_row = 0;
+    __set_cursor(cons);
+}
+
+void clear_curr_console() {
+    clear_screen(consoles + current_console);
 }
 
 // scroll up by one line
@@ -94,19 +114,6 @@ void console_get_cursor(console_t *cons, int *row, int *col) {
     mutex_lock(&(cons->cons_mutex));
     __get_cursor(cons, row, col);
     mutex_unlock(&(cons->cons_mutex));
-}
-
-static void __set_cursor(console_t *cons) {
-    if (current_console == -1 || (cons != &(consoles[current_console]))) {
-        return;
-    }
-    int pos = (
-        cons->cursor_row_base + cons->cursor_row
-    ) * CONSOLE_MAXCOL + cons->cursor_col;
-    outportb(0x3d4, 0x0f);
-    outportb(0x3d5, (uint8_t)(pos & 0xff));
-    outportb(0x3d4, 0x0e);
-    outportb(0x3d5, (uint8_t)((pos >> 8) & 0xff));
 }
 
 void console_set_cursor(console_t *cons, int row, int col) {
