@@ -3,9 +3,11 @@
 #include <thread/sync.h>
 #include <arch/x86.h>
 #include <common/debug.h>
+#include <common/utils.h>
 #include <lib/kprintf.h>
 
 #define KB_BUFFER_SIZE 64
+#define SYS_READ_BUF_SIZE 128
 
 static int tty_ready = 0;
 
@@ -19,6 +21,12 @@ struct TTY {
     uint32_t kb_inbuf_head;
     size_t kb_inbuf_num;
     sem_t kb_sem;
+
+    // sys_read_buf
+    char rbuf[SYS_READ_BUF_SIZE];
+    uint32_t rbuf_head;
+    size_t rbuf_num;
+    mutex_t rbuf_lock;
 };
 
 static tty_t ttys[NR_TTY];
@@ -44,11 +52,48 @@ void tty_echo_char(console_t *con, key_info_t ki) {
     }
 }
 
+static key_info_t __tty_getkey(tty_t *tty) {
+    sem_down(&(tty->kb_sem));
+    INT_STATUS old_status = disable_int();
+    ASSERT(tty->kb_inbuf_num > 0);
+    ASSERT(tty->kb_inbuf_num == tty->kb_sem.val + 1);
+    key_info_t ki = tty->kb_in_buffer[tty->kb_inbuf_head];
+    tty->kb_inbuf_head = (tty->kb_inbuf_head + 1) % KB_BUFFER_SIZE;
+    (tty->kb_inbuf_num)--;
+    set_int_status(old_status);
+    return ki;
+}
+
+// put chars into tty->rbuf until '\n' or full
+static void tty_put_rbuf(tty_t *tty) {
+    ASSERT(0 == tty->rbuf_num);
+
+    while (1) {
+        key_info_t ki = __tty_getkey(tty);
+        key_code_e keycode = __keycode(ki);
+        if (KEYCODE_BACKSPACE == keycode) {
+            if (tty->rbuf_num > 0) {
+                (tty->rbuf_num)--;
+            }
+        } else {
+            char c = get_printable_char(ki);
+            if ('\0' == c) {
+                continue;
+            }
+            int rbuf_tail = (tty->rbuf_head + tty->rbuf_num) % SYS_READ_BUF_SIZE;
+            tty->rbuf[rbuf_tail] = c;
+            (tty->rbuf_num)++;
+            if ('\n' == c || SYS_READ_BUF_SIZE == tty->rbuf_num) {
+                break;
+            }
+        }
+    }
+}
+
 void tty_putkey(key_info_t ki) {
     ASSERT(get_int_status() == INTERRUPT_OFF);
-    // kprintf(KPL_DEBUG, "{ki:%X}", ki);
 
-    // ALT-[1-6] is used to change TTY
+    // CTRL-[1-6] is used to change TTY
     if (__keyflags(ki) == (KIF_CTRL)) {
         key_code_e keycode = __keycode(ki);
         if (keycode >= KEYCODE_ALPHA1 && keycode <= KEYCODE_ALPHA6) {
@@ -58,11 +103,10 @@ void tty_putkey(key_info_t ki) {
     }
 
     int tty_no = get_curr_console_tty();
-    if (tty_no == -1) {
-        return;
-    }
-
+    ASSERT(0 <= tty_no && tty_no < NR_TTY);
     tty_t *tty = &(ttys[tty_no]);
+
+    // kb buffer
     if (tty->kb_inbuf_num == KB_BUFFER_SIZE) {
         return;
     }
@@ -84,28 +128,52 @@ void tty_flush_key_buffer(int tty_no) {
 
 key_info_t tty_getkey(int tty_no) {
     tty_t *tty = &(ttys[tty_no]);
-    sem_down(&(tty->kb_sem));
-    INT_STATUS old_status = disable_int();
-    ASSERT(tty->kb_inbuf_num > 0);
-    ASSERT(tty->kb_inbuf_num == tty->kb_sem.val + 1);
-    key_info_t ki = tty->kb_in_buffer[tty->kb_inbuf_head];
-    tty->kb_inbuf_head = (tty->kb_inbuf_head + 1) % KB_BUFFER_SIZE;
-    (tty->kb_inbuf_num)--;
-    set_int_status(old_status);
-    return ki;
+    return __tty_getkey(tty);
 }
 
 key_info_t tty_getkey_curr() {
     tty_getkey(get_current_thread()->tty_no);
 }
 
+int tty_read(int tty_no, char *buf, size_t count) {
+    if (tty_no < 0 || tty_no >= NR_TTY) {
+        return -1;
+    }
+    tty_t *tty = &(ttys[tty_no]);
+
+    mutex_lock(&(tty->rbuf_lock));
+    if (0 == tty->rbuf_num) {
+        tty_put_rbuf(tty);
+    }
+
+    ASSERT(tty->rbuf_num > 0);
+    count = MIN(count, tty->rbuf_num);
+    for (uint32_t i = 0; i < count; i++) {
+        buf[i] = tty->rbuf[(tty->rbuf_head + i) % SYS_READ_BUF_SIZE];
+    }
+    tty->rbuf_head = (tty->rbuf_head + count) % SYS_READ_BUF_SIZE;
+    tty->rbuf_num -= count;
+    mutex_unlock(&(tty->rbuf_lock));
+
+    return count;
+}
+
+int tty_read_curr(char *buf, size_t count) {
+    return tty_read(get_current_thread()->tty_no, buf, count);
+}
 
 void tty_init() {
     for (int i = 0; i < NR_TTY; i++) {
         ttys[i].tty_no = i;
+        // init kb_infbuf
         ttys[i].kb_inbuf_head = 0;
         ttys[i].kb_inbuf_num = 0;
         sem_init(&(ttys[i].kb_sem), 0);
+        // init rbuf
+        ttys[i].rbuf_head = 0;
+        ttys[i].rbuf_num = 0;
+        mutex_init(&(ttys[i].rbuf_lock));
+        // init console
         ttys[i].my_console = init_console(i);
     }
     select_console(0);
@@ -134,5 +202,5 @@ int tty_puts_curr(
     if (tty_no < 0 || tty_no >= NR_TTY) {
         return 0;
     }
-    return console_puts_nolock(ttys[tty_no].my_console, str, count, bg, fg, True);
+    return console_puts(ttys[tty_no].my_console, str, count, bg, fg, True);
 }

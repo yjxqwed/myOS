@@ -23,6 +23,12 @@ key_info_t tty_getkey(int tty_no);
 // get a keyinfo from tty (the tty of the process which needs the keyinfo)
 key_info_t tty_getkey_curr();
 
+// read up to count chars from tty <tty_no>
+int tty_read(int tty_no, char *buf, size_t count);
+
+// read up to count chars from current tty
+int tty_read_curr(char *buf, size_t count);
+
 /**
  * @brief print str to the console; this function
  *        should be called by sys_write only

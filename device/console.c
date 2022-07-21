@@ -165,7 +165,6 @@ static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
         } case '\r': {
             break;
         } default: {
-            // MAGICBP;
             *p = __disp_char(c, bg, fg);
             (cons->cursor_col)++;
             break;

@@ -14,22 +14,16 @@
 
 // get line from stdin
 static int lvsh_getline(char* line) {
-    char c = 0;
-    int id = 0;
-    while (1) {
-        if (-1 == read(STDIN_FILENO, &c, 1)) {
-            return -1;
-        }
-        if (c == '\b' && id > 0) {
-            id--;
-        } else if (c == '\n') {
-            line[id] = '\0';
-            break;
-        } else {
-            line[id++] = c;
+    int nrd = read(STDIN_FILENO, line, LINE_LEN);
+
+    if (nrd > 0) {
+        if (line[nrd - 1] == '\n') {
+            nrd--;
+            line[nrd] = '\0';
         }
     }
-    return id;
+
+    return nrd;
 }
 
 void lvsh(void) {
@@ -37,7 +31,7 @@ void lvsh(void) {
     while (1) {
         printf("$> ");
         int ok = lvsh_getline(line);
-        if (ok == 0) {
+        if (ok <= 0) {
             continue;
         }
         if (strcmp(line, "ls") == 0) {
@@ -58,7 +52,6 @@ void lvsh(void) {
         } else {
             printf("Your input: [%d][%s]\n", ok, line);
             pid_t cpid = create_process(line, NULL);
-            MAGICBP
             printf("cpid = %d\n", cpid);
         }
     }

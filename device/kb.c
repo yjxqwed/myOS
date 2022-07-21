@@ -209,12 +209,12 @@ char get_printable_char(key_info_t ki) {
     if (keycode == KEYCODE_ENTER) {
         return '\n';
     }
-    if (keycode == KEYCODE_BACKSPACE) {
-        return '\b';
-    }
-    if (keycode == KEYCODE_TAB) {
-        return '\t';
-    }
+    // if (keycode == KEYCODE_BACKSPACE) {
+    //     return '\b';
+    // }
+    // if (keycode == KEYCODE_TAB) {
+    //     return '\t';
+    // }
     if (keycode == KEYCODE_NONE || keycode > KEYCODE_RIGHTBRACKET) {
         return '\0';
     }

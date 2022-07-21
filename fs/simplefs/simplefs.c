@@ -755,17 +755,7 @@ int sys_close(int fd) {
 int sys_read(int fd, void *buffer, size_t count) {
     kprintf(KPL_DEBUG, "sys_read: fd=%d\n", fd);
     if (fd == FD_STDIN) {
-        int idx = 0;
-        char *buff = (char *)buffer;
-        while (idx < count) {
-            // sys_read will only get printable chars, \n and \b
-            char c = get_printable_char(tty_getkey_curr());
-            if (c == '\0') {
-                continue;
-            }
-            buff[idx++] = c;
-        }
-        return idx;
+        return tty_read_curr((char *)buffer, count);
     } else if (fd == FD_STDOUT || fd == FD_STDERR) {
         return -1;
     } else {
