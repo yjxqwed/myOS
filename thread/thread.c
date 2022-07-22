@@ -343,11 +343,11 @@ void thread_join(task_t *task) {
 
 void thread_block_self(task_status_e status) {
     ASSERT(get_int_status() == INTERRUPT_OFF);
-    ASSERT(
-        status == TASK_BLOCKED ||
-        status == TASK_SUSPENDING ||
-        status == TASK_WAITING
-    );
+    // ASSERT(
+    //     status == TASK_BLOCKED ||
+    //     status == TASK_SUSPENDING ||
+    //     status == TASK_WAITING
+    // );
     current_task->status = status;
     ASSERT(!list_find(&task_ready_list, &(current_task->general_tag)));
     schedule();
@@ -355,11 +355,11 @@ void thread_block_self(task_status_e status) {
 
 void thread_unblock(task_t *task) {
     ASSERT(get_int_status() == INTERRUPT_OFF);
-    ASSERT(
-        task->status == TASK_BLOCKED ||
-        task->status == TASK_SUSPENDING ||
-        task->status == TASK_WAITING
-    );
+    // ASSERT(
+    //     task->status == TASK_BLOCKED ||
+    //     task->status == TASK_SUSPENDING ||
+    //     task->status == TASK_WAITING
+    // );
     task_push_back_ready(task);
     task->status = TASK_READY;
 }
@@ -431,16 +431,57 @@ void task_assign_tty(task_t *task, int tty_no) {
 }
 
 pid_t pid_alloc() {
+    INT_STATUS old_status = disable_int();
     pid_t pid = bitmap_scan(&pid_btmp, 1);
     if (pid != -1) {
         bitmap_set(&pid_btmp, pid, 1);
     }
+    set_int_status(old_status);
     return pid;
 }
 
 void pid_free(pid_t pid) {
-    if (pid == -1) {
-        return;
+    INT_STATUS old_status = disable_int();
+    if (pid > -1) {
+        bitmap_set(&pid_btmp, pid, 0);
     }
-    bitmap_set(&pid_btmp, pid, 0);
+    set_int_status(old_status);
+}
+
+task_t *pid2task(pid_t pid) {
+    INT_STATUS old_status = disable_int();
+    list_node_t *p;
+    list_t *l = &task_all_list;
+    task_t *ret = NULL;
+    __list_for_each(l, p) {
+        task_t *t = __container_of(task_t, list_all_tag, p);
+        if (t->task_id == pid) {
+            ret = t;
+            break;
+        }
+    }
+    set_int_status(old_status);
+    return ret;
+}
+
+int sys_ps(task_info_t *tis, size_t count) {
+    INT_STATUS old_status = disable_int();
+    size_t i = 0;
+    list_node_t *p;
+    list_t *l = &task_all_list;
+    __list_for_each(l, p) {
+        if (i >= count) {
+            break;
+        }
+        task_t *t = __container_of(task_t, list_all_tag, p);
+        tis[i].task_id = t->task_id;
+        tis[i].parent_id = t->parent_id;
+        tis[i].status = t->status;
+        tis[i].elapsed_ticks = t->elapsed_ticks;
+        tis[i].tty_no = t->tty_no;
+        strcpy(t->task_name, tis[i].task_name);
+        i++;
+    }
+    set_int_status(old_status);
+    return i;
 }

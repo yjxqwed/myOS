@@ -1,6 +1,5 @@
 #include <sys/syscall.h>
 #include <arch/x86.h>
-#include <common/types.h>
 #include <unistd.h>
 #include <stdio.h>
 
@@ -131,4 +130,8 @@ pid_t create_process(const char *filename, char * const argv[]) {
 
 void clear() {
     _syscall0(SYSCALL_CLS); 
+}
+
+int ps(task_info_t *tis, size_t count) {
+    return _syscall2(SYSCALL_PS, tis, count);
 }

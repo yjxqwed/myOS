@@ -7,6 +7,8 @@ typedef struct Task task_t;
 #include <lib/list.h>
 #include <arch/x86.h>
 #include <mm/vmm.h>
+
+#include <thread/task_info.h>
 // #include <fs/myfs/fs_types.h>
 
 #define MAX_TASKS 256
@@ -14,20 +16,6 @@ typedef struct Task task_t;
 // thread_func_t is a function pointer to a function
 // that accepts void * and returns void *
 typedef void *(* thread_func_t)(void *);
-
-typedef enum TaskStatus {
-    TASK_RUNNING,
-    TASK_READY,
-    TASK_BLOCKED,
-    TASK_WAITING,
-    TASK_SUSPENDING,
-    TASK_STOPPED,
-    TASK_FINISHED,
-    TASK_DEAD,
-} task_status_e;
-
-
-#define TASK_NAME_LEN 16
 
 // the task struct
 struct Task {
@@ -72,6 +60,9 @@ struct Task {
 
     // true if this is a user process
     bool_t is_user_process;
+
+    // exit status used by parent
+    uint8_t exit_status;
 
     // a magic number to guard this struct
     uint32_t stack_guard;
@@ -145,5 +136,15 @@ pid_t pid_alloc();
  * @brief free an allocated pid
  */
 void pid_free(pid_t pid);
+
+/**
+ * @brief find task_t by pid
+ */
+task_t *pid2task(pid_t pid);
+
+/**
+ * @brief get tasks' information
+ */
+int sys_ps(task_info_t *tis, size_t count);
 
 #endif

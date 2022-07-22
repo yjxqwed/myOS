@@ -51,6 +51,20 @@ void lvsh(void) {
             printf("ppid: %d\n", ppid);
         } else if (strcmp(line, "clear") == 0) {
             clear();
+        } else if (strcmp(line, "ps") == 0) {
+            task_info_t *tis = malloc(10 * sizeof(task_info_t));
+            int nps = ps(tis, 10);
+            printf("PID, PPID, TIME, TTY, STATUS, NAME\n");
+            for (int i = 0; i < nps; i++) {
+                printf(
+                    "%d, %d, %d, %d, %d, %s\n",
+                    tis[i].task_id, tis[i].parent_id,
+                    tis[i].elapsed_ticks, tis[i].tty_no,
+                    tis[i].status, tis[i].task_name
+                );
+            }
+            printf("%d tasks printed.\n", nps);
+            free(tis);
         } else {
             printf("Your input: [%d][%s]\n", ok, line);
             pid_t cpid = create_process(line, NULL);

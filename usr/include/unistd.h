@@ -6,6 +6,7 @@
  */
 
 #include <common/types.h>
+#include <thread/task_info.h>
 #include <fs/fs.h>
 
 #define	STDIN_FILENO    0  /* Standard input.  */
@@ -107,5 +108,14 @@ pid_t create_process(const char *filename, char * const argv[]);
  * @brief clear current screen
  */
 void clear();
+
+/**
+ * @brief get information of all tasks
+ * 
+ * @param tis buffer
+ * @param count size of the buffer
+ * @return int number of ps
+ */
+int ps(task_info_t *tis, size_t count);
 
 #endif

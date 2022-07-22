@@ -266,3 +266,28 @@ pid_t sys_create_process(const char *filename, char * const argv[]) {
     }
     return ret;
 }
+
+void sys_exit(int status) {
+    task_t *cp = get_current_thread();
+    pid_t ppid = cp->parent_id;
+    ASSERT(ppid != -1);
+    cp->exit_status = status;
+
+    // reclaim all resources
+
+    // let init adopt all child processes of cp
+
+    task_t *pp = pid2task(ppid);
+    ASSERT(pp != NULL);
+
+    INT_STATUS old_status = disable_int();
+    if (TASK_WAITING == pp->status) {
+        thread_unblock(pp);
+    }
+    thread_block_self(TASK_ZOMBIED);
+    set_int_status(old_status);
+}
+
+pid_t sys_wait(int *status) {
+    task_t *cp = get_current_thread();
+}
