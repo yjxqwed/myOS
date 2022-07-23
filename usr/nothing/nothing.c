@@ -5,6 +5,6 @@ int main() {
     pid_t pid = getpid();
     pid_t ppid = getppid();
     printf("nothing: pid=%d, ppid=%d\n", pid, ppid);
-    // while (1) {}
+    _exit(0);
     return 0;
 }

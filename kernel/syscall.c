@@ -53,11 +53,13 @@ void syscall_init() {
     handlers[SYSCALL_BRK] = sys_brk;
     // sleep
     handlers[SYSCALL_SLEEP] = sys_sleep;
-    // pid
+    // process
     handlers[SYSCALL_GETPID] = sys_getpid;
     handlers[SYSCALL_GETPPID] = sys_getppid;
     handlers[SYSCALL_CREATE_PROCESS] = sys_create_process;
     handlers[SYSCALL_PS] = sys_ps;
+    handlers[SYSCALL_EXIT] = sys_exit;
+    handlers[SYSCALL_WAIT] = sys_wait;
     // clear
     handlers[SYSCALL_CLS] = sys_clear;
     register_handler(0x80, syscall_handler);

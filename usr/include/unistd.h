@@ -118,4 +118,14 @@ void clear();
  */
 int ps(task_info_t *tis, size_t count);
 
+/**
+ * @brief exit with status
+ */
+void _exit(int status);
+
+/**
+ * @brief wait for child processes
+ */
+pid_t wait(int *status);
+
 #endif

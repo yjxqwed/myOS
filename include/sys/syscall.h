@@ -17,6 +17,8 @@ enum {
     SYSCALL_CLOSE,
     SYSCALL_UNLINK,
     SYSCALL_LIST_FILES,
+    SYSCALL_EXIT,
+    SYSCALL_WAIT,
 
     SYSCALL_ARG2,      // syscalls after this require 2 arguments
     SYSCALL_OPEN,

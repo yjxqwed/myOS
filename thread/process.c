@@ -267,6 +267,23 @@ pid_t sys_create_process(const char *filename, char * const argv[]) {
     return ret;
 }
 
+static void reclaim_resources(task_t *t) {
+    ASSERT(t != NULL);
+    // mem
+    destroy_vmm_struct(t->vmm);
+    kfree(t->vmm);
+    t->vmm = NULL;
+    // close all open fds
+    ASSERT(t->fd_table != NULL);
+    for (int fd = 3; fd < NR_OPEN; fd++) {
+        if (t->fd_table[fd] != -1) {
+            simplefs_file_close(fd);
+        }
+    }
+    kfree(t->fd_table);
+    t->fd_table = NULL;
+}
+
 void sys_exit(int status) {
     task_t *cp = get_current_thread();
     pid_t ppid = cp->parent_id;
@@ -274,20 +291,22 @@ void sys_exit(int status) {
     cp->exit_status = status;
 
     // reclaim all resources
+    reclaim_resources(cp);
 
     // let init adopt all child processes of cp
+    // TODO
 
+    // signal parent if necessary
     task_t *pp = pid2task(ppid);
     ASSERT(pp != NULL);
-
     INT_STATUS old_status = disable_int();
     if (TASK_WAITING == pp->status) {
         thread_unblock(pp);
     }
     thread_block_self(TASK_ZOMBIED);
-    set_int_status(old_status);
 }
 
 pid_t sys_wait(int *status) {
     task_t *cp = get_current_thread();
+    return -1;
 }

@@ -135,3 +135,11 @@ void clear() {
 int ps(task_info_t *tis, size_t count) {
     return _syscall2(SYSCALL_PS, tis, count);
 }
+
+void _exit(int status) {
+    _syscall1(SYSCALL_EXIT, status);
+}
+
+pid_t wait(int *status) {
+    return _syscall1(SYSCALL_WAIT, status);
+}

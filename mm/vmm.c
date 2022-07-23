@@ -88,7 +88,23 @@ void destroy_vmm_struct(vmm_t *vmm) {
         return;
     }
     // TODO: delete the address space
-    k_free_pages(vmm->pgdir, 1);
+    // for (int i = __pde_idx(0); i < __pde_idx(KERNEL_BASE); i++) {
+    //     pde_t pde = vmm->pgdir[i];
+    //     if (pde & PDE_PRESENT) {
+    //         pte_t *pt = (pte_t *)__va(__pg_start_addr(pde));
+    //         for (int j = 0; j < NRPTE; j++) {
+    //             pte_t pte = pt[j];
+    //             if (pte & PTE_PRESENT) {
+    //                 uintptr_t page_pa = pte & PG_START_ADDRESS_MASK;
+    //                 ppage_t *p = pa2page(page_pa);
+    //                 page_decref(p);
+    //             }
+    //         }
+    //         ppage_t *ptp = kva2page(pt);
+    //         page_decref(ptp);
+    //     }
+    // }
+    // destroy_pd(vmm->pgdir);
 }
 
 void *sys_brk(uintptr_t __addr) {

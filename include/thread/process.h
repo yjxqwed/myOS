@@ -17,5 +17,6 @@ task_t *process_execute(const char *filename, const char *name, int tty_no);
 pid_t sys_getpid();
 pid_t sys_getppid();
 pid_t sys_create_process(const char *filename, char * const argv[]);
-
+void sys_exit(int status);
+pid_t sys_wait(int *status);
 #endif
