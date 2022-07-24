@@ -65,6 +65,10 @@ void lvsh(void) {
             }
             printf("%d tasks printed.\n", nps);
             free(tis);
+        } else if (strcmp(line, "mm") == 0) {
+            mm_info_t mm_info;
+            mm(&mm_info);
+            printf("MEM: total=%d, used=%d, free=%d\n", mm_info.total_mem_installed, mm_info.used_mem, mm_info.free_mem);
         } else if (strcmp(line, "exit") == 0) {
             break;
         } else {

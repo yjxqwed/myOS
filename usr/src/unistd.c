@@ -143,3 +143,7 @@ void _exit(int status) {
 pid_t wait(int *status) {
     return _syscall1(SYSCALL_WAIT, status);
 }
+
+int mm(mm_info_t *mm_info) {
+    return _syscall1(SYSCALL_MM, mm_info);
+}

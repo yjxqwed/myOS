@@ -10,6 +10,7 @@
 #include <arch/x86.h>
 #include <list.h>
 #include <thread/sync.h>
+#include <mm/mm_info.h>
 
 // high mem starts at 1MiB
 #define HIGH_MEM_BASE 0x00100000
@@ -128,5 +129,7 @@ void load_page_dir(pde_t *pd);
 
 void print_page(ppage_t *p);
 void pmem_print();
+
+int sys_mm(mm_info_t *mm_info);
 
 #endif

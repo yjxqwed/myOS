@@ -237,7 +237,7 @@ void pmem_init() {
     kprintf(KPL_DEBUG, "nppages=0x%x\nfree_page=0x%x\n", nppages, fpn);
     // These pages will never be freed or reused!
     for (int i = 0; i < fpn; i++) {
-        pmap[i].num_ref = 0;
+        pmap[i].num_ref = 1;
         mutex_init(&(pmap[i].page_lock));
         bitmap_set(&pmem_btmp, i, 1);
     }
@@ -248,7 +248,7 @@ void pmem_init() {
     }
     // These pages are reserved by machine (known from mutiboot memory map)
     for (int i = max_high_pfn + 1; i < nppages; i++) {
-        pmap[i].num_ref = 0;
+        pmap[i].num_ref = 1;
         mutex_init(&(pmap[i].page_lock));
         bitmap_set(&pmem_btmp, i, 1);
     }
@@ -511,4 +511,21 @@ void load_page_dir(pde_t *pd) {
     } else {
         lcr3(__pa(pd));
     }
+}
+
+
+int sys_mm(mm_info_t *mm_info) {
+    mm_info->total_mem_installed = nppages;
+    mm_info->used_mem = 0;
+    mm_info->free_mem = 0;
+    mutex_lock(&pmem_lock);
+    for (int i = 0; i < nppages; i++) {
+        if (0 == pmap[i].num_ref) {
+            mm_info->free_mem++;
+        } else {
+            mm_info->used_mem++;
+        }
+    }
+    mutex_unlock(&pmem_lock);
+    return 0;
 }

@@ -8,6 +8,7 @@
 #include <common/types.h>
 #include <thread/task_info.h>
 #include <fs/fs.h>
+#include <mm/mm_info.h>
 
 #define	STDIN_FILENO    0  /* Standard input.  */
 #define	STDOUT_FILENO   1  /* Standard output.  */

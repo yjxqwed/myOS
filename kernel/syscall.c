@@ -49,8 +49,9 @@ void syscall_init() {
     handlers[SYSCALL_UNLINK] = sys_unlink;
     handlers[SYSCALL_STAT] = sys_stat;
     handlers[SYSCALL_LIST_FILES] = sys_list_files;
-    // extend heap
+    // memory
     handlers[SYSCALL_BRK] = sys_brk;
+    handlers[SYSCALL_MM] = sys_mm;
     // sleep
     handlers[SYSCALL_SLEEP] = sys_sleep;
     // process
