@@ -142,6 +142,12 @@ void pid_free(pid_t pid);
  */
 task_t *pid2task(pid_t pid);
 
+
+/**
+ * @brief find a child process by pid
+ */
+task_t *find_child_process(pid_t pid);
+
 /**
  * @brief get tasks' information
  */

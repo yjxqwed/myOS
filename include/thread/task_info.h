@@ -4,14 +4,18 @@
 #include <common/types.h>
 
 typedef enum TaskStatus {
+    // task is running on the cpu
     TASK_RUNNING,
+    // task is ready to run on the cpu
     TASK_READY,
+    // task is blocked by some external task (e.g. a disk io)
     TASK_BLOCKED,
+    // task is waiting for its child process(es)
     TASK_WAITING,
-    TASK_SUSPENDING,
-    TASK_STOPPED,
     TASK_FINISHED,
-    TASK_DEAD,
+    // task has called exited
+    TASK_HANGING,
+    // task's parent process doesn't wait for it
     TASK_ZOMBIED
 } task_status_e;
 

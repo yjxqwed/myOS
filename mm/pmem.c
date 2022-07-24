@@ -455,7 +455,7 @@ static pte_t *pgdir_walk(pde_t *pgdir, const void *va, bool_t create) {
             if (fp == NULL) {
                 return NULL;
             }
-            // page_incref(fp);
+            page_incref(fp);
             pg_tab = page2kva(fp);
             pgdir[pde_idx] = (pde_t)__pg_entry(
                 __pa(pg_tab), PDE_PRESENT | PDE_WRITABLE | PDE_USER

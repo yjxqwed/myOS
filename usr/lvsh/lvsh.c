@@ -65,10 +65,15 @@ void lvsh(void) {
             }
             printf("%d tasks printed.\n", nps);
             free(tis);
+        } else if (strcmp(line, "exit") == 0) {
+            break;
         } else {
             printf("Your input: [%d][%s]\n", ok, line);
             pid_t cpid = create_process(line, NULL);
             printf("cpid = %d\n", cpid);
+            int cexit_stat = -1;
+            cpid = wait(&cexit_stat);
+            printf("cpid = %d, ces = %d\n", cpid, cexit_stat);
         }
     }
 }

@@ -303,10 +303,26 @@ void sys_exit(int status) {
     if (TASK_WAITING == pp->status) {
         thread_unblock(pp);
     }
-    thread_block_self(TASK_ZOMBIED);
+    thread_block_self(TASK_HANGING);
 }
 
 pid_t sys_wait(int *status) {
-    task_t *cp = get_current_thread();
-    return -1;
+    pid_t ret = -1;
+    task_t *pp = get_current_thread();
+    task_t *cp = find_child_process(pp->task_id);
+    if (cp != NULL) {
+        while (1) {
+            if (TASK_HANGING == cp->status) {
+                *status = cp->exit_status;
+                ret = cp->task_id;
+                task_destroy(cp);
+                break;
+            } else {
+                INT_STATUS old_status = disable_int();
+                thread_block_self(TASK_WAITING);
+                set_int_status(old_status);
+            }
+        }
+    }
+    return ret;
 }

@@ -13,7 +13,7 @@ LD_PARAMS = -m elf_i386
 # objects
 SRC = $(USR_ROOT)/src
 
-usr_lib_objs = $(SRC)/unistd.elf32 $(SRC)/stdio.elf32 $(SRC)/malloc.elf32 $(SRC)/string.elf32
+usr_lib_objs = $(SRC)/_start.elf32 $(SRC)/unistd.elf32 $(SRC)/stdio.elf32 $(SRC)/malloc.elf32 $(SRC)/string.elf32
 
 objs = $(NAME).elf32
 

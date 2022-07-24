@@ -142,7 +142,15 @@ void task_destroy(task_t *task) {
     if (task == NULL) {
         return;
     }
+    ASSERT(task->is_user_process);
+    ASSERT(task->fd_table == NULL);
+    ASSERT(task->vmm == NULL);
+    INT_STATUS old_status = disable_int();
+    list_erase(&(task->list_all_tag));
+    ASSERT(task->general_tag.prev == NULL && task->general_tag.next == NULL);
+    // list_erase(&(task->general_tag));
     pid_free(task->task_id);
+    set_int_status(old_status);
     k_free_pages(task, 1);
 }
 
@@ -355,13 +363,12 @@ void thread_block_self(task_status_e status) {
 
 void thread_unblock(task_t *task) {
     ASSERT(get_int_status() == INTERRUPT_OFF);
-    // ASSERT(
-    //     task->status == TASK_BLOCKED ||
-    //     task->status == TASK_SUSPENDING ||
-    //     task->status == TASK_WAITING
-    // );
-    task_push_back_ready(task);
+    ASSERT(!list_find(&task_ready_list, &(task->general_tag)));
+    ASSERT(task->status != TASK_HANGING);
+    ASSERT(task->status != TASK_ZOMBIED);
+    ASSERT(task->status != TASK_READY);
     task->status = TASK_READY;
+    task_push_back_ready(task);
 }
 
 task_t *get_current_thread() {
@@ -484,4 +491,22 @@ int sys_ps(task_info_t *tis, size_t count) {
     }
     set_int_status(old_status);
     return i;
+}
+
+task_t *find_child_process(pid_t pid) {
+    list_node_t *p;
+    list_t *l = &task_all_list;
+    task_t *ct = NULL;
+    INT_STATUS old_status = disable_int();
+    __list_for_each(l, p) {
+        task_t *t = __container_of(task_t, list_all_tag, p);
+        if (t->parent_id == pid) {
+            ct = t;
+            if (t->status == TASK_HANGING) {
+                break;
+            }
+        }
+    }
+    set_int_status(old_status);
+    return ct;
 }
