@@ -7,7 +7,7 @@ USR_ROOT = ..
 # build flags
 G_PARAMS = -Wall -m32 -I$(USR_ROOT)/include -I$(ROOT)/include \
            -nostdlib -fno-builtin -fno-exceptions -fno-leading-underscore \
-           -nostdinc -masm=intel -O3
+           -nostdinc -masm=intel -O3 -D KDEBUG
 LD_PARAMS = -m elf_i386
 
 # objects

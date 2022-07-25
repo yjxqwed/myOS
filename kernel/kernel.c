@@ -610,8 +610,8 @@ void kernelMain() {
     // extern void usr_test4();
     // process_execute(usr_test4, "usr_test4", 1);
     // extern void lvsh();
-    process_execute("lvsh", "lvsh", 1);
-    process_execute("lvsh", "lvsh", 2);
+    process_execute("lvsh", "lvsh", 1, 0, NULL);
+    process_execute("lvsh", "lvsh", 2, 0, NULL);
     // process_execute(lvsh, "lvsh2", 2);
     // process_execute(lvsh, "lvsh4", 4);
     // process_execute(lvsh, "lvsh5", 5);

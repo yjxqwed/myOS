@@ -63,6 +63,9 @@ void *malloc(size_t size) {
 }
 
 void free(void *ptr) {
+    if (ptr == NULL) {
+        return;
+    }
     free_blk_header_t *header = (free_blk_header_t *)((char *)ptr - SIZE_T_SIZE);
     free_blk_header_t *free_list_head = (free_blk_header_t *)heap_start;
     // add freed block to free list after head

@@ -6,6 +6,7 @@
 #include <myos.h>
 
 #include <lib/string.h>
+#include <lib/kprintf.h>
 
 /**
  * @brief Create a new page directory
@@ -47,7 +48,7 @@ int vmm_map_pages(pde_t *pd, uint32_t va, size_t np, uint32_t perm) {
 }
 
 
-int init_vmm_struct(vmm_t *vmm) {
+int init_vmm_struct(vmm_t *vmm, int argc, char * const argv[]) {
     // ASSERT(vmm != NULL);
 
     int ret = -1;
@@ -63,7 +64,20 @@ int init_vmm_struct(vmm_t *vmm) {
             (ret = page_map(vmm->pgdir, USER_STACK_BOTTOM - 1 * PAGE_SIZE, p, PTE_USER | PTE_WRITABLE)) != 0
         ) {
             // failed to alloc the user stack
+        }
+        else if (
+            (p = pages_alloc(1, GFP_ZERO)) == NULL ||
+            (ret = page_map(vmm->pgdir, USER_ARGS, p, PTE_USER)) != 0
+        ) {
+            // failed to alloc the cmd args
         } else {
+            cmd_args_t *cmd_args = (cmd_args_t *)page2kva(p);
+            cmd_args->argc = argc;
+            for (int i = 0; i < argc; i++) {
+                strcpy(argv[i], cmd_args->argv_str[i]);
+                cmd_args->argv[i] = cmd_args->argv_str[i];
+                // console_kprintf(KPL_DEBUG, "%d: %s\n", i, cmd_args->argv_str[i]);
+            }
             ret = 0;
         }
     }
@@ -75,10 +89,15 @@ int init_vmm_struct(vmm_t *vmm) {
 
         vmm->stack_bot = USER_STACK_BOTTOM;
         vmm->stack_top = USER_STACK_BOTTOM + PAGE_SIZE;
-    } else {
-        page_unmap(vmm->pgdir, USER_STACK_BOTTOM - 1 * PAGE_SIZE);
-        destroy_pd(vmm->pgdir);
+
+        vmm->args_start = USER_ARGS;
+        vmm->args_end = vmm->args_start + PAGE_SIZE;
     }
+    // else {
+    //     page_unmap(vmm->pgdir, USER_STACK_BOTTOM - 1 * PAGE_SIZE);
+    //     page_unmap(vmm->pgdir, USER_ARGS);
+    //     destroy_pd(vmm->pgdir);
+    // }
 
     return ret;
 }

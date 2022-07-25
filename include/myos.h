@@ -13,6 +13,8 @@
 // myOS kernel uses high 2G virtual address space
 #define KERNEL_BASE 0x80000000
 
+#define USER_ARGS (KERNEL_BASE - 2 * PAGE_SIZE)
+
 #define USER_STACK_BOTTOM (KERNEL_BASE - 4 * PAGE_SIZE)
 // user stack size limit 16KiB
 #define USER_STACK_LIMIT 0x00004000

@@ -103,7 +103,7 @@ pid_t getppid();
 /**
  * @brief create a children process
  */
-pid_t create_process(const char *filename, char * const argv[]);
+pid_t create_process(const char *filename, int argc, char * const argv[]);
 
 /**
  * @brief clear current screen
@@ -128,5 +128,10 @@ void _exit(int status);
  * @brief wait for child processes
  */
 pid_t wait(int *status);
+
+/**
+ * @brief get memory usage
+ */
+int mm(mm_info_t *mm_info);
 
 #endif

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <common/stdarg.h>
 #include <common/types.h>
+#include <string.h>
 
 static char hex_char[16] = "0123456789ABCDEF";
 

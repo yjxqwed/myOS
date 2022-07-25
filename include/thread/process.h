@@ -12,11 +12,11 @@
  * @param name name of the process
  * @param tty_no tty of this process
  */
-task_t *process_execute(const char *filename, const char *name, int tty_no);
+task_t *process_execute(const char *filename, const char *name, int tty_no, int argc, char * const argv[]);
 
 pid_t sys_getpid();
 pid_t sys_getppid();
-pid_t sys_create_process(const char *filename, char * const argv[]);
+pid_t sys_create_process(const char *filename, int argc, char * const argv[]);
 void sys_exit(int status);
 pid_t sys_wait(int *status);
 #endif

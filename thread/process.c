@@ -3,6 +3,7 @@
 #include <mm/pmem.h>
 #include <mm/kvmm.h>
 #include <lib/kprintf.h>
+#include <lib/string.h>
 #include <common/debug.h>
 #include <sys/gdt.h>
 #include <myos.h>
@@ -189,7 +190,7 @@ static void process_destroy(task_t *task) {
     task_destroy(task);
 }
 
-task_t *process_execute(const char *filename, const char *name, int tty_no) {
+task_t *process_execute(const char *filename, const char *name, int tty_no, int argc, char * const argv[]) {
     task_t *t = NULL;
 
     // open target file
@@ -212,7 +213,7 @@ task_t *process_execute(const char *filename, const char *name, int tty_no) {
 
     // create a vmm object
     t->vmm = (vmm_t *)kmalloc(sizeof(vmm_t));
-    if (t->vmm == NULL || init_vmm_struct(t->vmm) != 0) {
+    if (t->vmm == NULL || init_vmm_struct(t->vmm, argc, argv) != 0) {
         goto __process_execute_fail__;
     }
 
@@ -257,9 +258,9 @@ pid_t sys_getppid() {
     return get_current_thread()->parent_id;
 }
 
-pid_t sys_create_process(const char *filename, char * const argv[]) {
+pid_t sys_create_process(const char *filename, int argc, char * const *argv) {
     task_t *cp = get_current_thread();
-    task_t *t = process_execute(filename, filename, cp->tty_no);
+    task_t *t = process_execute(filename, filename, cp->tty_no, argc, argv);
     pid_t ret = -1;
     if (t != NULL) {
         ret = t->task_id;
