@@ -8,3 +8,5 @@
 *.img
 *.map
 *.lock
+
+.gdbinit
