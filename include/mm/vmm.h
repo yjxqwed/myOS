@@ -46,7 +46,6 @@ typedef struct {
  * @brief Initialize a vmm object
  */
 int init_vmm_struct(vmm_t *vmm, int argc, char * const argv[]);
-int put_cmd_args(vmm_t *vmm, int argc, char * const argv[]);
 
 /**
  * @brief Destroy a vmm object

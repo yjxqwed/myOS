@@ -699,10 +699,12 @@ int simplefs_file_stat(const char *filename, stat_t *s) {
         (buf = kmalloc(SECTOR_SIZE)) != NULL &&
         (fid = find(filename, &fdesc, buf, 0)) >= 0
     ) {
-        strcpy(filename, s->filename);
-        s->size = fdesc.size;
-        s->file_id = fid;
-        s->blocks = 1 + ROUND_UP_DIV(s->size, SECTOR_SIZE);
+        if (s != NULL) {
+            strcpy(filename, s->filename);
+            s->size = fdesc.size;
+            s->file_id = fid;
+            s->blocks = 1 + ROUND_UP_DIV(s->size, SECTOR_SIZE);
+        }
         ret = 0;
     }
     mutex_unlock(&(__simplefs->fs_lock));

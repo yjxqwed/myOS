@@ -106,12 +106,19 @@ void lvsh(void) {
         } else if (strcmp(argv[0], "exit") == 0) {
             break;
         } else {
-            printf("Your input: [%d][%s]\n", ok, argv[0]);
-            pid_t cpid = create_process(argv[0], argc, argv);
-            printf("cpid = %d\n", cpid);
-            int cexit_stat = -1;
-            cpid = wait(&cexit_stat);
-            printf("cpid = %d, ces = %d\n", cpid, cexit_stat);
+            if (stat(argv[0], NULL) != 0) {
+                printf("lvsh: %s: No such file\n", argv[0]);
+            } else {
+                // printf("Your input: [%d][%s]\n", ok, argv[0]);
+                pid_t cpid = create_process(argv[0], argc, argv);
+                if (cpid < 0) {
+                    printf("lvsh: %s: Cannot execute\n", argv[0]);
+                } else {
+                    int cexit_stat = 0;
+                    wait(&cexit_stat);
+                    printf("lvsh: cpid = %d, ces = %d\n", cpid, cexit_stat);
+                }
+            }
         }
         for (int i = 0; i < NR_ARGS; i++) {
             free(argv[i]);
