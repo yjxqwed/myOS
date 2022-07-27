@@ -9,7 +9,6 @@ typedef enum KP_LEVEL {
     KPL_SIZE
 } KP_LEVEL;
 
-
 // kernel printf
 // DONT be too long, please (1024 char max)
 // %s -> string
@@ -18,11 +17,12 @@ typedef enum KP_LEVEL {
 // %X -> unsigned hex uint32 full 8 bits
 // %c -> char
 int kprintf(KP_LEVEL kpl, const char *fmt, ...);
-
 int console_kprintf(KP_LEVEL kpl, const char *fmt, ...);
 
 // @brief kernel sprintf, string format
 int ksprintf(char *out, const char *fmt, ...);
 
+// void kprintf_enable_paging();
+// void kprintf_use_tty();
 
 #endif

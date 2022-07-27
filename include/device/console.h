@@ -5,13 +5,14 @@
 typedef struct Console console_t;
 
 #include <myos.h>
+#include <device/screen.h>
 
-typedef enum Color {
-    CONS_BLACK, CONS_BLUE, CONS_GREEN, CONS_CYAN,
-    CONS_RED, CONS_PURPLE, CONS_BROWN, CONS_GRAY,
-    CONS_DARK_GRAY, CONS_LIGHT_BLUE, CONS_LIGHT_GREEN, CONS_LIGHT_CYAN,
-    CONS_LIGHT_RED, CONS_LIGHT_PURPLE, CONS_YELLOW, CONS_WHITE
-} color_e;
+// typedef enum Color {
+//     CONS_BLACK, CONS_BLUE, CONS_GREEN, CONS_CYAN,
+//     CONS_RED, CONS_PURPLE, CONS_BROWN, CONS_GRAY,
+//     CONS_DARK_GRAY, CONS_LIGHT_BLUE, CONS_LIGHT_GREEN, CONS_LIGHT_CYAN,
+//     CONS_LIGHT_RED, CONS_LIGHT_PURPLE, CONS_YELLOW, CONS_WHITE
+// } color_e;
 
 
 // put a char with foreground color = fg and
@@ -24,13 +25,13 @@ typedef enum Color {
  * @param set_write_out_col for console_erase_char not to erase the output chars
  */
 int console_puts(
-    console_t *cons, const char *str, size_t count, color_e bg, color_e fg,
+    console_t *cons, const char *str, size_t count, COLOR bg, COLOR fg,
     bool_t set_write_out_col
 );
 
 // same as console puts but no lock, only used by kernel to print something.
 int console_puts_nolock(
-    console_t *cons, const char *str, size_t count, color_e bg, color_e fg,
+    console_t *cons, const char *str, size_t count, COLOR bg, COLOR fg,
     bool_t set_write_out_col
 );
 

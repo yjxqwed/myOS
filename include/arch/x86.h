@@ -347,18 +347,18 @@ INT_STATUS disable_int();
 /**
  * More info: https://wiki.osdev.org/Interrupt
  */
-#define INT_PIT 0x0
-#define INT_KB  0x1
-#define INT_CASCADE 0x2
-#define INT_COM2 0x3
-#define INT_COM1 0x4
-#define INT_LPT2 0x5
-#define INT_FLOPPY 0x6
-#define INT_LPT1 0x7
-#define INT_CLOCK 0x8
-#define INT_PS2 0xC
-#define INT_PATA 0xE
-#define INT_SATA 0xF
+#define IRQ_PIT 0x0
+#define IRQ_KB  0x1
+#define IRQ_CASCADE 0x2
+#define IRQ_COM2 0x3
+#define IRQ_COM1 0x4
+#define IRQ_LPT2 0x5
+#define IRQ_FLOPPY 0x6
+#define IRQ_LPT1 0x7
+#define IRQ_CLOCK 0x8
+#define IRQ_PS2 0xC
+#define IRQ_PATA 0xE
+#define IRQ_SATA 0xF
 
 
 void disable_pit();

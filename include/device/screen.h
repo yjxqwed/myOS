@@ -10,18 +10,17 @@
 #define MAXROW 25
 #define TAB_WIDTH 8
 
+// size in bytes of a whole row
+#define ROW_RAM (MAXCOL * 2)
+// size in bytes of a whole page (screen)
+#define PAGE_RAM (MAXROW * ROW_RAM)
+
 
 typedef enum COLOR {
     BLACK, BLUE, GREEN, CYAN, RED, PURPLE, BROWN, GRAY,
     DARK_GRAY, LIGHT_BLUE, LIGHT_GREEN, LIGHT_CYAN, 
     LIGHT_RED, LIGHT_PURPLE, YELLOW, WHITE
 } COLOR;
-
-
-// put a char with foreground color = fg and 
-// background color = bg
-void scrn_putc(char c, COLOR bg, COLOR fg);
-void scrn_puts(const char *str, COLOR bg, COLOR fg);
 
 /**
  *   a word (16 B) for a char
@@ -38,6 +37,10 @@ void scrn_puts(const char *str, COLOR bg, COLOR fg);
  *  FG: foreground
  */
 
+// put a char with foreground color = fg and 
+// background color = bg
+void scrn_putc(char c, COLOR bg, COLOR fg);
+void scrn_puts(const char *str, size_t count, COLOR bg, COLOR fg);
 
 // For more info on text mode cursor 
 // https://wiki.osdev.org/Text_Mode_Cursor

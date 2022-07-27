@@ -6,7 +6,7 @@
 
 void printISRParam(const isrp_t* p) {
     task_t *t = get_current_thread();
-    console_kprintf(
+    kprintf(
         KPL_PANIC,
         "\n[%s, %d]"
         "{eip=%x; errco=%x; "
@@ -22,11 +22,11 @@ void panic_spin(
     const char* funcname, const char* cause
 ) {
     disable_int();
-    console_kprintf(KPL_DUMP, "\n");
-    console_kprintf(KPL_PANIC, "!!!!! error !!!!!\n");
-    console_kprintf(KPL_PANIC, "file: %s\n", filename);
-    console_kprintf(KPL_PANIC, "line: %d\n", line);
-    console_kprintf(KPL_PANIC, "function: %s\n", funcname);
-    console_kprintf(KPL_PANIC, "cause: %s\n", cause);
+    kprintf(KPL_DUMP, "\n");
+    kprintf(KPL_PANIC, "!!!!! error !!!!!\n");
+    kprintf(KPL_PANIC, "file: %s\n", filename);
+    kprintf(KPL_PANIC, "line: %d\n", line);
+    kprintf(KPL_PANIC, "function: %s\n", funcname);
+    kprintf(KPL_PANIC, "cause: %s\n", cause);
     hlt();
 }

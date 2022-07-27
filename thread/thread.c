@@ -180,6 +180,7 @@ static void thread_kmain() {
     task_push_back_all(kmain);
     set_int_status(old_status);
     kmain->status = TASK_RUNNING;
+    task_assign_tty(kmain, 0);
     ASSERT(kmain->task_id == 0 && kmain->parent_id == -1);
     current_task = kmain;
 }

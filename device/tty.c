@@ -1,9 +1,11 @@
 #include <device/tty.h>
 #include <device/kb.h>
-#include <thread/sync.h>
-#include <arch/x86.h>
+
 #include <common/debug.h>
 #include <common/utils.h>
+
+#include <thread/sync.h>
+#include <arch/x86.h>
 #include <lib/kprintf.h>
 
 #define KB_BUFFER_SIZE 64
@@ -40,28 +42,28 @@ static void tty_echo_char(console_t *con, key_info_t ki) {
     if (KEYCODE_BACKSPACE == kcode) {
         console_erase_char(con);
     } else if (KEYCODE_ENTER == kcode) {
-        console_puts_nolock(con, "\n", 1, CONS_BLACK, CONS_GRAY, False);
+        console_puts_nolock(con, "\n", 1, BLACK, GRAY, False);
     } else if (kcode >= KEYCODE_A && kcode <= KEYCODE_RIGHTBRACKET) {
         char c[1];
         c[0] = get_printable_char(ki);
         if (c[0] != '\0') {
-            console_puts_nolock(con, c, 1, CONS_BLACK, CONS_GRAY, False);
+            console_puts_nolock(con, c, 1, BLACK, GRAY, False);
         }
     } else {
-        // console_puts_nolock(con, "<HELLO>", 8, CONS_BLACK, CONS_GRAY, False);
+        // console_puts_nolock(con, "<HELLO>", 8, BLACK, GRAY, False);
     }
 }
 
 static key_info_t __tty_getkey(tty_t *tty) {
     sem_down(&(tty->kb_sem));
     // INT_STATUS old_status = disable_int();
-    IRQ_set_mask(INT_KB);
+    IRQ_set_mask(IRQ_KB);
     ASSERT(tty->kb_inbuf_num > 0);
     ASSERT(tty->kb_inbuf_num == tty->kb_sem.val + 1);
     key_info_t ki = tty->kb_in_buffer[tty->kb_inbuf_head];
     tty->kb_inbuf_head = (tty->kb_inbuf_head + 1) % KB_BUFFER_SIZE;
     (tty->kb_inbuf_num)--;
-    IRQ_clear_mask(INT_KB);
+    IRQ_clear_mask(IRQ_KB);
     // set_int_status(old_status);
     return ki;
 }
@@ -184,13 +186,17 @@ void tty_init() {
 }
 
 
-int tty_puts(int tty_no, const char *str, size_t count, color_e bg, color_e fg) {
+int tty_puts(int tty_no, const char *str, size_t count, COLOR bg, COLOR fg) {
     if (!tty_ready || tty_no < 0 || tty_no >= NR_TTY) {
         return -1;
     }
     return console_puts(ttys[tty_no].my_console, str, count, bg, fg, True);
 }
 
-int tty_puts_curr(const char *str, size_t count, color_e bg, color_e fg) {
+int tty_puts_curr(const char *str, size_t count, COLOR bg, COLOR fg) {
     return tty_puts(get_curr_console_tty(), str, count, bg, fg);
+}
+
+int tty_puts_task(const char *str, size_t count, COLOR bg, COLOR fg) {
+    return tty_puts(get_current_thread()->tty_no, str, count, bg, fg);
 }

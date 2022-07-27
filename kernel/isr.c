@@ -5,6 +5,7 @@
 #include <string.h>
 #include <kprintf.h>
 #include <sys/gdt.h>
+#include <thread/process.h>
 
 // cpu exception
 extern void isr0();
@@ -93,11 +94,11 @@ static void irq_remap(void) {
 }
 
 void disable_pit() {
-    IRQ_set_mask(INT_PIT);
+    IRQ_set_mask(IRQ_PIT);
 }
 
 void enable_pit() {
-    IRQ_clear_mask(INT_PIT);
+    IRQ_clear_mask(IRQ_PIT);
 }
 
 void IRQ_set_mask(unsigned char IRQline) {
@@ -226,24 +227,30 @@ char* cpu_execption_msgs[] = {
 static interrupt_handler_t handlers[IDT_SIZE] = {NULL};
 
 static void page_fault_handler(isrp_t *p) {
-    console_kprintf(KPL_PANIC, cpu_execption_msgs[p->int_no]);
-    printISRParam(p);
+    // MAGICBP
+    // kprintf(KPL_PANIC, cpu_execption_msgs[p->int_no]);
+    // printISRParam(p);
     uint32_t cr2 = scr2();
-    console_kprintf(KPL_PANIC, " cr2 = 0x%X\n", cr2);
-    console_kprintf(KPL_PANIC, " 0x%X\n", *(uint32_t *)(p->eip));
-    console_kprintf(KPL_PANIC, " System Halted.\n");
-    hlt();
+    kprintf(KPL_PANIC, " cr2 = 0x%X\n", cr2);
+    // kprintf(KPL_PANIC, " System Halted.\n");
+    // hlt();
 }
 
 void cpu_exception_handler(isrp_t *p) {
+    kprintf(KPL_PANIC, cpu_execption_msgs[p->int_no]);
+    printISRParam(p);
+
     if (handlers[p->int_no] != NULL) {
         handlers[p->int_no](p);
     } else if (p->int_no == 14) {
         page_fault_handler(p);
+    }
+
+    task_t *t = get_current_thread();
+    if (t != NULL && t->is_user_process) {
+        sys_exit(-14);
     } else {
-        console_kprintf(KPL_PANIC, cpu_execption_msgs[p->int_no]);
-        printISRParam(p);
-        console_kprintf(KPL_PANIC, " System Halted.\n");
+        kprintf(KPL_PANIC, " System Halted.\n");
         hlt();
     }
 }
@@ -258,7 +265,7 @@ void interrupt_request_handler(isrp_t *p) {
     if (handlers[p->int_no] != NULL) {
         handlers[p->int_no](p);
     } else {
-        // console_kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
+        // kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
     }
 }
 

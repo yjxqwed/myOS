@@ -7,10 +7,10 @@
 // offset of the char at (row, col)
 #define CHAR_OFFSET(row, col) ((row * MAXCOL + col) * 2)
 
-// size in bytes of a whole row
-#define ROW_RAM (MAXCOL * 2)
-// size in bytes of a whole page (screen)
-#define PAGE_RAM (MAXROW * ROW_RAM)
+// // size in bytes of a whole row
+// #define ROW_RAM (MAXCOL * 2)
+// // size in bytes of a whole page (screen)
+// #define PAGE_RAM (MAXROW * ROW_RAM)
 
 #define ATTR(bg, fg) (uint8_t)((bg << 4) | fg)
 
@@ -135,9 +135,9 @@ void scrn_putc(char c, COLOR bg, COLOR fg) {
     // __set_cursor(cursor_row, cursor_col);
 }
 
-void scrn_puts(const char *str, COLOR bg, COLOR fg) {
+void scrn_puts(const char *str, size_t count, COLOR bg, COLOR fg) {
     INT_STATUS old_status = disable_int();
-    for (int i = 0; str[i] != '\0'; i++) {
+    for (int i = 0; i < count; i++) {
         scrn_putc(str[i], bg, fg);
     }
     set_int_status(old_status);

@@ -769,9 +769,9 @@ int sys_write(int fd, const void *buffer, size_t count) {
     if (fd == FD_STDIN) {
         return -1;
     } else if (fd == FD_STDOUT) {
-        return tty_puts(get_current_thread()->tty_no, buffer, count, CONS_BLACK, CONS_GRAY);
+        return tty_puts_task(buffer, count, BLACK, GRAY);
     } else if (fd == FD_STDERR) {
-        return tty_puts(get_current_thread()->tty_no, buffer, count, CONS_BLACK, CONS_GRAY);
+        return tty_puts_task(buffer, count, BLACK, GRAY);
     } else {
         return simplefs_file_write(fd, buffer, count);
     }

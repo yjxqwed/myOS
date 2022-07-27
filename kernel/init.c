@@ -3,7 +3,7 @@
 #include <device/screen.h>
 #include <common/debug.h>
 #include <sys/idt.h>
-#include <kprintf.h>
+#include <lib/kprintf.h>
 #include <device/pit.h>
 #include <device/tty.h>
 #include <device/ata.h>
@@ -38,6 +38,7 @@ void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
     install_boot_pg();
     // change video mem to vaddr
     video_mem_enable_paging();
+    // kprintf_enable_paging();
 }
 
 
@@ -63,6 +64,7 @@ void kinit() {
     timer_init(10000);
     // init tty
     tty_init();
+    // kprintf_use_tty();
     // enable interrupt
     enable_int();
     // init hard drives

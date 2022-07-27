@@ -1,10 +1,10 @@
-#include <kprintf.h>
+#include <lib/string.h>
+#include <lib/kprintf.h>
 #include <device/screen.h>  // for color and video mem operation
 #include <device/tty.h>  // for color and video mem operation
 #include <common/types.h>
-#include <lib/string.h>
 #include <common/stdarg.h>
-
+#include <thread/thread.h>
 
 // static int idx = 0;
 
@@ -152,12 +152,15 @@ int ksprintf(char *out, const char *fmt, ...) {
     return ret;
 }
 
+typedef int(* puts_t)(const char *, size_t, COLOR, COLOR);
+static puts_t __puts = __pa(scrn_puts);
+
 int kprintf(KP_LEVEL kpl, const char *fmt, ...) {
     static char buf[1024];
     args_list args;
     args_start(args, fmt);
     int ret = __ksprintf(buf, fmt, args);
-    scrn_puts(buf, KPL[kpl].bg, KPL[kpl].fg);
+    scrn_puts(buf, ret, KPL[kpl].bg, KPL[kpl].fg);
     args_end(args);
     return ret;
 }
@@ -167,8 +170,7 @@ int console_kprintf(KP_LEVEL kpl, const char *fmt, ...) {
     args_list args;
     args_start(args, fmt);
     int ret = __ksprintf(buf, fmt, args);
-    size_t count = strlen(buf);
-    tty_puts_curr(buf, count, KPL[kpl].bg, KPL[kpl].fg);
+    ret = tty_puts_task(buf, ret, KPL[kpl].bg, KPL[kpl].fg);
     args_end(args);
     return ret;
 }
