@@ -34,7 +34,7 @@ From 2020.9
 * Can also execute a binary form it and pass command line args to the process.
 
 ### A simple software `cat` (yes, it is the cat on Linux XD)
-![lvsh](/screenshots/cat.png)
+![cat](/screenshots/cat.png)
 ### A software `nothing` used to test
 ![nothing_n](/screenshots/nothing_normal.png)
 ### Use `nothing` to trigger a page fault
