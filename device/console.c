@@ -45,7 +45,7 @@ struct Console {
     // record the col for write
     uint16_t write_cursor_col;
     // output mutex of this console
-    mutex_t cons_mutex;
+    mutex_t lock;
     int tty_no;
 };
 
@@ -59,12 +59,12 @@ console_t *init_console(int tty_no) {
     cons->cursor_col = 0;
     cons->cursor_row = 0;
     cons->cursor_row_base = tty_no * CONSOLE_MAXROW;
-    mutex_init(&(cons->cons_mutex));
+    mutex_init(&(cons->lock));
     cons->tty_no = tty_no;
     return cons;
 }
 
-static inline void clear_row(console_t *cons, int row) {
+static inline void __clear_row(console_t *cons, int row) {
     for (int i = 0; i < CONSOLE_MAXCOL; i++) {
         cons->video_mem[CONSOLE_CHAR_OFFSET(row, i)] = CONSOLE_BLANK_CHAR;
     }
@@ -83,25 +83,13 @@ static void __set_cursor(console_t *cons) {
     outportb(0x3d5, (uint8_t)((pos >> 8) & 0xff));
 }
 
-void clear_screen(console_t *cons) {
-    for (int i = 0; i < CONSOLE_MAXROW; i++) {
-        clear_row(cons, i);
-    }
-    cons->cursor_col = 0;
-    cons->cursor_row = 0;
+void console_set_cursor(console_t *cons, int row, int col) {
+    ASSERT(cons != NULL);
+    mutex_lock(&(cons->lock));
+    cons->cursor_row = row;
+    cons->cursor_col = col;
     __set_cursor(cons);
-}
-
-void clear_curr_console() {
-    clear_screen(consoles + current_console);
-}
-
-// scroll up by one line
-static void scrollup(console_t *cons) {
-    uint16_t *dest = cons->video_mem;
-    uint16_t *src = cons->video_mem + CONSOLE_MAXCOL;
-    memcpy(src, dest, CONSOLE_ROW_RAM * (CONSOLE_MAXROW - 1));
-    clear_row(cons, CONSOLE_MAXROW - 1);
+    mutex_unlock(&(cons->lock));
 }
 
 static void __get_cursor(console_t *cons, int *row, int *col) {
@@ -111,18 +99,34 @@ static void __get_cursor(console_t *cons, int *row, int *col) {
 
 void console_get_cursor(console_t *cons, int *row, int *col) {
     ASSERT(cons != NULL);
-    mutex_lock(&(cons->cons_mutex));
+    mutex_lock(&(cons->lock));
     __get_cursor(cons, row, col);
-    mutex_unlock(&(cons->cons_mutex));
+    mutex_unlock(&(cons->lock));
 }
 
-void console_set_cursor(console_t *cons, int row, int col) {
+void clear_screen(console_t *cons) {
     ASSERT(cons != NULL);
-    mutex_lock(&(cons->cons_mutex));
-    cons->cursor_row = row;
-    cons->cursor_col = col;
+    mutex_lock(&(cons->lock));
+    for (int i = 0; i < CONSOLE_MAXROW; i++) {
+        __clear_row(cons, i);
+    }
+    cons->cursor_col = 0;
+    cons->cursor_row = 0;
     __set_cursor(cons);
-    mutex_unlock(&(cons->cons_mutex));
+    mutex_unlock(&(cons->lock));
+}
+
+void clear_curr_console() {
+    ASSERT(0 <= current_console && current_console < NR_TTY);
+    clear_screen(consoles + current_console);
+}
+
+// scroll up by one line
+static void __scrollup(console_t *cons) {
+    uint16_t *dest = cons->video_mem;
+    uint16_t *src = cons->video_mem + CONSOLE_MAXCOL;
+    memcpy(src, dest, CONSOLE_ROW_RAM * (CONSOLE_MAXROW - 1));
+    __clear_row(cons, CONSOLE_MAXROW - 1);
 }
 
 void console_erase_char(console_t *cons) {
@@ -184,48 +188,67 @@ static void __putc(console_t *cons, char c, color_e bg, color_e fg) {
     }
     if (cons->cursor_row >= CONSOLE_MAXROW) {
         cons->cursor_row = CONSOLE_MAXROW - 1;
-        scrollup(cons);
+        __scrollup(cons);
     }
+}
+
+static int __puts(
+    console_t *cons, const char *str, size_t count,
+    color_e bg, color_e fg, bool_t set_write_out_col
+) {
+    ASSERT(cons != NULL);
+    if (cons == &(consoles[0])) {
+        return 0;
+    }
+    for (int i = 0; i < count; i++) {
+        __putc(cons, str[i], bg, fg);
+    }
+    __set_cursor(cons);
+    if (set_write_out_col) {
+        cons->write_cursor_col = cons->cursor_col;
+    }
+    return count;
 }
 
 int console_puts_nolock(
     console_t *cons, const char *str, size_t count, color_e bg, color_e fg,
     bool_t set_write_out_col
 ) {
-    ASSERT(cons != NULL);
     INT_STATUS old_status = disable_int();
-    if (cons == &(consoles[0])) {
-        return 0;
-    }
-    for (int i = 0; i < count; i++) {
-        __putc(cons, str[i], bg, fg);
-    }
-    __set_cursor(cons);
-    if (set_write_out_col) {
-        cons->write_cursor_col = cons->cursor_col;
-    }
+    // if (cons == &(consoles[0])) {
+    //     return 0;
+    // }
+    // for (int i = 0; i < count; i++) {
+    //     __putc(cons, str[i], bg, fg);
+    // }
+    // __set_cursor(cons);
+    // if (set_write_out_col) {
+    //     cons->write_cursor_col = cons->cursor_col;
+    // }
+    int ret = __puts(cons, str, count, bg, fg, set_write_out_col);
     set_int_status(old_status);
-    return count;
+    return ret;
 }
 
 int console_puts(
     console_t *cons, const char *str, size_t count, color_e bg, color_e fg,
     bool_t set_write_out_col
 ) {
-    ASSERT(cons != NULL);
-    if (cons == &(consoles[0])) {
-        return 0;
-    }
-    mutex_lock(&(cons->cons_mutex));
-    for (int i = 0; i < count; i++) {
-        __putc(cons, str[i], bg, fg);
-    }
-    __set_cursor(cons);
-    if (set_write_out_col) {
-        cons->write_cursor_col = cons->cursor_col;
-    }
-    mutex_unlock(&(cons->cons_mutex));
-    return count;
+    // ASSERT(cons != NULL);
+    // if (cons == &(consoles[0])) {
+    //     return 0;
+    // }
+    mutex_lock(&(cons->lock));
+    // for (int i = 0; i < count; i++) {
+    //     __putc(cons, str[i], bg, fg);
+    // }
+    // __set_cursor(cons);
+    // if (set_write_out_col) {
+    //     cons->write_cursor_col = cons->cursor_col;
+    // }
+    int ret = __puts(cons, str, count, bg, fg, set_write_out_col);
+    mutex_unlock(&(cons->lock));
+    return ret;
 }
 
 int get_curr_console_tty() {

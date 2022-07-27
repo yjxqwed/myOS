@@ -1,9 +1,7 @@
 #ifndef __TTY_H__
 #define __TTY_H__
 
-// opaque declaration of struct TTY
 // TTY is for TeleTYpewriter
-typedef struct TTY tty_t;
 
 #include <device/kb.h>
 #include <device/console.h>
@@ -33,20 +31,13 @@ int tty_read_curr(char *buf, size_t count);
  * @brief print str to the console; this function
  *        should be called by sys_write only
  */
-int tty_puts(
-    int tty_no, const char *str, size_t count,
-    color_e bg, color_e fg
-);
+int tty_puts(int tty_no, const char *str, size_t count, color_e bg, color_e fg);
 
 /**
  * @brief print str to the current tty;
  *        this function should be used by console_kprintf only
  */
-int tty_puts_curr(
-    const char *str, size_t count,
-    color_e bg, color_e fg
-);
-
+int tty_puts_curr(const char *str, size_t count, color_e bg, color_e fg);
 
 void tty_init();
 

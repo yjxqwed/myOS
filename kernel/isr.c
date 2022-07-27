@@ -93,15 +93,39 @@ static void irq_remap(void) {
 }
 
 void disable_pit() {
-    uint8_t val = inportb(PIC_M_CTLMASK);
-    val |= (uint8_t)0x01;
-    outportb(PIC_M_CTLMASK, val);
+    IRQ_set_mask(INT_PIT);
 }
 
 void enable_pit() {
-    uint8_t val = inportb(PIC_M_CTLMASK);
-    val &= (uint8_t)0xfe;
-    outportb(PIC_M_CTLMASK, val);
+    IRQ_clear_mask(INT_PIT);
+}
+
+void IRQ_set_mask(unsigned char IRQline) {
+    uint16_t port;
+    uint8_t value;
+ 
+    if (IRQline < 8) {
+        port = PIC_M_CTLMASK;
+    } else {
+        port = PIC_S_CTLMASK;
+        IRQline -= 8;
+    }
+    value = inportb(port) | (1 << IRQline);
+    outportb(port, value);
+}
+ 
+void IRQ_clear_mask(unsigned char IRQline) {
+    uint16_t port;
+    uint8_t value;
+ 
+    if (IRQline < 8) {
+        port = PIC_M_CTLMASK;
+    } else {
+        port = PIC_S_CTLMASK;
+        IRQline -= 8;
+    }
+    value = inportb(port) & ~(1 << IRQline);
+    outportb(port, value);
 }
 
 extern Gate _idt[IDT_SIZE];

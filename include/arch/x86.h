@@ -344,7 +344,34 @@ INT_STATUS disable_int();
 #define PIC_S_CTL     0xA0
 #define PIC_S_CTLMASK 0xA1
 
+/**
+ * More info: https://wiki.osdev.org/Interrupt
+ */
+#define INT_PIT 0x0
+#define INT_KB  0x1
+#define INT_CASCADE 0x2
+#define INT_COM2 0x3
+#define INT_COM1 0x4
+#define INT_LPT2 0x5
+#define INT_FLOPPY 0x6
+#define INT_LPT1 0x7
+#define INT_CLOCK 0x8
+#define INT_PS2 0xC
+#define INT_PATA 0xE
+#define INT_SATA 0xF
+
+
 void disable_pit();
 void enable_pit();
+
+/**
+ * @brief disable one type of ints
+ */
+void IRQ_set_mask(unsigned char IRQline);
+
+/**
+ * @brief enable one type of ints
+ */
+void IRQ_clear_mask(unsigned char IRQline);
 
 #endif
