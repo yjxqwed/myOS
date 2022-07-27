@@ -107,8 +107,11 @@ void clear_screen(console_t *cons) {
 }
 
 void clear_curr_console() {
-    ASSERT(0 <= current_console && current_console < NR_TTY);
-    clear_screen(consoles + current_console);
+    int console_no = get_current_thread()->tty_no;
+    if (console_no < 0 || console_no >= NR_TTY) {
+        return;
+    }
+    clear_screen(consoles + console_no);
 }
 
 // scroll up by one line

@@ -23,10 +23,6 @@ int printf(const char *fmt, ...);
  */
 int sprintf(char *buf, const char *fmt, ...);
 
-/**
- * @brief getchar
- *        no io buffering
- */
 char getchar();
 int putchar(char c);
 

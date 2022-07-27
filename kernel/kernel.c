@@ -5,9 +5,9 @@
 #include <arch/x86.h>
 
 static void print_myOS(void) {
+    kprintf(KPL_DUMP, "\n");
     kprintf(
-        KPL_NOTICE,
-        "\n\n"
+        KPL_DUMP,
         ">>=====================================================<<\n"
         "||                            #######     ######       ||\n"
         "||  WELCOME TO               ##     ##   ##     #      ||\n"
@@ -28,8 +28,11 @@ extern void kernel_test_simplefs();
 void kernelMain() {
     // kprintf(KPL_DUMP, "\nHello Wolrd! --- This is myOS by Justing Yang\n");
     print_myOS();
-    process_execute("lvsh", "lvsh", 1, 0, NULL);
-    process_execute("lvsh", "lvsh", 2, 0, NULL);
+    process_execute("login", "login", 1, 0, NULL);
+    process_execute("login", "login", 2, 0, NULL);
+    process_execute("login", "login", 3, 0, NULL);
+    process_execute("login", "login", 4, 0, NULL);
+    process_execute("login", "login", 5, 0, NULL);
     while (1) {
         INT_STATUS old_status = disable_int();
         ASSERT(old_status == INTERRUPT_ON);
