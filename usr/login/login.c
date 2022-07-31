@@ -10,10 +10,11 @@ int main(int argc, char *argv[]) {
     char line[128];
     while (1) {
         printf("login: ");
-        read(STDIN_FILENO, line, 128);
-        create_process("lvsh", 0, NULL);
-        int cexit_stat = 0;
-        wait(&cexit_stat);
+        if (read(STDIN_FILENO, line, 128) > 1) {
+            create_process("lvsh", 0, NULL);
+            int cexit_stat = 0;
+            wait(&cexit_stat);
+        }
     }
     return 0;
 }

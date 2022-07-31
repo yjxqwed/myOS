@@ -1,23 +1,31 @@
 # Notes
 
 ## Development Environment
-### WSL (WSL2 on Win10 build 2004)
-### X server
-> Download and install <a href="https://sourceforge.net/projects/vcxsrv/">XLaunch</a> on Windows  
-> export DISPLAY="`grep nameserver /etc/resolv.conf | sed 's/nameserver //'`:0"
-### Bochs
-> sudo apt update  
-> sudo apt upgrade  
-> sudo apt install build-essential bison xorg-dev g++  
-> sudo apt install bochs-x  
-> Download and extract <a href="http://bochs.sourceforge.net/">bochs</a>  
-> cd {directory of bochs}  
-> ./configure  --enable-debugger --enable-disasm  
-> sudo make && sudo make install  
+
+### Compiling Bochs
+`sudo apt install build-essential bison xorg-dev g++ bochs-x`
+
+Download and extract <a href="http://bochs.sourceforge.net/">bochs</a>  
+
+`cd {directory of bochs}`
+
+`./configure  --enable-debugger --enable-readline`
+
+`./configure  --enable-gdb-stub --enable-readline`
+
+`sudo make && sudo make install`
+
+Reference: <a href="https://bochs.sourceforge.io/doc/docbook/user/compiling.html"> Compiling Bochs </a>
+
 ### Compile the OS
-> sudo apt install g++ nasm binutils grub-pc-bin xorriso
+```sudo apt install -y gcc-9 nasm binutils grub-pc-bin xorriso mtools```
+
+* Should only use `gcc-9` to compile myOS
+* Install `mtools` if `grub-mkrescue` fails
+
+
 ### Run
-> bochs -q  
+```bochs -q```  
 
 
 ## Boot the computer

@@ -1,50 +1,5 @@
 NAME = lvsh
 
-# dirs
-ROOT = ../..
-USR_ROOT = ..
-
-# build flags
-G_PARAMS = -Wall -m32 -I$(USR_ROOT)/include -I$(ROOT)/include \
-           -nostdlib -fno-builtin -fno-exceptions -fno-leading-underscore \
-           -nostdinc -masm=intel -O3 -D KDEBUG
-LD_PARAMS = -m elf_i386
-
-# objects
-SRC = $(USR_ROOT)/src
-
-usr_lib_objs = $(SRC)/_start.elf32 $(SRC)/unistd.elf32 $(SRC)/stdio.elf32 $(SRC)/malloc.elf32 $(SRC)/string.elf32
-
 objs = $(NAME).elf32
 
-objects = $(usr_lib_objs) $(objs)
-
-
-
-# build rules
-.PHONY = clean docker install dump
-
-all: $(NAME)
-
-%.elf32: %.c
-	gcc $(G_PARAMS) -o $@ -c $<
-
-$(NAME): $(USR_ROOT)/usr_linker.ld $(objects)
-	ld $(LD_PARAMS) -T $< -o $@ $(objects)
-
-clean:
-	rm -rf $(NAME) $(objects)
-
-docker:
-	docker exec -w /mnt/external/myOS/usr/$(NAME) myos1 make
-
-dump:
-	objdump -D -M intel $(NAME) | less
-
-FSTOOL = $(ROOT)/fstool/fstool
-DISK = $(ROOT)/e.img
-
-install:
-	docker exec -w /mnt/external/myOS/usr/$(NAME) myos1 $(FSTOOL) $(DISK) rm $(NAME)
-	docker exec -w /mnt/external/myOS/usr/$(NAME) myos1 $(FSTOOL) $(DISK) load $(NAME) $(NAME)
-	docker exec -w /mnt/external/myOS/usr/$(NAME) myos1 $(FSTOOL) $(DISK) list
+include ../makefile.include

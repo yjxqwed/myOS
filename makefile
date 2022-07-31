@@ -1,3 +1,6 @@
+# compile myos with gcc-9
+GCC = gcc-9
+
 # build flags
 G_PARAMS = -Wall -m32 -I include -I include/lib -nostdlib -fno-builtin \
            -fno-exceptions -fno-leading-underscore -nostdinc -masm=intel
@@ -52,7 +55,7 @@ objects = $(device_objs) $(kernel_asm_objs) $(kernel_c_objs) \
 all: mykernel.iso
 
 %.elf32: %.c
-	gcc $(G_PARAMS) -o $@ -c $<
+	$(GCC) $(G_PARAMS) -o $@ -c $<
 
 %.elf32: %.s
 	nasm $(NASM_PARAMS) -o $@ $<

@@ -2,6 +2,10 @@
 #include "simplefs.h"
 
 int main(int argc, char **argv) {
+    if (argc < 2) {
+        printf("USAGE: fstool <img> [load|dump|rm|stat|list] ...\n");
+        return -1;
+    }
     disk_t *disk = disk_open(argv[1]);
     print_disk(disk);
     simplefs_init();
