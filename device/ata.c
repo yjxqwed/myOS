@@ -219,6 +219,7 @@ static void select_disk(disk_t *hd);
 static inline void cmd_out(ata_channel_t *chan, uint8_t cmd) {
     chan->expecting_intr = True;
     outportb(reg_cmd(chan), cmd);
+    thread_msleep(5);
 }
 
 /**
@@ -259,7 +260,8 @@ static int busy_wait(disk_t *hd) {
     ata_channel_t *chan = hd->my_channel;
     int sleep_time = 30 * 1000;
     while ((sleep_time -= 10) >= 0) {
-        uint8_t status = inportb(reg_status(chan));
+        thread_msleep(10);
+        uint8_t status = inportb(reg_alt_status(chan));
         if (status & ATA_SR_ERR) {
             return 1;  // error
         }
@@ -267,7 +269,6 @@ static int busy_wait(disk_t *hd) {
             // device not busy and data requesty ready
             return 0;  // no err
         }
-        thread_msleep(10);
     }
     return 2;  // timeout
 }
@@ -279,12 +280,11 @@ static void identify_disk(disk_t *hd) {
     select_disk(hd);
     cmd_out(hd->my_channel, ATA_CMD_IDENTIFY);
     // test whether it is empty or not
-    thread_msleep(1000);
-    if (inportb(reg_status(hd->my_channel)) == 0) {
+    if (inportb(reg_alt_status(hd->my_channel)) == 0) {
         hd->existed = False;
         return;
     }
-    sem_down(&(hd->my_channel->disk_done));
+    // sem_down(&(hd->my_channel->disk_done));
     if (busy_wait(hd) != 0) {
         hd->existed = False;
         return;
@@ -358,8 +358,9 @@ void ata_read(disk_t *hd, uint32_t lba, void *buf, uint32_t sec_cnt) {
         uint32_t num_sectors = MIN(sec_cnt - sec_done, 256);
         select_disk_sector(hd, lba + sec_done, num_sectors);
         cmd_out(hd->my_channel, ATA_CMD_READ_PIO);
+        // kprintf(KPL_DEBUG, "chan: %s\n", hd->my_channel->chan_name);
         // use sem_down to wait for the completion of the disk
-        sem_down(&(hd->my_channel->disk_done));
+        // sem_down(&(hd->my_channel->disk_done));
         if (busy_wait(hd) != 0) {
             char error[64];
             ksprintf(error, "%s read sector %d failed", hd->disk_name, lba);
@@ -393,7 +394,7 @@ void ata_write(disk_t *hd, uint32_t lba, const void *buf, uint32_t sec_cnt) {
         }
         write_sector(hd, (void *)((uintptr_t)buf + sec_done * 512), num_sectors);
         // use sem_down to wait for the completion of the device
-        sem_down(&(hd->my_channel->disk_done));
+        // sem_down(&(hd->my_channel->disk_done));
         sec_done += num_sectors;
     }
     mutex_unlock(&(hd->my_channel->chan_lock));
@@ -412,12 +413,13 @@ static void *hd_handler(isrp_t *p) {
     if (chan->expecting_intr) {
         chan->expecting_intr = False;
         sem_up(&(chan->disk_done));
-        /**
-         * to tell the hard drive controller that this interrupt is
-         * handled so that further operations can be executed
-         */
-        inportb(reg_status(chan));
     }
+    /**
+     * to tell the hard drive controller that this interrupt is
+     * handled so that further operations can be executed
+     */
+    inportb(reg_alt_status(chan));
+    kprintf(KPL_DEBUG, "hd_handler: irq_no=%d\n", irq_no);
 }
 
 partition_t *first_part = NULL;
@@ -519,6 +521,8 @@ void ata_init() {
             ch->irq_no = INT_ATA1;
         }
         ch->expecting_intr = False;
+        // disable hd int at all
+        outportb(reg_dev_ctl(ch), 1 << 1);
         mutex_init(&(ch->chan_lock));
         sem_init(&(ch->disk_done), 0);
         register_handler(ch->irq_no, hd_handler);

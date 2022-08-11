@@ -11,7 +11,8 @@
 
 #include <mm/kvmm.h>
 
-#include <device/ata.h>
+// #include <device/ata.h>
+#include <device/ide.h>
 #include <device/tty.h>
 
 #include <thread/process.h>
@@ -79,10 +80,10 @@ typedef struct {
     mutex_t fs_lock;
 } simplefs_struct_t;
 
-extern partition_t *first_part;
+extern PARTITION *first_part;
 
 // simple fs only operates the first partition
-static partition_t *__part = NULL;
+static PARTITION *__part = NULL;
 static simplefs_struct_t *__simplefs = NULL;
 
 // system level file table; simplefs supports up to 32 open files
@@ -93,7 +94,7 @@ static mutex_t __file_table_lock;
 static void sync_sec_btmp(int id) {
     int btmp_lba = __simplefs->sb->sector_btmp_start_lba + id / SECTOR_SIZE_IN_BIT;
     void *data = __simplefs->sector_btmp.bits_ + id / SECTOR_SIZE_IN_BIT * SECTOR_SIZE;
-    ata_write(__part->my_disk, btmp_lba, data, 1);
+    ata_write(__part->my_drive, btmp_lba, data, 1);
 }
 
 // get a free sec
@@ -143,8 +144,9 @@ static void print_simplefs(const simplefs_struct_t *simplefs) {
 
 // write modified super block to disk
 static void sync_super_block(uint8_t *buf) {
+    memset(buf, 0, SECTOR_SIZE);
     memcpy(__simplefs->sb, buf, sizeof(super_block_t));
-    ata_write(__part->my_disk, __part->start_lba + 1, buf, 1);
+    ata_write(__part->my_drive, __part->start_lba + 1, buf, 1);
 }
 
 // write file desc table to disk
@@ -152,9 +154,9 @@ static void sync_desc_table(uint32_t file_id, file_desc_t *fdesc, uint8_t *buf) 
     super_block_t *sb = __simplefs->sb;
     uint32_t lba = sb->file_desc_table_start_lba + file_id / NR_DESC_PER_SEC;
     uint32_t offset = file_id % NR_DESC_PER_SEC;
-    ata_read(__part->my_disk, lba, buf, 1);
+    ata_read(__part->my_drive, lba, buf, 1);
     memcpy(fdesc, (file_desc_t *)buf + offset, sizeof(file_desc_t));
-    ata_write(__part->my_disk, lba, buf, 1);
+    ata_write(__part->my_drive, lba, buf, 1);
 }
 
 // get a new gfd
@@ -209,7 +211,7 @@ static void format_partition(uint8_t *buf, super_block_t *sb) {
 
     memcpy(sb, buf, sizeof(super_block_t));
     kprintf(KPL_NOTICE, "  Writing super block to disk... ");
-    ata_write(__part->my_disk, __part->start_lba + 1, buf, 1);
+    ata_write(__part->my_drive, __part->start_lba + 1, buf, 1);
     kprintf(KPL_NOTICE, "  Done!\n");
     memset(buf, 0, SECTOR_SIZE);
 
@@ -234,7 +236,7 @@ static void format_partition(uint8_t *buf, super_block_t *sb) {
         }
         if ((i + 1) % SECTOR_SIZE_IN_BIT == 0) {
             uint32_t lba = sb->sector_btmp_start_lba + i / SECTOR_SIZE_IN_BIT;
-            ata_write(__part->my_disk, lba, buf, 1);
+            ata_write(__part->my_drive, lba, buf, 1);
             if (with1) {
                 memset(buf, 0, SECTOR_SIZE);
                 with1 = 0;
@@ -247,7 +249,7 @@ static void format_partition(uint8_t *buf, super_block_t *sb) {
     memset(buf, 0, SECTOR_SIZE);
     kprintf(KPL_NOTICE, "  Writing empty desc table to disk... ");
     for (uint32_t i = 0; i < sb->file_desc_table_sec_cnt; i++) {
-        ata_write(__part->my_disk, sb->file_desc_table_start_lba + i, buf, 1);
+        ata_write(__part->my_drive, sb->file_desc_table_start_lba + i, buf, 1);
     }
     kprintf(KPL_NOTICE, "  Done!\n");
 
@@ -266,7 +268,7 @@ void simplefs_init() {
     if (buf == NULL || sb == NULL || simplefs == NULL) {
         PANIC("simplefs failed to init: no mem!");
     }
-    ata_read(__part->my_disk, __part->start_lba + 1, buf, 1);
+    ata_read(__part->my_drive, __part->start_lba + 1, buf, 1);
     if (*(uint32_t *)buf != SIMPLE_FS_MAGIC) {
         format_partition(buf, sb);
     } else {
@@ -274,16 +276,24 @@ void simplefs_init() {
     }
 
     // mount part
-    uint32_t byte_len = sb->sector_btmp_sec_cnt * SECTOR_SIZE;
+    uint32_t byte_len;
+
+    // init sector bitmap
+    byte_len = sb->sector_btmp_sec_cnt * SECTOR_SIZE;
     simplefs->sector_btmp.bits_ = kmalloc(byte_len);
     if (simplefs->sector_btmp.bits_ == NULL) {
         PANIC("simplefs failed to init: no mem!");
     }
+    // ata_read(__part->my_drive, 2306, simplefs->sector_btmp.bits_, 16);
     ata_read(
-        __part->my_disk, sb->sector_btmp_start_lba,
+        __part->my_drive, sb->sector_btmp_start_lba,
         simplefs->sector_btmp.bits_, sb->sector_btmp_sec_cnt
     );
     bitmap_reinit(&(simplefs->sector_btmp), byte_len);
+
+    // ata_read(__part->my_drive, 2050, buf, 1);
+
+    // while (1);
 
     // init file bitmap
     byte_len = MAX_FILE_CNT / 8;
@@ -296,7 +306,7 @@ void simplefs_init() {
 
     for (uint32_t i = 0; i < sb->file_desc_table_sec_cnt; i++) {
         uint32_t lba = sb->file_desc_table_start_lba + i;
-        ata_read(__part->my_disk, lba, buf, 1);
+        ata_read(__part->my_drive, lba, buf, 1);
         file_desc_t *fds = buf;
         for (uint32_t j = 0; j < NR_DESC_PER_SEC; j++) {
             if (fds[j].idx_lba != 0) {
@@ -334,7 +344,7 @@ static int file_create(const char *filename, file_desc_t *desc, uint8_t *buf) {
 
         // clean the index array
         memset(buf, 0, SECTOR_SIZE);
-        ata_write(__part->my_disk, lba, buf, 1);
+        ata_write(__part->my_drive, lba, buf, 1);
 
         strcpy(filename, desc->filename);
         desc->size = 0;
@@ -363,7 +373,7 @@ static int find(const char *filename, file_desc_t *fd, uint8_t *buf, int create)
             if (bitmap_bit_test(fbtmp, i)) {
                 uint32_t this_lba = sb->file_desc_table_start_lba + i / NR_DESC_PER_SEC;
                 if (this_lba > avail_lba) {
-                    ata_read(__part->my_disk, this_lba, buf, 1);
+                    ata_read(__part->my_drive, this_lba, buf, 1);
                     avail_lba = this_lba;
                 }
                 file_desc_t *fdesc = (file_desc_t *)buf + i % NR_DESC_PER_SEC;
@@ -523,7 +533,7 @@ int simplefs_file_write(int fd, const void *buffer, size_t count) {
         } else {
             int *lbas = io_buf + SECTOR_SIZE;
             ASSERT(fp->desc.idx_lba != 0);
-            ata_read(__part->my_disk, fp->desc.idx_lba, lbas, 1);
+            ata_read(__part->my_drive, fp->desc.idx_lba, lbas, 1);
 
             int bytes_written = 0;
             int pos = fp->file_pos;
@@ -543,17 +553,17 @@ int simplefs_file_write(int fd, const void *buffer, size_t count) {
                 }
                 ASSERT(lbas[sec_no] > 0);
                 if (!new_blk) {
-                    ata_read(__part->my_disk, lbas[sec_no], io_buf, 1);
+                    ata_read(__part->my_drive, lbas[sec_no], io_buf, 1);
                 }
                 memcpy((uint8_t *)buffer + bytes_written, io_buf + sec_off, bytes_to_write);
-                ata_write(__part->my_disk, lbas[sec_no], io_buf, 1);
+                ata_write(__part->my_drive, lbas[sec_no], io_buf, 1);
                 pos += bytes_to_write;
                 bytes_written += bytes_to_write;
             }
 
             if (pos > fp->desc.size) {
                 // sync lbas
-                ata_write(__part->my_disk, fp->desc.idx_lba, lbas, 1);
+                ata_write(__part->my_drive, fp->desc.idx_lba, lbas, 1);
             }
 
             fp->file_pos = pos;
@@ -586,7 +596,7 @@ int simplefs_file_read(int fd, void *buffer, size_t count) {
         } else {
             int *lbas = io_buf + SECTOR_SIZE;
             ASSERT(fp->desc.idx_lba != 0);
-            ata_read(__part->my_disk, fp->desc.idx_lba, lbas, 1);
+            ata_read(__part->my_drive, fp->desc.idx_lba, lbas, 1);
 
             int bytes_read = 0;
             int pos = fp->file_pos;
@@ -595,7 +605,7 @@ int simplefs_file_read(int fd, void *buffer, size_t count) {
                 int sec_off = pos % SECTOR_SIZE;
                 int bytes_to_read = MIN(count - bytes_read, SECTOR_SIZE - sec_off);
                 ASSERT(lbas[sec_no] > 0);
-                ata_read(__part->my_disk, lbas[sec_no], io_buf, 1);
+                ata_read(__part->my_drive, lbas[sec_no], io_buf, 1);
                 memcpy(io_buf + sec_off, (uint8_t *)buffer + bytes_read, bytes_to_read);
                 pos += bytes_to_read;
                 bytes_read += bytes_to_read;
@@ -662,7 +672,7 @@ int simplefs_file_delete(const char *filename) {
     ) {
         // reclaim sectors
         if (desc.size > 0) {
-            ata_read(__part->my_disk, desc.idx_lba, buf, 1);
+            ata_read(__part->my_drive, desc.idx_lba, buf, 1);
             int *lbas = buf;
             for (int i = 0; i < ROUND_UP_DIV(desc.size, SECTOR_SIZE); i++) {
                 ASSERT(lbas[i] > 0);
@@ -728,7 +738,7 @@ int simplefs_list_files(stat_t *s) {
             if (bitmap_bit_test(fbtmp, i)) {
                 uint32_t this_lba = sb->file_desc_table_start_lba + i / NR_DESC_PER_SEC;
                 if (this_lba > avail_lba) {
-                    ata_read(__part->my_disk, this_lba, buf, 1);
+                    ata_read(__part->my_drive, this_lba, buf, 1);
                     avail_lba = this_lba;
                 }
                 file_desc_t *fdesc = (file_desc_t *)buf + i % NR_DESC_PER_SEC;
@@ -755,7 +765,7 @@ int sys_close(int fd) {
 }
 
 int sys_read(int fd, void *buffer, size_t count) {
-    kprintf(KPL_DEBUG, "sys_read: fd=%d\n", fd);
+    // kprintf(KPL_DEBUG, "sys_read: fd=%d\n", fd);
     if (fd == FD_STDIN) {
         return tty_read_curr((char *)buffer, count);
     } else if (fd == FD_STDOUT || fd == FD_STDERR) {

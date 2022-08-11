@@ -33,19 +33,22 @@ $(NAME): $(USR_ROOT)/usr_linker.ld $(objects)
 clean:
 	rm -rf $(NAME) $(objects)
 
-docker:
-	docker exec -w /mnt/external/myOS/usr/$(NAME) myos1 make
-
 dump:
 	objdump -D -M intel $(NAME) | less
 
 FSTOOL = $(ROOT)/fstool/fstool
-DISK = $(ROOT)/e.img
-
-docker-install:
-	docker exec -w /mnt/external/myOS/usr/$(NAME) myos1 make install
+DISK = $(ROOT)/f.img
 
 install:
 	$(FSTOOL) $(DISK) rm $(NAME)
 	$(FSTOOL) $(DISK) load $(NAME) $(NAME)
 	$(FSTOOL) $(DISK) list
+
+DOCKER_PATH = /mnt/external
+DOCKER_CONTAINER = myos1
+
+docker:
+	docker exec -w $(DOCKER_PATH)/myOS/usr/$(NAME) $(DOCKER_CONTAINER) make
+
+docker-install:
+	docker exec -w $(DOCKER_PATH)/myOS/usr/$(NAME) $(DOCKER_CONTAINER) make install

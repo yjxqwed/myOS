@@ -257,16 +257,16 @@ void cpu_exception_handler(isrp_t *p) {
 
 void interrupt_request_handler(isrp_t *p) {
     uint32_t irq_no = p->int_no - 32;
-    if (irq_no >= 8) {
-        outportb(PIC_S_CTL, 0x20);
-    }
-    outportb(PIC_M_CTL, 0x20);
-
     if (handlers[p->int_no] != NULL) {
         handlers[p->int_no](p);
     } else {
         // kprintf(KPL_DUMP, "IRQ %d recvd!\n", irq_no);
     }
+
+    if (irq_no >= 8) {
+        outportb(PIC_S_CTL, PIC_EOI);
+    }
+    outportb(PIC_M_CTL, PIC_EOI);
 }
 
 void interrupt_handler(isrp_t *p) {

@@ -40,7 +40,7 @@ struct Console {
 };
 
 static console_t consoles[NR_TTY];
-static int current_console = -1;
+static int current_console = 0;
 
 console_t *init_console(int tty_no) {
     ASSERT(tty_no >= 0 && tty_no < NR_TTY);
@@ -190,9 +190,9 @@ static int __puts(
     COLOR bg, COLOR fg, bool_t set_write_out_col
 ) {
     ASSERT(cons != NULL);
-    if (cons == &(consoles[0])) {
-        return 0;
-    }
+    // if (cons == &(consoles[0])) {
+    //     return 0;
+    // }
     for (int i = 0; i < count; i++) {
         __putc(cons, str[i], bg, fg);
     }

@@ -167,7 +167,7 @@ static inline void hlt() __attr_always_inline;
 
 static inline uint8_t inportb(uint16_t port) {
     uint8_t val;
-    __asm_volatile (
+    __asm_volatile(
         "inb %0, %1\n\t"
         "nop\n\t"
         "nop"         // introduce some delay
@@ -179,7 +179,7 @@ static inline uint8_t inportb(uint16_t port) {
 }
 
 static inline void outportb(uint16_t port, uint8_t val) {
-    __asm_volatile (
+    __asm_volatile(
         "outb %1, %0\n\t"
         "nop\n\t"
         "nop"         // introduce some delay
@@ -210,6 +210,30 @@ static inline void outportsw(
         : "+S"(buf), "+c"(word_cnt)
         : "Nd"(port)
         : "cc"
+    );
+}
+
+static inline uint32_t inportl(uint16_t port) {
+    uint32_t val;
+    __asm_volatile (
+        "ind %0, %1\n\t"
+        "nop\n\t"
+        "nop"         // introduce some delay
+        : "=a"(val)   // output
+        : "Nd"(port)  // input
+        :             // clobbered regs
+    );
+    return val;
+}
+
+static inline void outportl(uint16_t port, uint32_t val) {
+    __asm_volatile (
+        "outd %1, %0\n\t"
+        "nop\n\t"
+        "nop"         // introduce some delay
+        :             // output
+        : "a"(val), "Nd"(port)  // input
+        :             // clobbered regs
     );
 }
 
@@ -343,6 +367,9 @@ INT_STATUS disable_int();
 #define PIC_M_CTLMASK 0x21
 #define PIC_S_CTL     0xA0
 #define PIC_S_CTLMASK 0xA1
+
+// end of interrupt
+#define PIC_EOI       0x20
 
 /**
  * More info: https://wiki.osdev.org/Interrupt

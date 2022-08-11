@@ -22,6 +22,10 @@ int console_kprintf(KP_LEVEL kpl, const char *fmt, ...);
 // @brief kernel sprintf, string format
 int ksprintf(char *out, const char *fmt, ...);
 
+#ifndef printf
+#define printf(fmt, ...) kprintf(KPL_DEBUG, fmt, ##__VA_ARGS__)
+#endif
+
 // void kprintf_enable_paging();
 // void kprintf_use_tty();
 

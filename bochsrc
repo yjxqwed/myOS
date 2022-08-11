@@ -3,6 +3,7 @@ megs: 512
 # linux/Mac
 romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
 vgaromimage: file=/usr/local/share/bochs/VGABIOS-lgpl-latest
+vga: extension=vbe
 
 # windows
 # romimage: file="C:\Program Files\Bochs-2.6.11/BIOS-bochs-latest", address=0x00000000, options=none

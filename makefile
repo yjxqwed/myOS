@@ -15,7 +15,8 @@ endif
 
 # objects
 device_objs = device/kb.elf32 device/screen.elf32 device/pit.elf32 \
-              device/ata.elf32 device/tty.elf32 device/console.elf32
+              device/tty.elf32 device/console.elf32 \
+			  device/ide.elf32
 
 kernel_asm_objs = kernel/asm/entry.elf32 \
                   kernel/asm/istub.elf32

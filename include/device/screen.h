@@ -37,9 +37,10 @@ typedef enum COLOR {
  *  FG: foreground
  */
 
-// put a char with foreground color = fg and 
-// background color = bg
+// put a char with foreground color = fg and background color = bg
 void scrn_putc(char c, COLOR bg, COLOR fg);
+
+// put a str with foreground color = fg and background color = bg
 void scrn_puts(const char *str, size_t count, COLOR bg, COLOR fg);
 
 // For more info on text mode cursor 

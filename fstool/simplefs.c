@@ -121,6 +121,7 @@ static void print_simplefs(const simplefs_struct_t *simplefs) {
 }
 
 static void sync_super_block(uint8_t *buf) {
+    memset(buf, 0, SECTOR_SIZE);
     memcpy(__simplefs->sb, buf, sizeof(super_block_t));
     ata_write(__part->my_disk, __part->start_lba + 1, buf, 1);
 }
