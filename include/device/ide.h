@@ -4,12 +4,14 @@
 // https://wiki.osdev.org/PCI_IDE_Controller
 #include <common/types.h>
 #include <lib/list.h>
+#include <thread/sync.h>
 
 typedef struct {
     uint16_t base;  // i/o base port
     uint16_t control;  // control port
     uint16_t bm_ide; // bus-master ide port
     uint16_t no_intr; // no interrupt port
+    mutex_t chan_lock;
 } IDE_CHANNELS;
 
 // an in memory structure for a partition
@@ -39,6 +41,7 @@ typedef struct {
     uint16_t features; // drive features
     uint32_t command_sets; // supported command sets
     uint32_t size; // drive size in sectors
+    char dev_name[8];  // name of this device
     unsigned char model[41]; // drive name
     // at most 4 primary partitions
     PARTITION prim_parts[4];
@@ -55,8 +58,8 @@ typedef struct {
 
 
 
-#define MAXIMUM_CHANNELS    2
-#define MAXIMUM_IDE_DEVICES    5
+#define MAXIMUM_CHANNELS       2
+#define MAXIMUM_IDE_DEVICES    4
 
 // ATA register ports for read/write
 #define ATA_REG_DATA         0x00
@@ -173,6 +176,5 @@ int ata_write(uint8_t drive, uint32_t lba, uint32_t buffer, uint8_t sec_cnt);
 
 
 void ata_init_2();
-int ata_get_drive_by_model(const char *model);
 
 #endif

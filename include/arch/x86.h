@@ -107,231 +107,51 @@ typedef PageTableEntry pte_t;
 // amount of memory controlled by a pg_tab (4 MiB)
 #define MEM_SIZE_PER_PGTABLE (NRPTE * PAGE_SIZE)
 
+// ================== Assembly =========================
+
+#define __asm_volatile __asm__ volatile
+
+uint8_t inportb(uint16_t port);
+void outportb(uint16_t port, uint8_t val);
+uint32_t inportd(uint16_t port);
+void outportd(uint16_t port, uint32_t val);
+
+
+void inportsw(uint16_t port, void *buf, uint32_t word_cnt);
+void outportsw(uint16_t port, void *buf, uint32_t word_cnt);
+void inportsd(uint16_t port, void *buf, uint32_t dword_cnt);
+void outportsd(uint16_t port, void *buf, uint32_t dword_cnt);
+
+
 // ====================== Register ============================
 
 #define CR0_PG 0x80000000
 
-// ================== Inline Assembly =========================
-
-#define __attr_always_inline __attribute__((always_inline))
-
-// read a byte from io port
-static inline uint8_t inportb(uint16_t port) __attr_always_inline;
-// write a byte to io port
-static inline void outportb(uint16_t port, uint8_t val) __attr_always_inline;
-/**
- * @brief read from port and store to buf
- * @param port port number
- * @param buf data buffer
- * @param word_cnt number of words (2 bytes) to read
- */
-static inline void inportsw(
-    uint16_t port, void *buf, uint32_t word_cnt
-) __attr_always_inline;
-
-/**
- * @brief write data to port from buf
- * @param port port number
- * @param buf data buffer
- * @param word_cnt number of words (2 bytes) to write
- */
-static inline void outportsw(
-    uint16_t port, void *buf, uint32_t word_cnt
-) __attr_always_inline;
-
 // load gdt
-static inline void lgdt(void *gp) __attr_always_inline;
+void lgdt(void *gp);
 
 // load idt
-static inline void lidt(void *ip) __attr_always_inline;
+void lidt(void *ip);
 
 // load cr0
-static inline void lcr0(uint32_t x) __attr_always_inline;
+void lcr0(uint32_t x);
 // store cr0
-static inline uint32_t scr0() __attr_always_inline;
+uint32_t scr0();
 
 // load cr3
-static inline void lcr3(uint32_t x) __attr_always_inline;
+void lcr3(uint32_t x);
 // store cr3
-static inline uint32_t scr3() __attr_always_inline;
+uint32_t scr3();
 
 // invlpg
-static inline void invlpg(void *va) __attr_always_inline;
+void invlpg(void *va);
 
 // load task register (tss)
-static inline void ltr(uint16_t selector_tss) __attr_always_inline;
+void ltr(uint16_t selector_tss);
 
-static inline void hlt() __attr_always_inline;
+void hlt();
 
-#define __asm_volatile __asm__ volatile
-
-static inline uint8_t inportb(uint16_t port) {
-    uint8_t val;
-    __asm_volatile(
-        "inb %0, %1\n\t"
-        "nop\n\t"
-        "nop"         // introduce some delay
-        : "=a"(val)   // output
-        : "Nd"(port)  // input
-        :             // clobbered regs
-    );
-    return val;
-}
-
-static inline void outportb(uint16_t port, uint8_t val) {
-    __asm_volatile(
-        "outb %1, %0\n\t"
-        "nop\n\t"
-        "nop"         // introduce some delay
-        :             // output
-        : "a"(val), "Nd"(port)  // input
-        :             // clobbered regs
-    );
-}
-
-static inline void inportsw(
-    uint16_t port, void *buf, uint32_t word_cnt
-) {
-    __asm_volatile(
-        "cld;"
-        "rep insw;"
-        : "+D"(buf), "+c"(word_cnt)
-        : "Nd"(port)
-        : "memory", "cc"
-    );
-}
-
-static inline void outportsw(
-    uint16_t port, void *buf, uint32_t word_cnt
-) {
-    __asm_volatile(
-        "cld;"
-        "rep outsw;"
-        : "+S"(buf), "+c"(word_cnt)
-        : "Nd"(port)
-        : "cc"
-    );
-}
-
-static inline uint32_t inportl(uint16_t port) {
-    uint32_t val;
-    __asm_volatile (
-        "ind %0, %1\n\t"
-        "nop\n\t"
-        "nop"         // introduce some delay
-        : "=a"(val)   // output
-        : "Nd"(port)  // input
-        :             // clobbered regs
-    );
-    return val;
-}
-
-static inline void outportl(uint16_t port, uint32_t val) {
-    __asm_volatile (
-        "outd %1, %0\n\t"
-        "nop\n\t"
-        "nop"         // introduce some delay
-        :             // output
-        : "a"(val), "Nd"(port)  // input
-        :             // clobbered regs
-    );
-}
-
-static inline void lgdt(void *gp) {
-    __asm_volatile (
-        "lgdt [%0]"
-        :
-        : "r"(gp)  // input
-        :
-    );
-}
-
-static inline void lidt(void *ip) {
-    __asm_volatile (
-        "lidt [%0]"
-        :
-        : "r"(ip)  // input
-        :
-    );
-}
-
-static inline void lcr0(uint32_t x) {
-    __asm_volatile (
-        "mov cr0, %0"
-        :
-        : "r"(x)
-        :
-    );
-}
-
-static inline uint32_t scr0() {
-    uint32_t cr0;
-    __asm_volatile (
-        "mov %0, cr0"
-        : "=r"(cr0)
-        :
-        :
-    );
-    return cr0;
-}
-
-static inline void lcr3(uint32_t x) {
-    __asm_volatile (
-        "mov cr3, %0"
-        :
-        : "r"(x)
-        :
-    );
-}
-
-static inline uint32_t scr3() {
-    uint32_t cr3;
-    __asm_volatile (
-        "mov %0, cr3"
-        : "=r"(cr3)
-        :
-        :
-    );
-    return cr3;
-}
-
-static inline uint32_t scr2() {
-    uint32_t cr2;
-    __asm_volatile (
-        "mov %0, cr2"
-        : "=r"(cr2)
-        :
-        :
-    );
-    return cr2;
-}
-
-static inline void invlpg(void *va) {
-    __asm_volatile (
-        "invlpg [%0]"
-        :
-        : "r"(va)
-        : "memory"
-    );
-}
-
-static inline void ltr(uint16_t selector_tss) {
-    __asm_volatile (
-        "ltr %0"
-        :
-        : "r"(selector_tss)
-        :
-    );
-}
-
-static inline void hlt() {
-    __asm_volatile (
-        "hlt"
-        :
-        :
-        : "memory"
-    );
-}
+// ================ INTERRUPT ================
 
 // IF is bit 9 of eflags
 #define EFLAGS_IF_MASK 0x00000200

@@ -16,8 +16,26 @@ IDE_DEVICE g_ide_devices[MAXIMUM_IDE_DEVICES];
 
 static volatile unsigned char g_ide_irq_invoked = 0;
 
-static uint8_t ide_read_register(uint8_t channel, uint8_t reg);
-static void ide_write_register(uint8_t channel, uint8_t reg, uint8_t data);
+// write data to register to the given channel
+static void ide_write_register(uint8_t channel, uint8_t reg, uint8_t data) {
+    // write value ata-control to tell irq is ready
+    if (reg > 0x07 && reg < 0x0C)
+        ide_write_register(channel, ATA_REG_CONTROL, 0x80 | g_ide_channels[channel].no_intr);
+
+    // write data to register ports
+    if (reg < 0x08)
+        outportb(g_ide_channels[channel].base + reg - 0x00, data);
+    else if (reg < 0x0C)
+        outportb(g_ide_channels[channel].base + reg - 0x06, data);
+    else if (reg < 0x0E)
+        outportb(g_ide_channels[channel].control + reg - 0x0A, data);
+    else if (reg < 0x16)
+        outportb(g_ide_channels[channel].bm_ide + reg - 0x0E, data);
+
+    // write value to tell reading is done
+    if (reg > 0x07 && reg < 0x0C)
+        ide_write_register(channel, ATA_REG_CONTROL, g_ide_channels[channel].no_intr);
+}
 
 // read register value from the given channel
 static uint8_t ide_read_register(uint8_t channel, uint8_t reg) {
@@ -44,52 +62,20 @@ static uint8_t ide_read_register(uint8_t channel, uint8_t reg) {
     return ret;
 }
 
-// write data to register to the given channel
-static void ide_write_register(uint8_t channel, uint8_t reg, uint8_t data) {
-    // write value ata-control to tell irq is ready
-    if (reg > 0x07 && reg < 0x0C)
-        ide_write_register(channel, ATA_REG_CONTROL, 0x80 | g_ide_channels[channel].no_intr);
-
-    // write data to register ports
-    if (reg < 0x08)
-        outportb(g_ide_channels[channel].base + reg - 0x00, data);
-    else if (reg < 0x0C)
-        outportb(g_ide_channels[channel].base + reg - 0x06, data);
-    else if (reg < 0x0E)
-        outportb(g_ide_channels[channel].control + reg - 0x0A, data);
-    else if (reg < 0x16)
-        outportb(g_ide_channels[channel].bm_ide + reg - 0x0E, data);
-
-    // write value to tell reading is done
-    if (reg > 0x07 && reg < 0x0C)
-        ide_write_register(channel, ATA_REG_CONTROL, g_ide_channels[channel].no_intr);
-}
-
 // read long word from reg port for quads times
 void insl(uint16_t reg, uint32_t *buffer, int quads) {
-    int index;
-    for (index = 0; index < quads; index++) {
-        buffer[index] = inportl(reg);
-    }
+    inportsd(reg, buffer, quads);
 }
 
 // write long word to reg port for quads times
 void outsl(uint16_t reg, uint32_t *buffer, int quads) {
-    int index;
-    for (index = 0; index < quads; index++) {
-        outportl(reg, buffer[index]);
-    }
+    outportsd(reg, buffer, quads);
 }
 
 // read collection of value from a channel into given buffer
 void ide_read_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t quads) {
     if (reg > 0x07 && reg < 0x0C)
         ide_write_register(channel, ATA_REG_CONTROL, 0x80 | g_ide_channels[channel].no_intr);
-
-    // get value of data-segment to extra segment by savin glast es value
-    // asm("pushw %es");
-    // asm("movw %ds, %ax");
-    // asm("movw %ax, %es");
 
     if (reg < 0x08)
         insl(g_ide_channels[channel].base + reg - 0x00, buffer, quads);
@@ -100,8 +86,6 @@ void ide_read_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t qu
     else if (reg < 0x16)
         insl(g_ide_channels[channel].bm_ide + reg - 0x0E, buffer, quads);
 
-    // asm("popw %es;");
-
     if (reg > 0x07 && reg < 0x0C)
         ide_write_register(channel, ATA_REG_CONTROL, g_ide_channels[channel].no_intr);
 }
@@ -109,11 +93,6 @@ void ide_read_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t qu
 void ide_write_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t quads) {
     if (reg > 0x07 && reg < 0x0C)
         ide_write_register(channel, ATA_REG_CONTROL, 0x80 | g_ide_channels[channel].no_intr);
-
-    // get value of data-segment to extra segment by savin glast es value
-    // asm("pushw %es");
-    // asm("movw %ds, %ax");
-    // asm("movw %ax, %es");
 
     if (reg < 0x08)
         outsl(g_ide_channels[channel].base + reg - 0x00, buffer, quads);
@@ -123,8 +102,6 @@ void ide_write_buffer(uint8_t channel, uint8_t reg, uint32_t *buffer, uint32_t q
         outsl(g_ide_channels[channel].control + reg - 0x0A, buffer, quads);
     else if (reg < 0x16)
         outsl(g_ide_channels[channel].bm_ide + reg - 0x0E, buffer, quads);
-
-    // asm("popw %es;");
 
     if (reg > 0x07 && reg < 0x0C)
         ide_write_register(channel, ATA_REG_CONTROL, g_ide_channels[channel].no_intr);
@@ -310,14 +287,8 @@ static void partition_scan(uint8_t drive, uint32_t base_lba) {
             }
             part->start_lba = base_lba + pe->start_lba;
             part->sec_cnt = pe->sec_cnt;
-            // part->my_disk = hd;
             part->my_drive = drive;
             __list_push_back(&partition_list, part, part_tag);
-            // kprintf(
-            //     KPL_NOTICE,
-            //     "    %x start_lba: 0x%X, sec_cnt: 0x%X\n",
-            //     part->my_drive, part->start_lba, part->sec_cnt
-            // );
             if (!first_part) {
                 first_part = part;
             }
@@ -352,7 +323,6 @@ void ide_init(
     uint32_t bus_master_addr
 ) {
     int i, j, k, count = 0;
-    // unsigned char ide_buf[2048] = {0};
 
     uint8_t *ide_buf = kmalloc(2048);
     if (ide_buf == NULL) {
@@ -369,6 +339,8 @@ void ide_init(
     g_ide_channels[ATA_SECONDARY].control = sec_channel_control_addr;
     g_ide_channels[ATA_PRIMARY].bm_ide = bus_master_addr;
     g_ide_channels[ATA_SECONDARY].bm_ide = bus_master_addr;
+    mutex_init(&(g_ide_channels[ATA_PRIMARY].chan_lock));
+    mutex_init(&(g_ide_channels[ATA_SECONDARY].chan_lock));
 
     // 2- Disable IRQs:
     ide_write_register(ATA_PRIMARY, ATA_REG_CONTROL, 2);
@@ -382,11 +354,9 @@ void ide_init(
 
             // (I) Select Drive:
             ide_write_register(i, ATA_REG_HDDEVSEL, 0xA0 | (j << 4));  // Select Drive.
-            //sleep(1); // Wait 1ms for drive select to work.
 
             // (II) Send ATA Identify Command:
             ide_write_register(i, ATA_REG_COMMAND, ATA_CMD_IDENTIFY);
-            //sleep(1); // This function should be implemented in your OS. which waits for 1 ms.
             // it is based on System Timer Device Driver.
 
             // (III) Polling:
@@ -415,7 +385,6 @@ void ide_init(
                     continue;  // Unknown Type (may not be a device).
 
                 ide_write_register(i, ATA_REG_COMMAND, ATA_CMD_IDENTIFY_PACKET);
-                //sleep(1);
             }
 
             // (V) Read Identification Space of the Device:
@@ -483,6 +452,8 @@ uint8_t ide_ata_access(uint8_t direction, uint8_t drive, uint32_t lba, uint8_t n
     uint32_t words = 256;                             // Almost every ATA drive has a sector-size of 512-byte.
     uint16_t cyl, i;
     uint8_t head, sect, err;
+    mutex_t *chan_lock = &(g_ide_channels[channel].chan_lock);
+    mutex_lock(chan_lock);
 
     ide_write_register(channel, ATA_REG_CONTROL, g_ide_channels[channel].no_intr = (g_ide_irq_invoked = 0x0) + 0x02);
 
@@ -571,34 +542,23 @@ uint8_t ide_ata_access(uint8_t direction, uint8_t drive, uint32_t lba, uint8_t n
     } else if (direction == ATA_READ) {
         // PIO Read.
         for (i = 0; i < num_sectors; i++) {
-            if ((err = ide_polling(channel, 1)))
+            if ((err = ide_polling(channel, 1))) {
+                mutex_unlock(chan_lock);
                 return err;  // Polling, set error and exit if there is.
-
-            // save es segment and repeat insw(read stream of shorts) instruction util no of sectors are read into buffer
-            // asm("pushw %es");
-            // asm("rep insw"
-            //     :
-            //     : "c"(words), "d"(bus), "D"(buffer));  // Receive Data.
-            // asm("popw %es");
-            // buffer += (words * 2);
-            ide_read_buffer(channel, ATA_REG_DATA, buffer + i * 512, words / 2);
+            }
+            ide_read_buffer(channel, ATA_REG_DATA, buffer + i * SECTOR_SIZE, words / 2);
         }
     } else {
         // PIO Write.
         for (i = 0; i < num_sectors; i++) {
             ide_polling(channel, 0);  // Polling.
-            // save es segment and repeat outsw(write stream of shorts) instruction util no of sectors are written to ide device
-            // asm("pushw %ds");
-            // asm("rep outsw" ::"c"(words), "d"(bus), "S"(buffer));  // Send Data
-            // asm("popw %ds");
-            // buffer += (words * 2);
-            ide_write_buffer(channel, ATA_REG_DATA, buffer + i * 512, words / 2);
+            ide_write_buffer(channel, ATA_REG_DATA, buffer + i * SECTOR_SIZE, words / 2);
         }
         // send the flush commands
         ide_write_register(channel, ATA_REG_COMMAND, (char[]){ATA_CMD_CACHE_FLUSH, ATA_CMD_CACHE_FLUSH, ATA_CMD_CACHE_FLUSH_EXT}[lba_mode]);
         ide_polling(channel, 0);  // Polling.
     }
-
+    mutex_unlock(chan_lock);
     return 0;  // Easy, isn't it?
 }
 
@@ -657,15 +617,6 @@ int ide_write_sectors(uint8_t drive, uint8_t num_sectors, uint32_t lba, uint32_t
 
 void ata_init_2() {
     ide_init(0x1F0, 0x3F6, 0x170, 0x376, 0x000);
-}
-
-int ata_get_drive_by_model(const char *model) {
-    // int i;
-    // for(i = 0; i < MAXIMUM_IDE_DEVICES; i++) {
-    //     if(strcmp((const char*)g_ide_devices[i].model, (char *)model) == 0)
-    //         return i;
-    // }
-    return -1;
 }
 
 int ata_read(uint8_t drive, uint32_t lba, uint32_t buffer, uint8_t sec_cnt) {
