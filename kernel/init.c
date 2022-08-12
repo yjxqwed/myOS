@@ -24,7 +24,7 @@ static void test_magic_number(uint32_t magic_number) {
             KPL_PANIC, "Invalid magic number 0x%x. System Halted.\n", 
             magic_number
         );
-        while (1);
+        hlt();
     }
 }
 
@@ -39,7 +39,6 @@ void entry_setup(multiboot_info_t *mbi, uint32_t magic_number) {
     install_boot_pg();
     // change video mem to vaddr
     video_mem_enable_paging();
-    // kprintf_enable_paging();
 }
 
 
@@ -66,42 +65,13 @@ void kinit() {
     // ata_init();
     ata_init_2();
 
-
-    // char *buf = kmalloc(16 * SECTOR_SIZE);
-    // ASSERT(buf != NULL);
-
-    // extern disk_t *first_disk;
-    // ata_read(first_disk, 2049, buf, 1);
-    // kprintf(KPL_DEBUG, "2049: 0x%X\n", *(uint32_t *)buf);
-    // ata_read(first_disk, 2306, buf, 16);
-    // kprintf(KPL_DEBUG, "2306: 0x%X\n", *(uint32_t *)buf);
-    // ata_read(first_disk, 2050, buf, 1);
-    // kprintf(KPL_DEBUG, "2050: 0x%X\n", *(uint32_t *)buf);
-    // ata_read(first_disk, 2050, buf, 1);
-    // kprintf(KPL_DEBUG, "2050: 0x%X\n", *(uint32_t *)buf);
-
-    // ide_read_sectors(1, 1, 2049, (uint32_t)buf);
-    // printf("2049: %X\n", *(uint32_t*)buf);
-
-    // ide_read_sectors(1, 16, 2306, (uint32_t)buf);
-    // printf("2306: %X\n", *(uint32_t*)buf);
-
-    // ide_read_sectors(1, 1, 2050, (uint32_t)buf);
-    // printf("2050: %X\n", *(uint32_t*)buf);
-
-    // ide_read_sectors(1, 1, 2050, (uint32_t)buf);
-    // printf("2050: %X\n", *(uint32_t*)buf);
-
-    // while (1);
-
     // init tty
     tty_init();
-    // kprintf_use_tty();
-    // enable interrupt
-    enable_int();
-    // init hard drives
-    
+
     // init file system
     // fs_init();
     simplefs_init();
+
+    // enable interrupt
+    enable_int();
 }

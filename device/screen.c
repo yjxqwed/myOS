@@ -7,11 +7,6 @@
 // offset of the char at (row, col)
 #define CHAR_OFFSET(row, col) ((row * MAXCOL + col) * 2)
 
-// // size in bytes of a whole row
-// #define ROW_RAM (MAXCOL * 2)
-// // size in bytes of a whole page (screen)
-// #define PAGE_RAM (MAXROW * ROW_RAM)
-
 #define ATTR(bg, fg) (uint8_t)((bg << 4) | fg)
 
 #define BLANK_CHAR (' ')

@@ -51,7 +51,7 @@ objects = $(device_objs) $(kernel_asm_objs) $(kernel_c_objs) \
 
 
 # build rules
-.PHONY = clean dump docker docker-release
+.PHONY = clean dump docker docker-release qemu
 
 all: mykernel.iso
 
@@ -81,7 +81,7 @@ mykernel.iso: mykernel.bin
 	mkdir iso/boot
 	mkdir iso/boot/grub
 	cp $< iso/boot/
-	echo 'set timeout = 0' > iso/boot/grub/grub.cfg
+	echo 'set timeout = 1' > iso/boot/grub/grub.cfg
 	echo 'set default = 0' >> iso/boot/grub/grub.cfg
 	echo '' >> iso/boot/grub/grub.cfg
 	echo 'menuentry "My Operating System" {' >> iso/boot/grub/grub.cfg
@@ -90,3 +90,9 @@ mykernel.iso: mykernel.bin
 	echo '}' >> iso/boot/grub/grub.cfg
 	grub-mkrescue --output=$@ iso
 	rm -rf iso
+
+qemu:
+	qemu-system-i386 -drive format=raw,file=e.img,media=disk,index=2,if=ide \
+					 -drive file=mykernel.iso,index=0,if=ide,media=cdrom \
+					 -boot order=d
+

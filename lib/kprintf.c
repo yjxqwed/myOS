@@ -165,12 +165,12 @@ int kprintf(KP_LEVEL kpl, const char *fmt, ...) {
     return ret;
 }
 
-int console_kprintf(KP_LEVEL kpl, const char *fmt, ...) {
+int printk(KP_LEVEL kpl, const char *fmt, ...) {
     static char buf[1024];
     args_list args;
     args_start(args, fmt);
     int ret = __ksprintf(buf, fmt, args);
-    ret = tty_puts_task(buf, ret, KPL[kpl].bg, KPL[kpl].fg);
+    ret = tty_puts_curr(buf, ret, KPL[kpl].bg, KPL[kpl].fg);
     args_end(args);
     return ret;
 }

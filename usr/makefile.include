@@ -37,7 +37,7 @@ dump:
 	objdump -D -M intel $(NAME) | less
 
 FSTOOL = $(ROOT)/fstool/fstool
-DISK = $(ROOT)/f.img
+DISK = $(ROOT)/e.img
 
 install:
 	$(FSTOOL) $(DISK) rm $(NAME)

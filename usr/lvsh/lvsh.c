@@ -103,6 +103,8 @@ void lvsh(void) {
             mm_info_t mm_info;
             mm(&mm_info);
             printf("MEM: total=%d, used=%d, free=%d\n", mm_info.total_mem_installed, mm_info.used_mem, mm_info.free_mem);
+        } else if (strcmp(argv[0], "sleep") == 0) {
+            sleep(2000);
         } else if (strcmp(argv[0], "exit") == 0) {
             break;
         } else {

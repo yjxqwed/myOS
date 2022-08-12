@@ -115,7 +115,7 @@ static void analyze_mem_map(multiboot_info_t *mbi) {
         }
     } else {
         kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
-        while (1);
+        hlt();
     }
     kprintf(KPL_NOTICE, "total mem installed = 0x%x MiB\n", total_mem_mb);
     kprintf(KPL_NOTICE, "=============================================\n");
@@ -132,7 +132,7 @@ void detect_memory(multiboot_info_t *mbi) {
                 "Not Enough Memory; "
                 "try with >= 128 MiB mem. System Halted.\n"
             );
-            while (1);
+            hlt();
         }
         if (high_free_mem > (MAX_MEMORY_LIMIT_MB  - 1) * 0x100000) {
             high_free_mem = (MAX_MEMORY_LIMIT_MB  - 1) * 0x100000;
@@ -149,7 +149,7 @@ void detect_memory(multiboot_info_t *mbi) {
         );
     } else {
         kprintf(KPL_PANIC, "No Memory Info. System Halted.\n");
-        while (1);
+        hlt();
     }
 }
 

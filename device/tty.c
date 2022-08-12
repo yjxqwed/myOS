@@ -180,7 +180,7 @@ void tty_init() {
         // init console
         ttys[i].my_console = init_console(i);
     }
-    // select_console(0);
+    select_console(0);
     kb_init();
     tty_ready = 1;
 }

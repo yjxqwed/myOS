@@ -10,6 +10,9 @@
 #include <device/tty.h>
 #include <device/console.h>
 
+#include <mm/kvmm.h>
+#include <lib/kprintf.h>
+
 
 // offset of the char at (row, col)
 #define CHAR_OFFSET(row, col) ((row) * MAXCOL + (col))
@@ -37,10 +40,14 @@ struct Console {
     // output mutex of this console
     mutex_t lock;
     int tty_no;
+
+    uint16_t *cons_buffer;
+    uint32_t cons_buffer_head;
+    uint32_t cons_buffer_num;
 };
 
 static console_t consoles[NR_TTY];
-static int current_console = 0;
+static int current_console = -1;
 
 console_t *init_console(int tty_no) {
     ASSERT(tty_no >= 0 && tty_no < NR_TTY);
@@ -51,6 +58,11 @@ console_t *init_console(int tty_no) {
     cons->cursor_row_base = tty_no * MAXROW;
     mutex_init(&(cons->lock));
     cons->tty_no = tty_no;
+    cons->cons_buffer = kmalloc(PAGE_RAM * 16);
+    if (cons->cons_buffer == NULL) {
+        PANIC("init_console: err no mem!");
+    }
+    cons->cons_buffer_head = cons->cons_buffer_num = 0;
     return cons;
 }
 
@@ -190,9 +202,9 @@ static int __puts(
     COLOR bg, COLOR fg, bool_t set_write_out_col
 ) {
     ASSERT(cons != NULL);
-    // if (cons == &(consoles[0])) {
-    //     return 0;
-    // }
+    if (cons == &(consoles[0])) {
+        return 0;
+    }
     for (int i = 0; i < count; i++) {
         __putc(cons, str[i], bg, fg);
     }
@@ -228,21 +240,42 @@ int get_curr_console_tty() {
 }
 
 void set_video_start_row(uint32_t row) {
-    uintptr_t video_mem = __pa(VIDEO_MEM + row * MAXCOL);
+    uintptr_t video_mem = row * MAXCOL;
     outportb(0x3d4, 0x0d);
     outportb(0x3d5, video_mem);
     outportb(0x3d4, 0x0c);
     outportb(0x3d5, video_mem >> 8);
 }
 
+static void __disable_cursor() {
+    outportb(0x3D4, 0x0A);
+    outportb(0x3D5, 0x20);
+}
+
+static void __enable_cursor(uint8_t cursor_start, uint8_t cursor_end) {
+    outportb(0x3D4, 0x0A);
+    outportb(0x3D5, (inportb(0x3D5) & 0xC0) | cursor_start);
+
+    outportb(0x3D4, 0x0B);
+    outportb(0x3D5, (inportb(0x3D5) & 0xE0) | cursor_end);
+}
+
 void select_console(int console) {
+    ASSERT(get_int_status() == INTERRUPT_OFF);
     ASSERT(0 <= console && console < NR_TTY);
     if (current_console == console) {
         return;
     }
-    current_console = console;
+
     console_t *cons = &(consoles[console]);
-    ASSERT(get_int_status() == INTERRUPT_OFF);
     set_video_start_row(cons->cursor_row_base);
-    __set_cursor(cons);
+
+    if (console == 0) {
+        __disable_cursor();
+    } else {
+        __enable_cursor(12, 15);
+        __set_cursor(cons);
+    }
+
+    current_console = console;
 }

@@ -17,7 +17,7 @@ typedef enum KP_LEVEL {
 // %X -> unsigned hex uint32 full 8 bits
 // %c -> char
 int kprintf(KP_LEVEL kpl, const char *fmt, ...);
-int console_kprintf(KP_LEVEL kpl, const char *fmt, ...);
+int printk(KP_LEVEL kpl, const char *fmt, ...);
 
 // @brief kernel sprintf, string format
 int ksprintf(char *out, const char *fmt, ...);
@@ -25,8 +25,5 @@ int ksprintf(char *out, const char *fmt, ...);
 #ifndef printf
 #define printf(fmt, ...) kprintf(KPL_DEBUG, fmt, ##__VA_ARGS__)
 #endif
-
-// void kprintf_enable_paging();
-// void kprintf_use_tty();
 
 #endif
